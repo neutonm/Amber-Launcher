@@ -176,7 +176,7 @@ end:
 #define VMUL_S(x, s)  vmulq_f32(x, vmovq_n_f32(s))
 #define VREV(x) vcombine_f32(vget_high_f32(vrev64q_f32(x)), vget_low_f32(vrev64q_f32(x)))
 typedef float32x4_t f4;
-static int have_simd()
+static int have_simd(void)
 {   /* TODO: detect neon for !MINIMP3_ONLY_SIMD */
     return 1;
 }
@@ -516,8 +516,10 @@ static int L3_read_side_info(bs_t *bs, L3_gr_info_t *gr, const uint8_t *hdr)
 
     unsigned tables, scfsi = 0;
     int main_data_begin, part_23_sum = 0;
-    int sr_idx = HDR_GET_MY_SAMPLE_RATE(hdr); sr_idx -= (sr_idx != 0);
+    int sr_idx = HDR_GET_MY_SAMPLE_RATE(hdr);
     int gr_count = HDR_IS_MONO(hdr) ? 1 : 2;
+
+    sr_idx -= (sr_idx != 0);
 
     if (HDR_TEST_MPEG1(hdr))
     {
@@ -692,9 +694,9 @@ static void L3_decode_scalefactors(const uint8_t *hdr, uint8_t *ist_pos, bs_t *b
         int sh = 3 - scf_shift;
         for (i = 0; i < gr->n_short_sfb; i += 3)
         {
-            iscf[gr->n_long_sfb + i + 0] += gr->subblock_gain[0] << sh;
-            iscf[gr->n_long_sfb + i + 1] += gr->subblock_gain[1] << sh;
-            iscf[gr->n_long_sfb + i + 2] += gr->subblock_gain[2] << sh;
+            iscf[gr->n_long_sfb + i + 0] += (uint8_t)(gr->subblock_gain[0] << sh);
+            iscf[gr->n_long_sfb + i + 1] += (uint8_t)(gr->subblock_gain[1] << sh);
+            iscf[gr->n_long_sfb + i + 2] += (uint8_t)(gr->subblock_gain[2] << sh);
         }
     } else if (gr->preflag)
     {
@@ -1430,14 +1432,16 @@ static void mp3d_DCT_II(float *grbuf, int n)
 static int16_t mp3d_scale_pcm(float sample)
 {
 #if HAVE_ARMV6
+    int16_t s;
     int32_t s32 = (int32_t)(sample + .5f);
     s32 -= (s32 < 0);
-    int16_t s = (int16_t)minimp3_clip_int16_arm(s32);
+    s = (int16_t)minimp3_clip_int16_arm(s32);
 #else
+    int16_t s;
     if (sample >=  32766.5f) return (int16_t) 32767;
     if (sample <= -32767.5f) return (int16_t)-32768;
-    int16_t s = (int16_t)(sample + .5f);
-    s -= (s < 0);   /* away from zero, to be compliant */
+    s = (int16_t)(sample + .5f);
+    s = (int16_t)((int)s - (s < 0));   /* away from zero, to be compliant */
 #endif
     return s;
 }

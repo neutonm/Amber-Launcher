@@ -226,7 +226,7 @@ void ini_free(ini_t *ini) {
 
 
 const char* ini_get(ini_t *ini, const char *section, const char *key) {
-  char *current_section = "";
+  char *current_section = (char*)0;
   char *val;
   char *p = ini->data;
 

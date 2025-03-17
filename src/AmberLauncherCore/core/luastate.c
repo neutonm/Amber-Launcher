@@ -532,7 +532,7 @@ SCommand_ExecuteLuaBasedCommand(
 
 void _LoadAllLuaScripts(lua_State* L, const char* folder_path) 
 {
-    #ifdef _WIN32
+#ifdef _WIN32
 
     WIN32_FIND_DATA find_data;
     HANDLE hFind = INVALID_HANDLE_VALUE;
@@ -571,6 +571,10 @@ void _LoadAllLuaScripts(lua_State* L, const char* folder_path)
 
 #else
 
+    struct dirent* entry;
+    char script_path[512];
+    size_t name_len;
+
     DIR* dir = opendir(folder_path);
     if (!dir) 
     {
@@ -578,10 +582,9 @@ void _LoadAllLuaScripts(lua_State* L, const char* folder_path)
         return;
     }
 
-    struct dirent* entry;
-    char script_path[512];
     while ((entry = readdir(dir)) != NULL) 
     {
+        struct stat path_stat;
         if (entry->d_name[0] == '.') 
         {
             continue;
@@ -593,7 +596,7 @@ void _LoadAllLuaScripts(lua_State* L, const char* folder_path)
             continue;
         }
 
-        size_t name_len = strlen(entry->d_name);
+        name_len = strlen(entry->d_name);
         if (name_len < 4 || strcmp(entry->d_name + name_len - 4, ".lua") != 0) 
         {
             continue; 
@@ -602,7 +605,6 @@ void _LoadAllLuaScripts(lua_State* L, const char* folder_path)
         /* Build the full path to the file */
         snprintf(script_path, sizeof(script_path), "%s/%s", folder_path, entry->d_name);
 
-        struct stat path_stat;
         if (stat(script_path, &path_stat) != 0) 
         {
             perror("stat");

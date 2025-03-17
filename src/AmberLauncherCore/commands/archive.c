@@ -8,6 +8,7 @@
 #include <lauxlib.h>
 
 #include <sys/stat.h>
+#include <stdlib.h>
 #include <errno.h>
 
 /* Define the maximum path length */
@@ -65,6 +66,8 @@ static void
 _ExtractArchive(const char* sArchivePath, const char* sExtractPath)
 {
     int dFileCount;
+    int i;
+    char file_path[MAX_PATH_LEN];
     mz_zip_archive tZipArchive;
     memset(&tZipArchive, 0, sizeof(tZipArchive));
 
@@ -72,20 +75,22 @@ _ExtractArchive(const char* sArchivePath, const char* sExtractPath)
     if (!mz_zip_reader_init_file(&tZipArchive, sArchivePath, 0)) 
     {
         fprintf(stderr, "Failed to initialize zip archive: %s\n", sArchivePath);
-        return EXIT_FAILURE;
+        return;
     }
 
     /* Get the number of files in the archive */
-    int file_count = mz_zip_reader_get_num_files(&tZipArchive);
-    if (file_count < 0) 
+    dFileCount = mz_zip_reader_get_num_files(&tZipArchive);
+    if (dFileCount < 0) 
     {
         fprintf(stderr, "Failed to get number of files in zip archive.\n");
         mz_zip_reader_end(&tZipArchive);
-        return EXIT_FAILURE;
+        return;
     }
 
     /* Iterate through each file in the archive */
-    for (int i = 0; i < file_count; i++) {
+    for (i = 0; i < dFileCount; i++) 
+    {
+        char *last_slash;
         mz_zip_archive_file_stat file_stat;
         if (!mz_zip_reader_file_stat(&tZipArchive, i, &file_stat)) {
             fprintf(stderr, "Failed to get file stat for index %d.\n", i);
@@ -93,7 +98,8 @@ _ExtractArchive(const char* sArchivePath, const char* sExtractPath)
         }
 
         /* Skip directories */
-        if (mz_zip_reader_is_file_a_directory(&tZipArchive, i)) {
+        if (mz_zip_reader_is_file_a_directory(&tZipArchive, i)) 
+        {
             /* Construct the full directory path */
             char dir_path[MAX_PATH_LEN];
             _join_paths(sExtractPath, file_stat.m_filename, dir_path, sizeof(dir_path));
@@ -108,11 +114,10 @@ _ExtractArchive(const char* sArchivePath, const char* sExtractPath)
         }
 
         /* Construct the full file path */
-        char file_path[MAX_PATH_LEN];
         _join_paths(sExtractPath, file_stat.m_filename, file_path, sizeof(file_path));
 
         /* Extract the directory part from the file path */
-        char *last_slash = strrchr(file_path, '/');
+        last_slash = strrchr(file_path, '/');
         if (last_slash != NULL) {
             /* Temporarily terminate the string to isolate the directory path */
             *last_slash = '\0';
@@ -138,7 +143,7 @@ _ExtractArchive(const char* sArchivePath, const char* sExtractPath)
     /* Close the Zip reader */
     mz_zip_reader_end(&tZipArchive);
 
-    return EXIT_SUCCESS;
+    return;
 }
 
 CAPI void 

@@ -1,10 +1,10 @@
-
+#define _GNU_SOURCE /* temp: fix this bs and remove nappgui.h from common.h*/
 #include <core/opsys.h>
 
 #if defined(__unix__)
 
 #if defined(__linux__)
-#   define _GNU_SOURCE
+
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <sys/syscall.h>
@@ -29,18 +29,20 @@ extern char **environ;
 #include <execinfo.h>
 #endif
 
+#define UT_DOMAINNAME domainname
+
 /******************************************************************************
  * STATIC FUNCTION DECLARATIONS
  ******************************************************************************/
 
-static int
+/* static int
 _AmberLauncher_ConcatCharArray(
     char* dest, 
     char **pArray, 
     int dNum, 
     int dSize, 
     char sSpaceChar
-);
+); */
 
 static int 
 _AmberLauncher_IsWinePrefix64bit(const char* winePrefix);
@@ -142,7 +144,7 @@ AmberLauncher_PrintDefaultSystemInformation(void)
     fprintf(stderr, "\tMachine: \t\t%s",     buffer.machine);
 
     #ifdef _GNU_SOURCE
-    fprintf(stderr, "\tDomain name: \t%s",   buffer.__domainname);
+    fprintf(stderr, "\tDomain name: \t%s",   buffer.UT_DOMAINNAME);
     #endif
 }
 
@@ -155,7 +157,7 @@ AmberLauncher_ProcessLaunch(const char* sAppPath, int argc, char **argv, bool_t 
     /* posix_spawn method */
     #if _XOPEN_SOURCE >= 600 
 
-        char *pAltArgv[] = {"", (char*)0};
+        char *pAltArgv[] = {(char*)0, (char*)0};
 
         pAltArgv[0] = (char*)sAppPath;
 
@@ -233,6 +235,8 @@ AmberLauncher_SetRegistryKey(const char* sValueName, uint32_t dValueData)
     char regFilePath[MAX_LINE_LENGTH];
     char command[2048];
 
+    int ret;
+
     winePrefix = getenv("WINEPREFIX");
     if (winePrefix == NULL) {
         winePrefix = getenv("HOME");
@@ -252,7 +256,7 @@ AmberLauncher_SetRegistryKey(const char* sValueName, uint32_t dValueData)
              dValueData);
     
     /* Execute the command */
-    int ret = system(command);
+    ret = system(command);
     
     if (ret != 0) 
     {
@@ -274,9 +278,12 @@ AmberLauncher_GetRegistryKey(const char* sValueName, uint32_t* pValueData)
     char *winePrefix;
     char regFilePath[MAX_LINE_LENGTH];
     char command[2048];
-    char buffer[1024];
     char line[1024];
     char name[256], type[256], data[256];
+    const char* registrySection;
+    FILE* fp;
+    uint32_t valueData = 0;
+    int found = 0;
 
     winePrefix = getenv("WINEPREFIX");
     if (winePrefix == NULL) {
@@ -289,7 +296,7 @@ AmberLauncher_GetRegistryKey(const char* sValueName, uint32_t* pValueData)
         winePrefix = regFilePath;
     }
 
-    const char* registrySection = _AmberLauncher_IsWinePrefix64bit(winePrefix) ? SECTION_64 : SECTION_32;
+    registrySection = _AmberLauncher_IsWinePrefix64bit(winePrefix) ? SECTION_64 : SECTION_32;
 
     snprintf(command, sizeof(command),
              "WINEPREFIX=\"%s\" wine reg query \"%s\" /v \"%s\" 2>/dev/null",
@@ -298,16 +305,22 @@ AmberLauncher_GetRegistryKey(const char* sValueName, uint32_t* pValueData)
              sValueName);
 
     /* Execute the command and read the output */
-    FILE* fp = popen(command, "r");
+    fp = popen(command, "r");
     if (!fp) {
         fprintf(stderr, "Failed to run command: %s\n", command);
         return 1;
     }
 
-    uint32_t valueData = 0;
-    int found = 0;
-
     while (fgets(line, sizeof(line), fp) != NULL) {
+
+        char *p;
+        char *pType;
+        char *pNameEnd;
+        char *pTypeEnd;
+        char *pData;
+        size_t nameLen;
+        size_t typeLen;
+
         // Remove the newline character at the end, if any
         line[strcspn(line, "\n")] = '\0';
 
@@ -317,23 +330,23 @@ AmberLauncher_GetRegistryKey(const char* sValueName, uint32_t* pValueData)
         }
 
         // Trim leading whitespace
-        char *p = line;
+        p = line;
         while (*p == ' ' || *p == '\t') {
             p++;
         }
 
         // Find the "REG_" in the line
-        char *pType = strstr(p, "REG_");
+        pType = strstr(p, "REG_");
         if (pType == NULL) {
             continue; // Should not happen, since we checked earlier
         }
 
         // The "name" is from p to pType - 1, trimming trailing whitespace
-        char *pNameEnd = pType;
+        pNameEnd = pType;
         while (pNameEnd > p && (*(pNameEnd - 1) == ' ' || *(pNameEnd - 1) == '\t')) {
             pNameEnd--;
         }
-        size_t nameLen = pNameEnd - p;
+        nameLen = pNameEnd - p;
         if (nameLen >= sizeof(name)) {
             nameLen = sizeof(name) - 1;
         }
@@ -341,11 +354,11 @@ AmberLauncher_GetRegistryKey(const char* sValueName, uint32_t* pValueData)
         name[nameLen] = '\0';
 
         // The "type" is from pType to the next whitespace or end of string
-        char *pTypeEnd = pType;
+        pTypeEnd = pType;
         while (*pTypeEnd != ' ' && *pTypeEnd != '\t' && *pTypeEnd != '\0') {
             pTypeEnd++;
         }
-        size_t typeLen = pTypeEnd - pType;
+        typeLen = pTypeEnd - pType;
         if (typeLen >= sizeof(type)) {
             typeLen = sizeof(type) - 1;
         }
@@ -353,7 +366,7 @@ AmberLauncher_GetRegistryKey(const char* sValueName, uint32_t* pValueData)
         type[typeLen] = '\0';
 
         // The "data" is the rest of the line after pTypeEnd, skipping leading whitespace
-        char *pData = pTypeEnd;
+        pData = pTypeEnd;
         while (*pData == ' ' || *pData == '\t') {
             pData++;
         }
@@ -385,6 +398,7 @@ AmberLauncher_GetRegistryKey(const char* sValueName, uint32_t* pValueData)
  * STATIC FUNCTION DEFINITIONS
  ******************************************************************************/
 
+ #if 0
 static int
 _AmberLauncher_ConcatCharArray(
     char* dest, 
@@ -431,6 +445,7 @@ _AmberLauncher_ConcatCharArray(
 
     return 0;
 }
+#endif
 
 static int 
 _AmberLauncher_IsWinePrefix64bit(const char* winePrefix)

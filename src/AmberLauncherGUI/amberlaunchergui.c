@@ -1,6 +1,7 @@
 /* NAppGUI Hello World */
 
 #include <AmberLauncherGUI.h>
+#include <AmberLauncherCore.h>
 
 /******************************************************************************
  * STATIC DECLARATIONS
@@ -13,8 +14,8 @@ static const char_t *_SLABEL =
 static const int32_t TITLE_PNG_W = 672;
 static const int32_t TITLE_PNG_H = 200;
 
-static int _argc    = 0;
-static char** _argv = NULL;
+/* static int _argc    = 0;
+static char** _argv = NULL; */
 
 /**
  * @relatedalso Panel
@@ -92,6 +93,8 @@ Panel_Set(App *pApp, const EPanelType eType)
     {
         window_defbutton(pApp->pWindow, defbutton);
     }
+
+    return NULL;
 }
 
 Panel* 
@@ -113,7 +116,7 @@ Panel_GetConfigure(App* pApp)
     Panel       *pPanel2     = panel_create();
     Layout      *pLayout1    = layout_create(1, 3);
     Layout      *pLayout2    = layout_create(1, 1);
-    Label       *pLabel      = label_multiline();
+    Label       *pLabel      = label_create();
     Button      *pButton     = button_push();
     TextView    *pText       = textview_create();
     Font        *pFont       = font_system(18, ekFNORMAL | ekFPIXELS);
@@ -205,7 +208,7 @@ Callback_OnButtonPlay(App *pApp, Event *e)
     {
         textview_printf(pApp->pText, "Button play\n");
     }
-    AmberLauncher_Play();
+    AmberLauncher_Play(pApp);
     /* AmberLauncher_ProcessLaunch("mm7.exe", _argc, _argv, TRUE); */
     unref(e);
 }
@@ -304,10 +307,13 @@ _Callback_OnClose(App *pApp, Event *e)
  * MAIN FUNCTION
  ******************************************************************************/
 
-#include "osmain.h"
+ #include <osapp/osmain.h>
+osmain(_Nappgui_Start, _Nappgui_End, "", App)
+
+/* #include <osmain.h> */
 /* osmain(_Nappgui_Start, _Nappgui_End, "", App) */
 
-int main(int argc, char *argv[])
+/* int main(int argc, char *argv[])
 {
     _argc = argc;
     _argv = argv;
@@ -322,3 +328,4 @@ int main(int argc, char *argv[])
         
     return 0;
 }
+ */

@@ -3859,7 +3859,7 @@ static mz_bool mz_zip_reader_read_central_dir(mz_zip_archive *pZip, mz_uint flag
                         }
 
                         pExtra_data += sizeof(mz_uint16) * 2 + field_data_size;
-                        extra_size_remaining = extra_size_remaining - sizeof(mz_uint16) * 2 - field_data_size;
+                        extra_size_remaining = extra_size_remaining - (mz_uint32)sizeof(mz_uint16) * 2 - field_data_size;
                     } while (extra_size_remaining);
 
 					MZ_FREE(buf);
@@ -4309,7 +4309,7 @@ static mz_bool mz_zip_file_stat_internal(mz_zip_archive *pZip, mz_uint file_inde
 
                         pStat->m_uncomp_size = MZ_READ_LE64(pField_data);
                         pField_data += sizeof(mz_uint64);
-                        field_data_remaining -= sizeof(mz_uint64);
+                        field_data_remaining -= (mz_uint32)sizeof(mz_uint64);
                     }
 
                     if (pStat->m_comp_size == MZ_UINT32_MAX)
@@ -4319,7 +4319,7 @@ static mz_bool mz_zip_file_stat_internal(mz_zip_archive *pZip, mz_uint file_inde
 
                         pStat->m_comp_size = MZ_READ_LE64(pField_data);
                         pField_data += sizeof(mz_uint64);
-                        field_data_remaining -= sizeof(mz_uint64);
+                        field_data_remaining -= (mz_uint32)sizeof(mz_uint64);
                     }
 
                     if (pStat->m_local_header_ofs == MZ_UINT32_MAX)
@@ -4329,14 +4329,14 @@ static mz_bool mz_zip_file_stat_internal(mz_zip_archive *pZip, mz_uint file_inde
 
                         pStat->m_local_header_ofs = MZ_READ_LE64(pField_data);
                         pField_data += sizeof(mz_uint64);
-                        field_data_remaining -= sizeof(mz_uint64);
+                        field_data_remaining -= (mz_uint32)sizeof(mz_uint64);
                     }
 
                     break;
                 }
 
                 pExtra_data += sizeof(mz_uint16) * 2 + field_data_size;
-                extra_size_remaining = extra_size_remaining - sizeof(mz_uint16) * 2 - field_data_size;
+                extra_size_remaining = extra_size_remaining - (mz_uint32)sizeof(mz_uint16) * 2 - field_data_size;
             } while (extra_size_remaining);
         }
     }

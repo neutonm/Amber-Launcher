@@ -6,6 +6,7 @@
 #include <core/common.h>
 #include <core/command.h>
 #include <core/luastate.h>
+#include <core/opsys.h>
 
 #include <commands/archive.h>
 #include <commands/config.h>

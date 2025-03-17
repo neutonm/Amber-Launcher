@@ -26,13 +26,7 @@ typedef enum
 
 } ELuaFunctionRefType;
 
-static const char* ELuaFunctionRefTypeStrings[] = {
-    "AppInit",
-    "AppDestroy",
-    "AppConfigure",
-    NULL
-};
-
+extern const char* ELuaFunctionRefTypeStrings[];
 /**
  * @brief   Predefined strings for 'function events.{string}' callbacks
  * 
@@ -48,14 +42,7 @@ typedef enum
 
 } ELuaFunctionEventType;
 
-static const char* ELuaFunctionEventTypeStrings[] = {
-    "InitLauncher",
-    "DestroyLauncher",
-    "BeforeConfigure",
-    "AfterConfigure",
-    "PlayGame",
-    NULL
-};
+extern const char* ELuaFunctionEventTypeStrings[];
 
 /**
  * @brief   Variable type that Lua state accepts

@@ -25,6 +25,14 @@
 #define MINIMP3_MAX_SAMPLES_PER_FRAME (1152*2)
 
 #define MAX_PATH_LENGTH 260  /* Maximum path length */
+#define MAX_FILENAME_LENGTH 80
+#define MAX_DIRPATH_LENGTH 160
+
+#ifdef _WIN32
+    #define DIR_SEP '\\'
+#else
+    #define DIR_SEP '/'
+#endif
 
 /* WAV header structure */
 typedef struct {
@@ -54,6 +62,18 @@ is_number(const char *str) {
     return 1;
 }
 
+/* static void 
+_ConstructFullPath(char *full_path, size_t size, const char *dir, const char *filename) 
+{
+    size_t dir_len = strlen(dir);
+    
+    if (dir_len > 0 && (dir[dir_len - 1] == '/' || dir[dir_len - 1] == '\\')) {
+        snprintf(full_path, size, "%s%s", dir, filename);
+    } else {
+        snprintf(full_path, size, "%s%c%s", dir, DIR_SEP, filename);
+    }
+} */
+
 /* Function to process an MP3 file */
 static void 
 _ConvertMP3ToWAV(const char *file_name) 
@@ -66,6 +86,7 @@ _ConvertMP3ToWAV(const char *file_name)
     size_t read_size;
     mp3dec_t mp3d;
     char wav_name[MAX_PATH_LENGTH];
+    char *dot;
     FILE *wav_file;
     WAVHeader header;
     size_t mp3_data_pos;
@@ -104,7 +125,7 @@ _ConvertMP3ToWAV(const char *file_name)
     /* Remove file extension to get base_name */
     strncpy(base_name, base, MAX_PATH_LENGTH - 1);
     base_name[MAX_PATH_LENGTH - 1] = '\0';
-    char *dot = strrchr(base_name, '.');
+    dot = strrchr(base_name, '.');
     if (dot) {
         *dot = '\0';  // Remove the extension
     }
@@ -144,7 +165,7 @@ _ConvertMP3ToWAV(const char *file_name)
         mp3dec_init(&mp3d);
 
         /* Construct WAV file name with directory path */
-        snprintf(wav_name, MAX_PATH_LENGTH, "%s%s.wav", dir_name, base_name);
+        snprintf(wav_name, 4096, "%s%s.wav", dir_name, base_name);
         wav_file = fopen(wav_name, "wb");
         if (!wav_file) {
             fprintf(stderr, "Failed to open %s\n", wav_name);
@@ -185,7 +206,7 @@ _ConvertMP3ToWAV(const char *file_name)
                     header.channels = (short)info.channels;
                     header.sample_rate = info.hz;
                     header.byte_rate = header.sample_rate * header.channels * header.bits_per_sample / 8;
-                    header.block_align = header.channels * header.bits_per_sample / 8;
+                    header.block_align = (short)(header.channels * header.bits_per_sample / 8);
                 }
 
                 /* Write PCM data to WAV file */
@@ -210,7 +231,7 @@ _ConvertMP3ToWAV(const char *file_name)
         free(mp3_data);
 
         /* Rename MP3 file to .bak.mp3 in the same directory */
-        snprintf(bak_name, MAX_PATH_LENGTH, "%s%s.bak.mp3", dir_name, base_name);
+        snprintf(bak_name, 4096, "%s%s.bak.mp3", dir_name, base_name);
         if (rename(file_name, bak_name) != 0) {
             fprintf(stderr, "Failed to rename %s to %s\n", file_name, bak_name);
         } else {
@@ -274,7 +295,7 @@ static int _test(void)
             {
                 /* Construct the full path to the file */
                 char full_path[MAX_PATH_LENGTH];
-                snprintf(full_path, MAX_PATH_LENGTH, "%s%s", dir_path, file_name);
+                snprintf(full_path, 4096, "%s%s", dir_path, file_name);
                 printf("Processing: %s\n", full_path);
                 _ConvertMP3ToWAV(full_path);
             }

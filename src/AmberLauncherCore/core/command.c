@@ -1,7 +1,7 @@
 #include <core/command.h>
 
 #include <stdio.h>
-#include <string.h>
+#include <stdlib.h>
 
 #include <lua.h>
 
@@ -24,7 +24,7 @@
 CAPI SCommand*
 SCommand_new(void)
 {
-    SCommand* pCommand = malloc(sizeof(SCommand));
+    SCommand* pCommand = (SCommand*)malloc(sizeof(SCommand));
 
     if (!IS_VALID(pCommand))
     {
@@ -125,4 +125,5 @@ CAPI int
 LUA_RegisterCommand(struct lua_State *L)
 {
     UNUSED(L);
+    return 0;
 }

@@ -59,6 +59,8 @@ LUA_REGISTER_INIConfig(struct lua_State* L)
     lua_settable(L, -3);
 
     lua_pop(L, 1);
+
+    return 1;
 }
 
 CAPI int
