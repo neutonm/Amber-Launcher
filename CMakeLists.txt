@@ -10,98 +10,103 @@ project(AmberLauncher
 )
 
 # ------------------------------------------------------------------------------
+# Options
+# ------------------------------------------------------------------------------
+option(OPTION_STATIC_LINKING    "Link libraries statically"                 OFF)
+option(OPTION_BUILD_DOCS        "Build documentation with Doxygen"          OFF)
+option(OPTION_BUILD_TESTS       "Build tests with CTest"                    OFF)
+
+# ------------------------------------------------------------------------------
 # C Standard Configuration
 # ------------------------------------------------------------------------------
-set(CMAKE_C_STANDARD 99)
-set(CMAKE_C_STANDARD_REQUIRED YES)
-set(CMAKE_C_EXTENSIONS NO)
+set(CMAKE_C_STANDARD            99)
+set(CMAKE_C_STANDARD_REQUIRED   YES)
+set(CMAKE_C_EXTENSIONS          NO)
 
 set(CMAKE_SCRIPT_PATH ${CMAKE_SCRIPT_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/modules/")
 
 # ------------------------------------------------------------------------------
-# Options
-# ------------------------------------------------------------------------------
-option(OPTION_STATIC_LINKING "Link libraries statically" OFF)
-option(OPTION_BUILD_DOCS "Build documentation with Doxygen" OFF)
-option(OPTION_BUILD_TESTS "Build tests with CTest" OFF)
-
-# ------------------------------------------------------------------------------
 # Flags
 # ------------------------------------------------------------------------------
-if(CMAKE_BUILD_TYPE MATCHES Debug)
-    add_definitions(-DDEBUG)
-endif()
-
 if(CMAKE_SIZEOF_VOID_P EQUAL 8)
-  add_definitions(-DSYSTEM_ARCH_BITNESS=64)
+    add_definitions(-DSYSTEM_ARCH_BITNESS=64)
+elseif(CMAKE_SIZEOF_VOID_P EQUAL 4)
+    add_definitions(-DSYSTEM_ARCH_BITNESS=32)
 else()
-  add_definitions(-DSYSTEM_ARCH_BITNESS=32)
+    message(FATAL_ERROR 
+    "Architecture bitness is not 64/32 bit.  \
+     Define SYSTEM_ARCH_BITNESS=<YOURNUMBER>.")
 endif()
 
 # POSIX compliance
-#include(${CMAKE_MODULE_PATH}/CheckPOSIX.cmake)
-
+include(${CMAKE_MODULE_PATH}/CheckPOSIX.cmake)
 if(POSIX_COMPLIANT)
     add_definitions(-D_POSIX_ENABLED)
-    message(STATUS "System is POSIX compliant, _POSIX_ENABLED defined")
-else()
-    message(STATUS "System is not POSIX compliant")
 endif()
 
-# Lib Unwind
+# ------------------------------------------------------------------------------
+# Debug
+# ------------------------------------------------------------------------------
 if(CMAKE_BUILD_TYPE MATCHES Debug)
-  include(${CMAKE_MODULE_PATH}/CheckLibUnwind.cmake)
-  if(LIBUNWIND_ENABLED)
-      add_definitions(-D_LIBUNWIND_ENABLED)
-      message(STATUS "Found libunwind")
-  endif()
+    add_definitions(-DDEBUG)
+
+    # libunwind (backtracing features)
+    include(${CMAKE_MODULE_PATH}/CheckLibUnwind.cmake)
+    if(LIBUNWIND_ENABLED)
+        add_definitions(-D_LIBUNWIND_ENABLED)
+        message(STATUS "Found libunwind")
+    endif()
 endif()
 
+# ------------------------------------------------------------------------------
+# MSVC
 # ------------------------------------------------------------------------------
 # Static Linking Configuration for MSVC
-# ------------------------------------------------------------------------------
 if(OPTION_STATIC_LINKING AND MSVC)
     # Set the runtime library to static
     set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 endif()
 
 # ------------------------------------------------------------------------------
-# Find Required Packages
-# ------------------------------------------------------------------------------
-# Removed all raylib-related configurations
-
-# Find libcurl
-find_package(CURL REQUIRED)
-if(NOT CURL_FOUND)
-    message(FATAL_ERROR "libcurl not found. Please install libcurl and ensure CMake can locate it.")
-endif()
-
-# Find Lua
-find_package(Lua REQUIRED)
-if(NOT Lua_FOUND)
-    message(FATAL_ERROR "Lua not found. Please install Lua and ensure CMake can locate it.")
-endif()
-
+# MinGW
 # ------------------------------------------------------------------------------
 # Detect MinGW Cross Compilation
-# ------------------------------------------------------------------------------
 set(IS_MINGW FALSE)
 if(CMAKE_C_COMPILER_ID STREQUAL "GNU" AND CMAKE_SYSTEM_NAME STREQUAL "Windows")
     set(IS_MINGW TRUE)
 endif()
 
 # ------------------------------------------------------------------------------
-# Integrate nappgui
+# Find Required Packages
 # ------------------------------------------------------------------------------
+# Find libcurl
+find_package(CURL REQUIRED)
+if(NOT CURL_FOUND)
+    message(FATAL_ERROR 
+    "libcurl not found. \
+    Please install libcurl and ensure CMake can locate it.")
+endif()
 
-# Optionally find a pre-installed nappgui
-find_package(nappgui REQUIRED)
+# Find Lua
+find_package(Lua REQUIRED)
+if(NOT Lua_FOUND)
+    message(FATAL_ERROR 
+    "Lua not found. Please install Lua and ensure CMake can locate it.")
+endif()
+
+find_package(nappgui)
 if(nappgui_FOUND)
     message(STATUS "Found pre-installed nappgui.")
 else()
-    message(FATAL_ERROR "nappgui not found. Please install nappgui or enable OPTION_USE_NAPPGUI_AUTOMATICALLY.")
+    message(FATAL_ERROR 
+    "nappgui not found. \
+    Please install nappgui or enable OPTION_USE_NAPPGUI_AUTOMATICALLY.")
 endif()
+
+# ------------------------------------------------------------------------------
+# Integrate nappgui
+# ------------------------------------------------------------------------------
 include("${NAPPGUI_ROOT_PATH}/prj/NAppProject.cmake")
 include("${NAPPGUI_ROOT_PATH}/prj/NAppCompilers.cmake")
 nap_config_compiler()
@@ -141,69 +146,63 @@ target_link_libraries(AmberLauncher PRIVATE
 # ------------------------------------------------------------------------------
 # Compiler Flags
 # ------------------------------------------------------------------------------
+# Set default compiler flags based on compiler type
 if(MSVC)
-    target_compile_options(AmberLauncher PRIVATE /W4 /WX /permissive- /std:c99)
+    set(CMAKE_C_FLAGS "/W4 /WX /permissive- /std:c99")
 else()
-    if(CMAKE_BUILD_TYPE MATCHES Debug)
-        target_compile_options(AmberLauncher PRIVATE 
-            -Wstrict-overflow 
-            -Wall 
-            -Wextra 
-            -Wpedantic 
-            -Werror 
-            -Wconversion 
-            -Wdouble-promotion 
-            -Wnull-dereference
-            -Wno-sign-conversion
-            -Wshadow 
-            -Wpointer-arith 
-            #-Wcast-align
-            -Wno-newline-eof
-            -Wstrict-prototypes 
-            -Wmissing-prototypes 
-            -fPIC
-            -g
-            -fPIE 
-            #-fsanitize=address
-        )
-    else()
-        target_compile_options(AmberLauncher PRIVATE 
-            -Wall 
-            -Wextra 
-            -Wpedantic 
-            -Werror 
-            -std=c99)
+    # Base flags for all build types
+    set(CMAKE_C_FLAGS "-Wall -Wextra -Wpedantic -Werror -std=c99")
+    
+    # Debug-specific compiler flags for GCC/Clang
+    set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} \
+            -Wstrict-overflow -Wconversion \
+            -Wdouble-promotion \
+            -Wnull-dereference \
+            -Wno-sign-conversion \
+            -Wshadow \
+            -Wpointer-arith \
+            -Wno-newline-eof \
+            -Wstrict-prototypes \
+            -Wmissing-prototypes \
+            -fPIC \
+            -g \
+            -fPIE")
+        
+    if(UNIX AND NOT APPLE)
+        set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} \
+            -fsanitize=address \
+            -fsanitize=leak \
+            -fsanitize-recover=address")
+        set(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} \
+            -fsanitize=address \
+            -fsanitize=leak \
+            -fno-omit-frame-pointer \
+            -g3")
     endif()
 endif()
 
 # ------------------------------------------------------------------------------
-# Debug-Specific Settings
+# Debug-Specific Link Settings
 # ------------------------------------------------------------------------------
 if(UNIX AND NOT APPLE)
-    # Linux specific debug settings
-    # target_compile_options(AmberLauncher PRIVATE
-    #     $<$<CONFIG:Debug>:-fsanitize=address -fsanitize=leak -fsanitize-recover=address>
-    # )
-    # target_link_options(AmberLauncher PRIVATE
-    #     $<$<CONFIG:Debug>:-fsanitize=address -fsanitize=leak -fno-omit-frame-pointer -g3>
-    # )
-    target_link_libraries(AmberLauncher PRIVATE
-        $<$<CONFIG:Debug>:unwind>
-    )
+    # Linux-specific debug link dependencies
+    if(CMAKE_BUILD_TYPE MATCHES Debug)
+        target_link_libraries(AmberLauncher PRIVATE unwind)
+    endif()
 elseif(WIN32)
-    # Windows specific debug settings
-    target_link_libraries(AmberLauncher PRIVATE
-        $<$<CONFIG:Debug>:dbghelp>
-    )
+    # Windows-specific debug link dependencies
+    if(CMAKE_BUILD_TYPE MATCHES Debug)
+        target_link_libraries(AmberLauncher PRIVATE dbghelp)
+    endif()
 endif()
 
 # ------------------------------------------------------------------------------
 # MinGW Specific Settings
 # ------------------------------------------------------------------------------
 if(IS_MINGW)
-    # Define a macro or add specific flags for MinGW if necessary
-    target_compile_definitions(AmberLauncher PRIVATE USE_MINGW)
-    # Add any MinGW-specific linker flags here
+    # Define a macro for MinGW
+    add_definitions(-DUSE_MINGW)
+    # set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} <whatever>")
 endif()
 
 # ------------------------------------------------------------------------------
@@ -214,7 +213,9 @@ if(OPTION_BUILD_DOCS)
     if(DOXYGEN_FOUND)
         # Configure Doxygen
         set(DOXYGEN_OUTPUT_DIR ${CMAKE_BINARY_DIR}/docs)
-        set(DOXYGEN_INPUT_DIR ${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/src)
+        set(DOXYGEN_INPUT_DIR 
+            ${CMAKE_SOURCE_DIR}/include 
+            ${CMAKE_SOURCE_DIR}/src)
 
         # Create Doxyfile
         file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
@@ -243,6 +244,7 @@ endif()
 # Testing with CTest
 # ------------------------------------------------------------------------------
 if(OPTION_BUILD_TESTS)
+    # @todo
     enable_testing()
     add_subdirectory(tests)
 endif()
@@ -280,6 +282,7 @@ add_custom_command(TARGET AmberLauncher
 # add_custom_command (
 #             TARGET AmberLauncher POST_BUILD
 #             COMMAND "${CMAKE_COMMAND}" -E copy -t "${CMAKE_SOURCE_DIR}"
-#                     "$<TARGET_RUNTIME_DLLS:AmberLauncher>" USES_TERMINAL COMMAND_EXPAND_LISTS
+#                     "$<TARGET_RUNTIME_DLLS:AmberLauncher>" 
+#                       USES_TERMINAL COMMAND_EXPAND_LISTS
 #         )
 #endif()
