@@ -117,6 +117,10 @@ install_manifest.txt
 .ninja_deps
 .ninja_log
 
+# General build/bin dir
+build/
+bin/
+
 # ---> VisualStudioCode
 .settings
 
