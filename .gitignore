@@ -190,3 +190,6 @@ Temporary Items
 # Binary
 AmberLauncherGUI.exe
 AmberLauncherGUI
+
+# cmake cache
+.cache/
