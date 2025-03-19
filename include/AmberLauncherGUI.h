@@ -43,7 +43,7 @@ Panel_GetNull(App* pApp);
  * @return      Panel* 
  */
 extern Panel* 
-Panel_GetConfigure(App* pApp);
+Panel_GetAutoConfigure(App* pApp);
 
 /**
  * @relatedalso Panel

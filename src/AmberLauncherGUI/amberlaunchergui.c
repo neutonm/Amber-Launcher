@@ -1,15 +1,15 @@
 /* NAppGUI Hello World */
 
+#include "core/common.h"
+#include "draw2d/draw2d.hxx"
+#include "gui/gui.hxx"
+#include "sewer/types.hxx"
 #include <AmberLauncherGUI.h>
 #include <AmberLauncherCore.h>
 
 /******************************************************************************
  * STATIC DECLARATIONS
  ******************************************************************************/
-
-static const char_t *_SLABEL = 
-    "Greetings adventurer, before you can play Amber Island, you have to configure the game. "
-    "Make sure you have Might and Magic 7 installed on your PC.";
 
 static const int32_t TITLE_PNG_W = 672;
 static const int32_t TITLE_PNG_H = 200;
@@ -75,7 +75,7 @@ Panel_Set(App *pApp, const EPanelType eType)
         break;
 
     case CPANEL_AUTOCONFIG:
-        pPanel = Panel_GetConfigure(pApp);
+        pPanel = Panel_GetAutoConfigure(pApp);
         break;
 
     case CPANEL_MAIN:
@@ -100,96 +100,111 @@ Panel_Set(App *pApp, const EPanelType eType)
 Panel* 
 Panel_GetNull(App* pApp)
 {
-    Panel   *pPanel      = panel_create();
-    Layout  *pLayout     = layout_create(1, 1);
-    
-    panel_layout(pPanel, pLayout);
-    unref(pApp);
+    Panel   *pPanelMain  = panel_create();
+    Layout  *pLayoutMain = layout_create(1, 1);
+    Label   *pLabelNull  = label_create();
 
-    return pPanel;
+    /* Label: Null */
+    label_text(pLabelNull, "Null");
+    label_multiline(pLabelNull, TRUE);
+
+    /* Layout: Main */
+    layout_hsize(pLayoutMain, 0, TITLE_PNG_W);
+    layout_halign(pLayoutMain, 0, 0, ekCENTER);
+    layout_valign(pLayoutMain, 0, 0, ekTOP);
+    layout_margin(pLayoutMain, 4);
+    layout_label(pLayoutMain, pLabelNull,0, 0);
+
+    /* Panel: Main */
+    panel_layout(pPanelMain, pLayoutMain);
+
+    unref(pApp);
+    return pPanelMain;
 }
 
 Panel* 
-Panel_GetConfigure(App* pApp)
+Panel_GetAutoConfigure(App* pApp)
 {
-    Panel       *pPanel1     = panel_create();
-    Panel       *pPanel2     = panel_create();
-    Layout      *pLayout1    = layout_create(1, 3);
-    Layout      *pLayout2    = layout_create(1, 1);
-    Label       *pLabel      = label_create();
-    Button      *pButton     = button_push();
-    TextView    *pText       = textview_create();
-    Font        *pFont       = font_system(18, ekFNORMAL | ekFPIXELS);
-    Font        *pFont2      = font_system(24, ekFNORMAL | ekFPIXELS);
+    Panel       *pPanelMain  = panel_create();
+    Layout      *pLayoutMain = layout_create(1,3);
+    Layout      *pLayoutTxt  = layout_create(1,1);
+    Label       *pLabelGreet = label_create();
+    Button      *pButtonCfg  = button_push();
+    TextView    *pConsole    = textview_create();
+    Font        *pFontGreet  = font_system(18, ekFNORMAL | ekFPIXELS);
+    Font        *pFontCfg    = font_system(24, ekFNORMAL | ekFPIXELS);
 
-    /* Label */
-    label_text(pLabel, _SLABEL);
-    label_font(pLabel, pFont);
+    pApp->pText = pConsole;
 
-    /* Button */
-    button_text(pButton, "Configure");
-    button_font(pButton, pFont2);
-    button_vpadding (pButton, 16);
-    button_OnClick(pButton, listener(pApp, Callback_OnButtonConfigure, App));
+    /* Label: Greetings Text */
+    label_text(pLabelGreet, TXT_GREETINGS);
+    label_font(pLabelGreet, pFontGreet);
+
+    /* Button: Configure */
+    button_text(pButtonCfg, TXT_BTN_CONFIGURE);
+    button_font(pButtonCfg, pFontCfg);
+    button_vpadding (pButtonCfg, 16);
+    button_OnClick(pButtonCfg, listener(pApp, Callback_OnButtonConfigure, App));
     
-    /* Layout Settings */
-    layout_hsize(pLayout2, 0, TITLE_PNG_W);
-    layout_vsize(pLayout2, 0, TITLE_PNG_H);
-    layout_margin(pLayout2, 8);
-    layout_halign(pLayout2, 0, 0, ekJUSTIFY);
+    /* Layout: Text */
+    layout_margin(pLayoutTxt, 4);
+    layout_label(pLayoutTxt, pLabelGreet, 0, 0);
 
-    /* Layout placement */
-    layout_label(pLayout2, pLabel, 0, 0);
-    panel_layout(pPanel2, pLayout2);
+    /* Layout: Main */
+    layout_layout(pLayoutMain, pLayoutTxt, 0, 0);
+    layout_textview(pLayoutMain, pConsole, 0, 1);
+    layout_button(pLayoutMain,pButtonCfg,0, 2);
 
-    layout_layout(pLayout1, pLayout2, 0, 0);
-    layout_panel(pLayout1, pPanel2, 0, 0);
-    layout_textview(pLayout1, pText, 0, 1);
-    layout_button(pLayout1, pButton, 0, 2);
-    panel_layout(pPanel1, pLayout1);
+    /* Panel: Main */
+    panel_layout(pPanelMain, pLayoutMain);
 
-    pApp->pText = pText;
+    /* Cleanup */
+    font_destroy(&pFontGreet);
+    font_destroy(&pFontCfg);
 
-    font_destroy(&pFont);
-    font_destroy(&pFont2);
-
-    return pPanel1;
+    return pPanelMain;
 }
 
 Panel* 
 Panel_GetMain(App* pApp)
 {
-    Panel   *pPanel1     = panel_create();
-    Layout  *pLayout1    = layout_create(1, 2);
-    Label   *pLabel      = label_create();
-    Button  *pButton     = button_push();
-    Font    *pFont       = font_system(18, ekFNORMAL | ekFPIXELS);
-    Font    *pFont2      = font_system(24, ekFNORMAL | ekFPIXELS);
+    Panel   *pPanelMain  = panel_create();
+    Layout  *pLayoutMain = layout_create(1, 2);
+    Layout  *pLayoutTxt  = layout_create(1,1);
+    Label   *pLabelTemp  = label_create();
+    Button  *pButtonPlay = button_push();
+    Font    *pFontPlay   = font_system(24, ekFNORMAL | ekFPIXELS);
 
     pApp->pText = NULL;
 
-    /* Label */
-    label_text(pLabel, _SLABEL);
+    /* Label: Temp */
+    label_text(pLabelTemp, TXT_GREETINGS);
+    label_multiline(pLabelTemp, TRUE);
 
-    /* Button */
-    button_text(pButton, "Play");
-    button_font(pButton, pFont2);
-    button_vpadding (pButton, 16);
-    button_OnClick(pButton, listener(pApp, Callback_OnButtonPlay, App));
+    /* Button: Play */
+    button_text(pButtonPlay, TXT_BTN_PLAY);
+    button_font(pButtonPlay, pFontPlay);
+    button_vpadding (pButtonPlay, 16);
+    button_OnClick(pButtonPlay, listener(pApp, Callback_OnButtonPlay, App));
     
-    /* Layout Settings */
-    layout_halign(pLayout1, 0, 0, ekJUSTIFY);
-    
-    /* Layout placement */
-    layout_label(pLayout1, pLabel, 0, 0);
-    layout_button(pLayout1, pButton, 0, 1);
-    panel_layout(pPanel1, pLayout1);
+    /* Layout: Text */
+    layout_margin(pLayoutTxt, 4);
+    layout_label(pLayoutTxt, pLabelTemp, 0, 0);
 
-    font_destroy(&pFont);
-    font_destroy(&pFont2);
+    /* Layout: Main */
+    layout_hsize(pLayoutMain, 0, TITLE_PNG_W);
+    /* layout_halign(pLayout, 0, 0, ekCENTER); */
+    layout_valign(pLayoutMain, 0, 0, ekTOP);
+    layout_layout(pLayoutMain, pLayoutTxt, 0, 0);
+    layout_button(pLayoutMain, pButtonPlay, 0, 1);
+
+    panel_layout(pPanelMain, pLayoutMain);
+
+    /* Cleanup */
+    font_destroy(&pFontPlay);
+
     unref(pApp);
-
-    return pPanel1;
+    return pPanelMain;
 }
 
 void 
@@ -220,39 +235,48 @@ Callback_OnButtonPlay(App *pApp, Event *e)
 static Panel*
 _Panel_GetRoot(App *pApp)
 {
-    Panel       *pPanel1    = panel_create();
-    Panel       *pPanel2    = panel_create();
-    Layout      *pLayout1   = layout_create(1, 2);
-    Layout      *pLayout2   = layout_create(1, 2);
-    Layout      *pLayout3   = layout_create(1, 1);
-    
+    Panel       *pPanelMain = panel_create();
+    Panel       *pPanelExt  = panel_create();
+    Layout      *pLayoutMain= layout_create(1,2);
+    Layout      *pLayoutExt = layout_create(1,1);
     ImageView   *pImageView = imageview_create();
 
-    pApp->pImageView        = pImageView;
-    pApp->pLayout           = pLayout1;
+    Label *label1 = label_create();
+    label_text(label1, "Hey");
+    label_multiline(label1, TRUE);
+
+    pApp->pLayout           = pLayoutMain;
+
+    /* Global Margin */
+    layout_margin(pLayoutMain, 4);
     
-    /* Panel2 */
-    layout_hsize(pLayout2, 0, TITLE_PNG_W);
-    layout_vsize(pLayout2, 0, TITLE_PNG_H);
-    /* layout_vmargin(pLayout2, 0, 4); */
-    /* imageview_scale(pImageView, ekGUI_SCALE_AUTO); */
+    /* Top Image */
+    /* layout_hsize(pLayoutMain, 0, TITLE_PNG_W);
+    layout_vsize(pLayoutMain, 0, TITLE_PNG_H);
+    layout_halign(pLayoutMain, 0, 0, ekJUSTIFY);
+    layout_valign(pLayoutMain, 0, 0, ekJUSTIFY);*/
+    layout_halign(pLayoutMain, 0, 1, ekJUSTIFY);
+    layout_valign(pLayoutMain, 0, 1, ekJUSTIFY); 
+    imageview_scale(pImageView, ekGUI_SCALE_AUTO);
     imageview_size(pImageView, s2df(TITLE_PNG_W,TITLE_PNG_H));
     imageview_image(pImageView, (const Image*)TITLE_JPG);
-    layout_imageview(pLayout2, pImageView, 0, 0);
-    panel_layout(pPanel2, pLayout3);
+    layout_imageview(pLayoutMain, pImageView, 0, 0);
     
-    /* Panel1 */
-    layout_halign(pLayout1, 0, 0, ekTOP);
-    layout_layout(pLayout1, pLayout2, 0, 0);
-    layout_panel(pLayout1, pPanel2, 0, 1);
-    layout_margin(pLayout1, 8);
-    layout_halign(pLayout1, 0, 1, ekJUSTIFY);
-    panel_layout(pPanel1, pLayout1);
+    /* External Panel */
+    layout_hsize(pLayoutExt, 0, TITLE_PNG_W);
+    layout_halign(pLayoutExt, 0, 0, ekCENTER);
+    layout_valign(pLayoutExt, 0, 0, ekTOP);
+    layout_label(pLayoutExt, label1, 0, 0);
+    panel_layout(pPanelExt, pLayoutExt);
 
-    /* Default pPanel */
+    /* Global Panel */
+    layout_panel(pLayoutMain, pPanelExt, 0, 1);
+    panel_layout(pPanelMain, pLayoutMain);
+
+    /* Starting panel */
     Panel_Set(pApp, CPANEL_AUTOCONFIG);
 
-    return pPanel1;
+    return pPanelMain;
 }
 
 static App*
@@ -265,7 +289,6 @@ _Nappgui_Start(void)
     gui_language("");
 
     pApp = heap_new0(App);
-    pApp->pImageView    = NULL;
     pApp->pLayout       = NULL;
     pApp->pText         = NULL;
     pApp->pWindow       = NULL;
