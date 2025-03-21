@@ -8,6 +8,7 @@
 - [ ] Separate GUI  (cmake)
 - [ ] Separate Scripting language (cmake)
 - [ ] tools folder for auxilary bash/python scripts
+- - [X] video conversion script (for tweak previews)
 
 ## Core Library
 *Responsible for providing main functionality for the launcher app. Must be independent module.* 
