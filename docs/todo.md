@@ -1,5 +1,21 @@
-# ToDo List
+```
+  __________  ____  ____     __    _______________
+ /_  __/ __ \/ __ \/ __ \   / /   /  _/ ___/_  __/
+  / / / / / / / / / / / /  / /    / / \__ \ / /   
+ / / / /_/ / /_/ / /_/ /  / /____/ / ___/ // /    
+/_/  \____/_____/\____/  /_____/___//____//_/     
+                                                                                    
+```
+Table Of Contents:
+- [Main](#main)
+- [Core Library](#core-library)
+    - [Lua Module:](#lua-module)
+- [GUI Library](#gui-library)
+- [Lua Scripts](#lua-scripts)
  
+> **CURRENT:** Figure how to show file browser via lua and connect UI and logic somehow with 
+Core and GUI libraries
+
 ## Main
 *General points  towards development*
 
@@ -7,8 +23,8 @@
 - [ ] Clang format
 - [ ] Separate GUI  (cmake)
 - [ ] Separate Scripting language (cmake)
-- [ ] tools folder for auxilary bash/python scripts
-- - [X] video conversion script (for tweak previews)
+- [X] tools folder for auxilary bash/python scripts
+- [X] video conversion script (for tweak previews)
 
 ## Core Library
 *Responsible for providing main functionality for the launcher app. Must be independent module.* 
