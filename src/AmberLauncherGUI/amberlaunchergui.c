@@ -1,5 +1,3 @@
-/* NAppGUI Hello World */
-
 #include "core/common.h"
 #include "draw2d/draw2d.hxx"
 #include "gui/gui.hxx"
@@ -13,9 +11,6 @@
 
 static const int32_t TITLE_PNG_W = 672;
 static const int32_t TITLE_PNG_H = 200;
-
-/* static int _argc    = 0;
-static char** _argv = NULL; */
 
 /**
  * @relatedalso Panel
@@ -211,18 +206,12 @@ void
 Callback_OnButtonConfigure(App *pApp, Event *e)
 {
     AmberLauncher_ConfigureStart(pApp);
-    textview_printf(pApp->pText, "Button configure\n");
-    Panel_Set(pApp, CPANEL_MAIN);
     unref(e);
 }
 
 void 
 Callback_OnButtonPlay(App *pApp, Event *e)
 {
-    if (pApp->pText)
-    {
-        textview_printf(pApp->pText, "Button play\n");
-    }
     AmberLauncher_Play(pApp);
     /* AmberLauncher_ProcessLaunch("mm7.exe", _argc, _argv, TRUE); */
     unref(e);

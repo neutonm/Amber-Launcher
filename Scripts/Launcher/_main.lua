@@ -73,8 +73,8 @@ function AppConfigure()
 
     --temp
     AL.CommandCall("DetectAndCopyGame")
-    AL.CommandCall("MergeAndRename")
-    AL.CommandCall("DetectAndInstallMod")
+    --AL.CommandCall("MergeAndRename")
+    --AL.CommandCall("DetectAndInstallMod")
     
     print("Configuration Successful!")
 end

@@ -23,8 +23,8 @@ Core and GUI libraries
 - [ ] Clang format
 - [ ] Separate GUI  (cmake)
 - [ ] Separate Scripting language (cmake)
-- [X] tools folder for auxilary bash/python scripts
-- [X] video conversion script (for tweak previews)
+- [x] tools folder for auxilary bash/python scripts
+- [x] video conversion script (for tweak previews)
 
 ## Core Library
 *Responsible for providing main functionality for the launcher app. Must be independent module.* 
