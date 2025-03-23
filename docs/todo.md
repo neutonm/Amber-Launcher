@@ -25,6 +25,7 @@ Core and GUI libraries
 - [ ] Separate Scripting language (cmake)
 - [x] tools folder for auxilary bash/python scripts
 - [x] video conversion script (for tweak previews)
+- [ ] add cpack (cmake): pack release into "distr" folder
 
 ## Core Library
 *Responsible for providing main functionality for the launcher app. Must be independent module.* 

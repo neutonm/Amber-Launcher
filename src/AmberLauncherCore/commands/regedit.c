@@ -26,7 +26,7 @@ CAPI int
 LUA_SetRegistryKey(lua_State *L)
 {
     const char      *sKey   = luaL_checkstring(L, 1);
-    const uint32_t  dValue  = (uint32_t)luaL_checkinteger(L, 2);
+    const uint32    dValue  = (uint32)luaL_checkinteger(L, 2);
 
     if (AmberLauncher_SetRegistryKey(sKey, dValue) != 0)
     {
@@ -40,7 +40,7 @@ CAPI int
 LUA_GetRegistryKey(lua_State *L)
 {
     const char *sKey   = luaL_checkstring(L, 1);
-    uint32_t    dValue = 0;
+    uint32      dValue = 0;
 
     if (AmberLauncher_GetRegistryKey(sKey, &dValue) != 0)
     {

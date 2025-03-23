@@ -205,14 +205,14 @@ Panel_GetMain(App* pApp)
 void 
 Callback_OnButtonConfigure(App *pApp, Event *e)
 {
-    AmberLauncher_ConfigureStart(pApp);
+    AmberLauncher_ConfigureStart(pApp->pAppCore);
     unref(e);
 }
 
 void 
 Callback_OnButtonPlay(App *pApp, Event *e)
 {
-    AmberLauncher_Play(pApp);
+    AmberLauncher_Play(pApp->pAppCore);
     /* AmberLauncher_ProcessLaunch("mm7.exe", _argc, _argv, TRUE); */
     unref(e);
 }

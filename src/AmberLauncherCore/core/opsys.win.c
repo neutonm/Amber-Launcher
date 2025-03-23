@@ -74,7 +74,7 @@ AmberLauncher__GetApplicationWorkingFolder(char *pOutPath, size_t dSize)
     }
 }
 
-CAPI bool_t
+CAPI CBOOL
 AmberLauncher_IsRunningUnderWine(void)
 {
     HKEY hKey;
@@ -156,7 +156,7 @@ AmberLauncher_PrintDefaultSystemInformation(void)
 }
 
 CAPI int
-AmberLauncher_ProcessLaunch(const char* sAppPath, int argc, char **argv, bool bCloseOnLaunch)
+AmberLauncher_ProcessLaunch(const char* sAppPath, int argc, char **argv, CBOOL bCloseOnLaunch)
 {
     STARTUPINFO tStartupInfo;
     PROCESS_INFORMATION tProcessInfo;
@@ -181,7 +181,7 @@ AmberLauncher_ProcessLaunch(const char* sAppPath, int argc, char **argv, bool bC
 }
 
 CAPI int
-AmberLauncher_SetRegistryKey(const char* sValueName, uint32_t dValueData)
+AmberLauncher_SetRegistryKey(const char* sValueName, uint32 dValueData)
 {
     HKEY hKey;
     const char* subKey = "Software\\New World Computing\\Might and Magic VII\\1.0";
@@ -248,7 +248,7 @@ AmberLauncher_SetRegistryKey(const char* sValueName, uint32_t dValueData)
 }
 
 CAPI int
-AmberLauncher_GetRegistryKey(const char* sValueName, uint32_t* pValueData)
+AmberLauncher_GetRegistryKey(const char* sValueName, uint32* pValueData)
 {
     HKEY hKey;
     const char* subKey = "Software\\New World Computing\\Might and Magic VII\\1.0";

@@ -31,13 +31,13 @@ extern CAPI void
 AmberLauncher_End(void);
 
 extern CAPI void
-AmberLauncher_Test(App* pApp);
+AmberLauncher_Test(AppCore* pApp);
 
 extern CAPI void
-AmberLauncher_ConfigureStart(App* pApp);
+AmberLauncher_ConfigureStart(AppCore* pApp);
 
 extern CAPI void
-AmberLauncher_Play(App* pApp);
+AmberLauncher_Play(AppCore* pApp);
 
 __END_C
 

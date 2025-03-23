@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include <core/common.h>
 #include <core/command.h>
@@ -57,7 +58,7 @@ _predicate(const void* pElement, const void* pCtx)
 {
     SCommand* pObject = (SCommand*)pElement;
     const char* sName = (const char*)pCtx;
-    const int dResult = blib_strcmp(pObject->sName, sName);
+    const int dResult = strcmp(pObject->sName, sName);
     return dResult == 0;
 }
 
@@ -263,30 +264,32 @@ AmberLauncher_End(void)
 }
 
 CAPI void
-AmberLauncher_Test(App* pApp)
+AmberLauncher_Test(AppCore* pApp)
 {
-    if (pApp->pText)
+    UNUSED(pApp);
+    /* if (pApp->pText)
     {
         textview_printf(pApp->pText, "Library call\n");
-    }
+    } */
 
     /* SCommand_Callback_ConvertMusic(NULL,NULL); */
 }
 
 CAPI void
-AmberLauncher_ConfigureStart(App* pApp)
+AmberLauncher_ConfigureStart(AppCore* pApp)
 {
-    if (pApp->pText)
+    UNUSED(pApp);
+    /* if (pApp->pText)
     {
         textview_printf(pApp->pText, "Configuration start...\n");
-    }
+    } */
 
     SLuaState_CallEvent(
         pContext->pLuaState, 
         ELuaFunctionEventTypeStrings[SLUA_EVENT_CONFIGURE_BEFORE]
     );
 
-    AmberLauncher_Test(pApp);
+    /* AmberLauncher_Test(pApp); */
 
     SLuaState_CallReferencedFunction(pContext->pLuaState, SLUA_FUNC_APPCONFIGURE);
 
@@ -299,13 +302,13 @@ AmberLauncher_ConfigureStart(App* pApp)
 }
 
 CAPI void
-AmberLauncher_Play(App* pApp)
+AmberLauncher_Play(AppCore* pApp)
 {
     SLuaState_CallEvent(
         pContext->pLuaState, 
         ELuaFunctionEventTypeStrings[SLUA_EVENT_PLAY]
     );
-    AmberLauncher_ProcessLaunch("mm7.exe", 0, NULL, TRUE);
-    unref(pApp);
+    AmberLauncher_ProcessLaunch("mm7.exe", 0, NULL, CTRUE);
+    UNUSED(pApp);
 }
 

@@ -2,9 +2,24 @@
 #define __AMBER_LAUNCHER_GUI_H
 
 #include <core/common.h>
+#include <nappgui.h>
 
 #include "res_app.h"
 #include <gui/guiall.h>
+
+/******************************************************************************
+ * STRUCTS
+ ******************************************************************************/
+
+typedef struct _app_t App;
+struct _app_t
+{
+    AppCore      *pAppCore;
+    Window       *pWindow;
+    TextView     *pText;
+    ImageView    *pImageView;
+    Layout       *pLayout;
+};
 
 __EXTERN_C
 

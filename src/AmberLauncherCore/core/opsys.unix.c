@@ -110,10 +110,10 @@ AmberLauncher_GetApplicationWorkingFolder(char *pOutPath, size_t dSize)
     }
 }
 
-CAPI bool_t
+CAPI CBOOL
 AmberLauncher_IsRunningUnderWine(void)
 {
-    return FALSE;
+    return CFALSE;
 }
 
 CAPI unsigned long
@@ -149,7 +149,7 @@ AmberLauncher_PrintDefaultSystemInformation(void)
 }
 
 CAPI int
-AmberLauncher_ProcessLaunch(const char* sAppPath, int argc, char **argv, bool_t bCloseOnLaunch)
+AmberLauncher_ProcessLaunch(const char* sAppPath, int argc, char **argv, CBOOL bCloseOnLaunch)
 {
     pid_t dPID      = 0;
     int dStatus     = 0;
@@ -224,7 +224,7 @@ AmberLauncher_ProcessLaunch(const char* sAppPath, int argc, char **argv, bool_t 
 }
 
 CAPI int
-AmberLauncher_SetRegistryKey(const char* sValueName, uint32_t dValueData)
+AmberLauncher_SetRegistryKey(const char* sValueName, uint32 dValueData)
 {
     const char *SECTION_64 = 
     "HKEY_LOCAL_MACHINE\\\\Software\\\\WOW6432Node\\\\New World Computing\\\\Might and Magic VII\\\\1.0";
@@ -268,7 +268,7 @@ AmberLauncher_SetRegistryKey(const char* sValueName, uint32_t dValueData)
 }
 
 CAPI int
-AmberLauncher_GetRegistryKey(const char* sValueName, uint32_t* pValueData)
+AmberLauncher_GetRegistryKey(const char* sValueName, uint32* pValueData)
 {
     const char *SECTION_64 = 
     "HKEY_LOCAL_MACHINE\\Software\\WOW6432Node\\New World Computing\\Might and Magic VII\\1.0";
@@ -282,7 +282,7 @@ AmberLauncher_GetRegistryKey(const char* sValueName, uint32_t* pValueData)
     char name[256], type[256], data[256];
     const char* registrySection;
     FILE* fp;
-    uint32_t valueData = 0;
+    uint32 valueData = 0;
     int found = 0;
 
     winePrefix = getenv("WINEPREFIX");
@@ -375,7 +375,7 @@ AmberLauncher_GetRegistryKey(const char* sValueName, uint32_t* pValueData)
 
         // Now you have name, type, and data
         if (strcmp(name, sValueName) == 0 && strcmp(type, "REG_DWORD") == 0) {
-            valueData = (uint32_t)strtoul(data, NULL, 0);
+            valueData = (uint32)strtoul(data, NULL, 0);
             *pValueData = valueData;
             found = 1;
             break;

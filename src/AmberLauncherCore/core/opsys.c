@@ -12,12 +12,12 @@ AmberLauncher_GetApplicationBitness(void)
     return sizeof(void*) << 3;
 }
 
-CAPI bool_t 
+CAPI CBOOL 
 AmberLauncher_IsLittleEndian(void)
 {
     union 
     {
-        volatile uint32_t i;
+        volatile uint32 i;
         volatile char c[4];
     } e = { 0x01000000 };
 

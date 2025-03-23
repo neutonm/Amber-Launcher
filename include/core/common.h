@@ -5,7 +5,7 @@
 #define _XOPEN_SOURCE 700
 
 #include <core/apidef.h>
-#include <nappgui.h>
+#include <core/stdint.h>
 
 /**
  * @brief   Enumeration of C types, sorted by size
@@ -47,16 +47,12 @@ typedef enum
     CTYPE_MAX
 } ECType;
 
-typedef struct _app_t App;
-
-struct _app_t
+/* Intermediate struct for Core/GUI */
+typedef struct _app_core_t AppCore;
+struct _app_core_t
 {
     int argc;
     char** argv;
-    Window *pWindow;
-    TextView *pText;
-    ImageView *pImageView;
-    Layout *pLayout;
 };
 
 typedef enum
@@ -67,7 +63,22 @@ typedef enum
     CPANEL_MAX
 } EPanelType;
 
+/* Bool for ANSI C / C89 */
+typedef enum {CFALSE, CTRUE = !CFALSE} cbool; 
+#define CBOOL cbool
+
+/* Common preprocessor stuff */
 #define UNUSED(x) (void)x
 #define IS_VALID(ptr) ((ptr) != 0x0 && (ptr) != NULL) /**< General check for pointers */
+
+#ifdef __cplusplus
+#define __EXTERN_C \
+    extern "C" \
+    {
+#define __END_C }
+#else
+#define __EXTERN_C
+#define __END_C
+#endif
 
 #endif

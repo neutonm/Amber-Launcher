@@ -65,7 +65,7 @@ SLuaState_new(void)
     return pLuaState;
 }
 
-CAPI bool_t 
+CAPI CBOOL 
 SLuaState_delete(SLuaState** pLuaState)
 {
     if (!IS_VALID(pLuaState) || !IS_VALID(*pLuaState))
@@ -76,7 +76,7 @@ SLuaState_delete(SLuaState** pLuaState)
             "SLuaState_delete(SLuaState** LuaState) -> \
             received \"LuaState\" as NULL."
         );
-        return FALSE;
+        return CFALSE;
     }
     
     lua_close((*pLuaState)->pState);
@@ -87,10 +87,10 @@ SLuaState_delete(SLuaState** pLuaState)
     free(*pLuaState);
     *pLuaState = NULL;
 
-    return TRUE;
+    return CTRUE;
 }
 
-CAPI bool_t
+CAPI CBOOL
 SLuaState_Init(SLuaState* pLuaState)
 {
     int i;
@@ -103,7 +103,7 @@ SLuaState_Init(SLuaState* pLuaState)
             "SLuaState_Init(SLuaState* pLuaState)-> \
             received \"pLuaState\" as NULL or LuaState->pState is NULL."
         );
-        return FALSE;
+        return CFALSE;
     }
 
     if (!SLuaState_LoadScript(pLuaState, pLuaState->sScriptNameConst))
@@ -117,7 +117,7 @@ SLuaState_Init(SLuaState* pLuaState)
             pLuaState->sScriptNameConst
         );
 
-        return FALSE;
+        return CFALSE;
     }
 
     if (!SLuaState_LoadScript(pLuaState, pLuaState->sScriptNameMain))
@@ -131,7 +131,7 @@ SLuaState_Init(SLuaState* pLuaState)
             pLuaState->sScriptNameMain
         );
 
-        return FALSE;
+        return CFALSE;
     }
 
     /* Register global functions */
@@ -149,10 +149,10 @@ SLuaState_Init(SLuaState* pLuaState)
 
     _LoadAllLuaScripts(pLuaState->pState, pLuaState->sScriptNameFolder);
 
-    return TRUE;
+    return CTRUE;
 }
 
-CAPI bool_t 
+CAPI CBOOL 
 SLuaState_RegisterFunctionReference(
     SLuaState* pLuaState, 
     ELuaFunctionRefType eRefType, 
@@ -174,7 +174,7 @@ SLuaState_RegisterFunctionReference(
             sLuaFunctionName
         );
 
-        return FALSE;
+        return CFALSE;
     } 
     
     tLuaFuncRef.sName   = sLuaFunctionName;
@@ -182,10 +182,10 @@ SLuaState_RegisterFunctionReference(
 
     SVector_PushBack(&pLuaState->tRefFunctions, &tLuaFuncRef);
 
-    return TRUE;
+    return CTRUE;
 }
 
-CAPI bool_t 
+CAPI CBOOL 
 SLuaState_PushGlobalVariable(
     SLuaState* pLuaState, 
     const char* sVariableName, 
@@ -204,7 +204,7 @@ SLuaState_PushGlobalVariable(
             "const char* sValue, ELuaVarType eType) -> "
             "received \"LuaState\" as NULL."
         );
-        return FALSE;
+        return CFALSE;
     }
 
     switch (eType) 
@@ -222,14 +222,14 @@ SLuaState_PushGlobalVariable(
             lua_pushstring(pLuaState->pState, sValue);
             break;
         default:
-            return FALSE;
+            return CFALSE;
     }
 
     lua_setglobal(pLuaState->pState, sVariableName);
-    return TRUE;
+    return CTRUE;
 }
 
-CAPI bool_t 
+CAPI CBOOL 
 SLuaState_GetGlobalVariable(
     const SLuaState* pLuaState, 
     const char* sVariableName, 
@@ -246,7 +246,7 @@ SLuaState_GetGlobalVariable(
             "(SLuaState* pLuaState, const char* sVariableName, SLuaVar* pVarOut) -> "
             "received \"LuaState\" as NULL."
         );
-        return FALSE;
+        return CFALSE;
     }
 
     lua_getglobal(L, sVariableName);
@@ -285,25 +285,25 @@ SLuaState_GetGlobalVariable(
                 sVariableName
             );
             lua_pop(L, 1);
-            return FALSE;
+            return CFALSE;
     }
 
     lua_pop(L, 1);
-    return TRUE;
+    return CTRUE;
 }
 
-CAPI bool_t 
+CAPI CBOOL 
 SLuaVar_IsOfType(const SLuaVar* pVar, ELuaVarType eType)
 {
     if (!IS_VALID(pVar))
     {
-        return FALSE;
+        return CFALSE;
     }
 
     return pVar->type == eType;
 }
 
-CAPI bool_t 
+CAPI CBOOL 
 SLuaState_ExecuteCode(SLuaState* pLuaState, const char *sCode)
 {
     /* @todo: refactor Execute Lua Code function */
@@ -315,7 +315,7 @@ SLuaState_ExecuteCode(SLuaState* pLuaState, const char *sCode)
             "SLuaState_ExecuteCode(SLuaState* pLuaState, const char *sCode)-> \
             received \"LuaState\" as NULL or LuaState->pState is NULL."
         );
-        return FALSE;
+        return CFALSE;
     }
 
     if (luaL_dostring(pLuaState->pState, sCode)) 
@@ -323,7 +323,7 @@ SLuaState_ExecuteCode(SLuaState* pLuaState, const char *sCode)
         fprintf(stderr, "Error: %s\n", lua_tostring(pLuaState->pState, -1));
         lua_pop(pLuaState->pState, 1);
         
-        return FALSE;
+        return CFALSE;
     } 
     else 
     {
@@ -336,10 +336,10 @@ SLuaState_ExecuteCode(SLuaState* pLuaState, const char *sCode)
         }
     }
 
-    return TRUE;
+    return CTRUE;
 }
 
-CAPI bool_t 
+CAPI CBOOL 
 SLuaState_LoadScript(SLuaState* pLuaState, const char* sScriptPath) 
 {
     int iLuaRetValue = 0;
@@ -356,7 +356,7 @@ SLuaState_LoadScript(SLuaState* pLuaState, const char* sScriptPath)
             "received \"pLuaState\" as NULL or \"sScriptPath\" is empty."
         );
         
-        return FALSE;
+        return CFALSE;
     }
 
     /* Format path. @todo Write or use cross-platform solution to file paths */
@@ -386,7 +386,7 @@ SLuaState_LoadScript(SLuaState* pLuaState, const char* sScriptPath)
         );
 
         lua_pop(pLuaState->pState, 1);
-        return FALSE;
+        return CFALSE;
     }
 
     iLuaRetValue = lua_pcall(pLuaState->pState, 0, LUA_MULTRET, 0);
@@ -404,13 +404,13 @@ SLuaState_LoadScript(SLuaState* pLuaState, const char* sScriptPath)
         );
 
         lua_pop(pLuaState->pState, 1);
-        return FALSE;
+        return CFALSE;
     }
 
-    return TRUE;
+    return CTRUE;
 }
 
-CAPI bool_t 
+CAPI CBOOL 
 SLuaState_CallReferencedFunction(
     SLuaState* pLuaState, 
     ELuaFunctionRefType eRefType)
@@ -438,10 +438,10 @@ SLuaState_CallReferencedFunction(
         );
 
         lua_pop(pLuaState->pState, 1);
-        return FALSE;
+        return CFALSE;
     }
 
-    return TRUE;
+    return CTRUE;
 }
 
 CAPI void 

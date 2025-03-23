@@ -58,18 +58,18 @@ AmberLauncher_GetApplicationWorkingFolder(char *pOutPath, size_t dSize);
  * @relatedalso AmberLauncher
  * @brief       Returns true if system is little-endian
  * 
- * @return      bool_t 
+ * @return      CBOOL 
  */
-extern CAPI bool_t 
+extern CAPI CBOOL 
 AmberLauncher_IsLittleEndian(void);
 
 /**
  * @relatedalso AmberLauncher
  * @brief       Checks if application is running via WINE (unix systems)
  * 
- * @return      bool_t 
+ * @return      CBOOL 
  */
-extern CAPI bool_t
+extern CAPI CBOOL
 AmberLauncher_IsRunningUnderWine(void);
 
 /**
@@ -104,14 +104,14 @@ AmberLauncher_ProcessLaunch(
     const char* sAppPath, 
     int argc, 
     char **argv, 
-    bool_t bCloseOnLaunch
+    CBOOL bCloseOnLaunch
 );
 
 extern CAPI int
-AmberLauncher_SetRegistryKey(const char* sValueName, uint32_t dValueData);
+AmberLauncher_SetRegistryKey(const char* sValueName, uint32 dValueData);
 
 extern CAPI int
-AmberLauncher_GetRegistryKey(const char* sValueName, uint32_t* pValueData);
+AmberLauncher_GetRegistryKey(const char* sValueName, uint32* pValueData);
 
 #ifdef __cplusplus
 }

@@ -40,11 +40,11 @@ typedef struct SCommandArg
 {
     union 
     {
-        int32_t dValue;
+        int32 dValue;
         char* sValue;
         void* pValue;
     } uData;
-    uint32_t dFlags;
+    uint32 dFlags;
     ECType eType; 
     
 } SCommandArg;
@@ -62,8 +62,8 @@ struct SCommand
     const char*     sName;          /**< String key for CCommand array */
     void*           pOwner;         /**< Owner of the command */
     CommandFunc     cbExecuteFunc;  /**< Callback function */
-    uint32_t        dFlags;         /**< Custom options for callback as flags  */
-    int8_t          dNumArgs;       /**< Number of arguments inside SCommandArg */
+    uint32          dFlags;         /**< Custom options for callback as flags  */
+    int8            dNumArgs;       /**< Number of arguments inside SCommandArg */
     int             dLuaRef;        /**< Lua Reference */
     int             dPriority;      /**< Priority (for internal sorting) */
 };
@@ -88,7 +88,7 @@ SCommand_new(void);
  * @param       pCommand 
  * @return      CBOOL Success 
  */
-extern CAPI bool_t
+extern CAPI CBOOL
 SCommand_delete(SCommand** pCommand);
 
 /**
@@ -99,7 +99,7 @@ SCommand_delete(SCommand** pCommand);
  * @param       dFlag 
  * @return      Success
  */
-extern CAPI bool_t
+extern CAPI CBOOL
 SCommand_SetFlag(SCommand* pCommand, unsigned int dFlag);
 
 /**
@@ -109,7 +109,7 @@ SCommand_SetFlag(SCommand* pCommand, unsigned int dFlag);
  * @param       pCommand 
  * @param       dFlag 
  */
-extern CAPI bool_t
+extern CAPI CBOOL
 SCommand_IsFlagSet(const SCommand* pCommand, unsigned int dFlag);
 
 /**

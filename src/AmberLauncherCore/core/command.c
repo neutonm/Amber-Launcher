@@ -47,7 +47,7 @@ SCommand_new(void)
     return pCommand;
 }
 
-CAPI bool_t
+CAPI CBOOL
 SCommand_delete(SCommand** pCommand)
 {
     if (!IS_VALID(pCommand) || !IS_VALID(*pCommand))
@@ -57,30 +57,30 @@ SCommand_delete(SCommand** pCommand)
             "SCommand_delete() -> received \"pCommand\" as NULL.")
         ;
 
-        return FALSE;
+        return CFALSE;
     }
 
     free(*pCommand);
     *pCommand = NULL;
 
-    return TRUE;
+    return CTRUE;
 }
 
-CAPI bool_t
+CAPI CBOOL
 SCommand_SetFlag(SCommand* pCommand, unsigned int dFlag)
 {
     if (IS_VALID(pCommand)) 
     {
         pCommand->dFlags |= dFlag;
-        return TRUE;
+        return CTRUE;
     }
-    return FALSE;
+    return CFALSE;
 }
 
-CAPI bool_t
+CAPI CBOOL
 SCommand_IsFlagSet(const SCommand* pCommand, unsigned int dFlag)
 {
-    return (pCommand && (pCommand->dFlags & dFlag)) ? TRUE : FALSE;
+    return (pCommand && (pCommand->dFlags & dFlag)) ? CTRUE : CFALSE;
 }
 
 CAPI void

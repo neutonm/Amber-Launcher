@@ -53,9 +53,9 @@ SLuaState_new(void);
  * @brief           Cleanup function for SLuaState
  * 
  * @param           pLuaState 
- * @return          bool_t 
+ * @return          CBOOL 
  */
-extern CAPI bool_t 
+extern CAPI CBOOL 
 SLuaState_delete(SLuaState** pLuaState);
 
 /**
@@ -63,9 +63,9 @@ SLuaState_delete(SLuaState** pLuaState);
  * @brief           Loads default scripts
  * 
  * @param           pLuaState 
- * @return          bool_t 
+ * @return          CBOOL 
  */
-extern CAPI bool_t
+extern CAPI CBOOL
 SLuaState_Init(SLuaState* pLuaState);
 
 /**
@@ -76,9 +76,9 @@ SLuaState_Init(SLuaState* pLuaState);
  * @param           pLuaState 
  * @param           eRefType 
  * @param           sLuaFunctionName 
- * @return          bool_t 
+ * @return          CBOOL 
  */
-extern CAPI bool_t 
+extern CAPI CBOOL 
 SLuaState_RegisterFunctionReference(
     SLuaState* pLuaState, 
     ELuaFunctionRefType eRefType, 
@@ -93,9 +93,9 @@ SLuaState_RegisterFunctionReference(
  * @param           sVariableName
  * @param           sValue 
  * @param           eType 
- * @return          bool_t 
+ * @return          CBOOL 
  */
-extern CAPI bool_t
+extern CAPI CBOOL
 SLuaState_PushGlobalVariable(
     SLuaState* pLuaState,
     const char* sVariableName, 
@@ -109,9 +109,9 @@ SLuaState_PushGlobalVariable(
  * @param           pLuaState
  * @param           sVariableName
  * @param           pVarOut
- * @return          bool_t
+ * @return          CBOOL
  */
-extern CAPI bool_t 
+extern CAPI CBOOL 
 SLuaState_GetGlobalVariable(
     const SLuaState* pLuaState, 
     const char* sVariableName, 
@@ -123,9 +123,9 @@ SLuaState_GetGlobalVariable(
  * 
  * @param           pVar
  * @param           eType 
- * @return          bool_t 
+ * @return          CBOOL 
  */
-extern CAPI bool_t 
+extern CAPI CBOOL 
 SLuaVar_IsOfType(const SLuaVar* pVar, ELuaVarType eType);
 
 /**
@@ -135,7 +135,7 @@ SLuaVar_IsOfType(const SLuaVar* pVar, ELuaVarType eType);
  * @param           pLuaState 
  * @param           sCode 
  */
-extern CAPI bool_t 
+extern CAPI CBOOL 
 SLuaState_ExecuteCode(SLuaState* pLuaState, const char *sCode);
 
 /**
@@ -144,9 +144,9 @@ SLuaState_ExecuteCode(SLuaState* pLuaState, const char *sCode);
  * 
  * @param           pLuaState 
  * @param           sScriptPath 
- * @return          bool_t 
+ * @return          CBOOL 
  */
-extern CAPI bool_t 
+extern CAPI CBOOL 
 SLuaState_LoadScript(SLuaState* pLuaState, const char* sScriptPath);
 
 /**
@@ -156,9 +156,9 @@ SLuaState_LoadScript(SLuaState* pLuaState, const char* sScriptPath);
  *
  * @param           pLuaState 
  * @param           eRefType 
- * @return          bool_t 
+ * @return          CBOOL 
  */
-extern CAPI bool_t 
+extern CAPI CBOOL 
 SLuaState_CallReferencedFunction(
     SLuaState* pLuaState, 
     ELuaFunctionRefType eRefType
