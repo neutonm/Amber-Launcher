@@ -21,6 +21,14 @@ struct _app_t
     Layout       *pLayout;
 };
 
+typedef enum
+{
+    CPANEL_NULL,
+    CPANEL_AUTOCONFIG,
+    CPANEL_MAIN,
+    CPANEL_MAX
+} EPanelType;
+
 __EXTERN_C
 
 /******************************************************************************

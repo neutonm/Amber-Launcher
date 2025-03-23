@@ -55,14 +55,6 @@ struct _app_core_t
     char** argv;
 };
 
-typedef enum
-{
-    CPANEL_NULL,
-    CPANEL_AUTOCONFIG,
-    CPANEL_MAIN,
-    CPANEL_MAX
-} EPanelType;
-
 /* Bool for ANSI C / C89 */
 typedef enum {CFALSE, CTRUE = !CFALSE} cbool; 
 #define CBOOL cbool
