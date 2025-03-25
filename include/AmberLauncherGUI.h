@@ -4,22 +4,28 @@
 #include <core/common.h>
 #include <nappgui.h>
 
+#include "core/appcore.h"
 #include "res_app.h"
 #include <gui/guiall.h>
+
+/******************************************************************************
+ * FORWARD DECLARATION
+ ******************************************************************************/
+
+struct AppCore;
 
 /******************************************************************************
  * STRUCTS
  ******************************************************************************/
 
-typedef struct _app_t App;
-struct _app_t
+typedef struct
 {
-    AppCore      *pAppCore;
-    Window       *pWindow;
-    TextView     *pText;
-    ImageView    *pImageView;
-    Layout       *pLayout;
-};
+    struct AppCore  *pAppCore;
+    Window          *pWindow;
+    TextView        *pText;
+    ImageView       *pImageView;
+    Layout          *pLayout;
+} AppGUI;
 
 typedef enum
 {
@@ -44,7 +50,7 @@ __EXTERN_C
  * @return      Panel* 
  */
 extern Panel*
-Panel_Set(App* pApp, const EPanelType eType);
+Panel_Set(AppGUI* pApp, const EPanelType eType);
 
 /*---------------------------------------------------------------------------*/
 
@@ -56,7 +62,7 @@ Panel_Set(App* pApp, const EPanelType eType);
  * @return      Panel* 
  */
 extern Panel* 
-Panel_GetNull(App* pApp);
+Panel_GetNull(AppGUI* pApp);
 
 /**
  * @relatedalso Panel
@@ -66,7 +72,7 @@ Panel_GetNull(App* pApp);
  * @return      Panel* 
  */
 extern Panel* 
-Panel_GetAutoConfigure(App* pApp);
+Panel_GetAutoConfigure(AppGUI* pApp);
 
 /**
  * @relatedalso Panel
@@ -76,7 +82,7 @@ Panel_GetAutoConfigure(App* pApp);
  * @return      Panel* 
  */
 extern Panel* 
-Panel_GetMain(App* pApp);
+Panel_GetMain(AppGUI* pApp);
 
 /******************************************************************************
  * HEADER CALLBACK DECLARATIONS
@@ -90,7 +96,7 @@ Panel_GetMain(App* pApp);
  * @param       e 
  */
 extern void
-Callback_OnButtonConfigure(App* pApp, Event *e);
+Callback_OnButtonConfigure(AppGUI* pApp, Event *e);
 
 /**
  * @relatedalso Callback
@@ -100,7 +106,7 @@ Callback_OnButtonConfigure(App* pApp, Event *e);
  * @param       e 
  */
 extern void
-Callback_OnButtonPlay(App* pApp, Event *e);
+Callback_OnButtonPlay(AppGUI* pApp, Event *e);
 
 __END_C
 

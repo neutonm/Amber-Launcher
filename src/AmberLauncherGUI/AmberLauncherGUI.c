@@ -20,7 +20,7 @@ static const int32_t TITLE_PNG_H = 200;
  * @return      Panel* 
  */
 static Panel*
-_Panel_GetRoot(App *pApp);
+_Panel_GetRoot(AppGUI *pApp);
 
 /**
  * @relatedalso Core
@@ -28,7 +28,7 @@ _Panel_GetRoot(App *pApp);
  * 
  * @return      App* 
  */
-static App*
+static AppGUI*
 _Nappgui_Start(void);
 
 /**
@@ -38,7 +38,7 @@ _Nappgui_Start(void);
  * @param       pApp 
  */
 static void 
-_Nappgui_End(App **pApp);
+_Nappgui_End(AppGUI **pApp);
 
 /******************************************************************************
  * STATIC CALLBACK DECLARATIONS
@@ -52,14 +52,14 @@ _Nappgui_End(App **pApp);
  * @param       e 
  */
 static void
-_Callback_OnClose(App* pApp, Event* e);
+_Callback_OnClose(AppGUI* pApp, Event* e);
 
 /******************************************************************************
  * HEADER DEFINITIONS
  ******************************************************************************/
 
 Panel *
-Panel_Set(App *pApp, const EPanelType eType)
+Panel_Set(AppGUI *pApp, const EPanelType eType)
 {
     Panel *pPanel = NULL;
     Button *defbutton = NULL;
@@ -93,7 +93,7 @@ Panel_Set(App *pApp, const EPanelType eType)
 }
 
 Panel* 
-Panel_GetNull(App* pApp)
+Panel_GetNull(AppGUI* pApp)
 {
     Panel   *pPanelMain  = panel_create();
     Layout  *pLayoutMain = layout_create(1, 1);
@@ -118,7 +118,7 @@ Panel_GetNull(App* pApp)
 }
 
 Panel* 
-Panel_GetAutoConfigure(App* pApp)
+Panel_GetAutoConfigure(AppGUI* pApp)
 {
     Panel       *pPanelMain  = panel_create();
     Layout      *pLayoutMain = layout_create(1,3);
@@ -139,7 +139,7 @@ Panel_GetAutoConfigure(App* pApp)
     button_text(pButtonCfg, TXT_BTN_CONFIGURE);
     button_font(pButtonCfg, pFontCfg);
     button_vpadding (pButtonCfg, 16);
-    button_OnClick(pButtonCfg, listener(pApp, Callback_OnButtonConfigure, App));
+    button_OnClick(pButtonCfg, listener(pApp, Callback_OnButtonConfigure, AppGUI));
     
     /* Layout: Text */
     layout_margin(pLayoutTxt, 4);
@@ -161,7 +161,7 @@ Panel_GetAutoConfigure(App* pApp)
 }
 
 Panel* 
-Panel_GetMain(App* pApp)
+Panel_GetMain(AppGUI* pApp)
 {
     Panel   *pPanelMain  = panel_create();
     Layout  *pLayoutMain = layout_create(1, 2);
@@ -180,7 +180,7 @@ Panel_GetMain(App* pApp)
     button_text(pButtonPlay, TXT_BTN_PLAY);
     button_font(pButtonPlay, pFontPlay);
     button_vpadding (pButtonPlay, 16);
-    button_OnClick(pButtonPlay, listener(pApp, Callback_OnButtonPlay, App));
+    button_OnClick(pButtonPlay, listener(pApp, Callback_OnButtonPlay, AppGUI));
     
     /* Layout: Text */
     layout_margin(pLayoutTxt, 4);
@@ -203,14 +203,14 @@ Panel_GetMain(App* pApp)
 }
 
 void 
-Callback_OnButtonConfigure(App *pApp, Event *e)
+Callback_OnButtonConfigure(AppGUI *pApp, Event *e)
 {
     AmberLauncher_ConfigureStart(pApp->pAppCore);
     unref(e);
 }
 
 void 
-Callback_OnButtonPlay(App *pApp, Event *e)
+Callback_OnButtonPlay(AppGUI *pApp, Event *e)
 {
     AmberLauncher_Play(pApp->pAppCore);
     /* AmberLauncher_ProcessLaunch("mm7.exe", _argc, _argv, TRUE); */
@@ -222,7 +222,7 @@ Callback_OnButtonPlay(App *pApp, Event *e)
  ******************************************************************************/
 
 static Panel*
-_Panel_GetRoot(App *pApp)
+_Panel_GetRoot(AppGUI *pApp)
 {
     Panel       *pPanelMain = panel_create();
     Panel       *pPanelExt  = panel_create();
@@ -268,39 +268,44 @@ _Panel_GetRoot(App *pApp)
     return pPanelMain;
 }
 
-static App*
+static AppGUI*
 _Nappgui_Start(void)
 {
-    App *pApp;
+    AppGUI *pApp;
     Panel *pPanel;
 
     gui_respack(res_app_respack);
     gui_language("");
 
-    pApp = heap_new0(App);
-    pApp->pLayout       = NULL;
-    pApp->pText         = NULL;
+    pApp = heap_new0(AppGUI);
+    pApp->pAppCore      = AppCore_create();
     pApp->pWindow       = NULL;
+    pApp->pText         = NULL;
+    pApp->pImageView    = NULL;
+    pApp->pLayout       = NULL;
+
+    AppCore_init(pApp->pAppCore);
     
     pPanel              = _Panel_GetRoot(pApp);
     pApp->pWindow       = window_create(ekWINDOW_STDRES | ekWINDOW_ESC | ekWINDOW_RETURN);
     window_panel(pApp->pWindow, pPanel);
     window_title(pApp->pWindow, "Amber Island Launcher");
     /* window_origin(pApp->pWindow, v2df(800, 400)); */
-    window_OnClose(pApp->pWindow, listener(pApp, _Callback_OnClose, App));
+    window_OnClose(pApp->pWindow, listener(pApp, _Callback_OnClose, AppGUI));
     window_show(pApp->pWindow);
 
-    AmberLauncher_Start();
+    AmberLauncher_Start(pApp->pAppCore);
     
     return pApp;
 }
 
 static void 
-_Nappgui_End(App **pApp)
+_Nappgui_End(AppGUI **pApp)
 {
-    AmberLauncher_End();
+    AmberLauncher_End((*pApp)->pAppCore);
     window_destroy(&(*pApp)->pWindow);
-    heap_delete(pApp, App);
+    AppCore_free(&(*pApp)->pAppCore);
+    heap_delete(pApp, AppGUI);
 }
 
 /******************************************************************************
@@ -308,7 +313,7 @@ _Nappgui_End(App **pApp)
  ******************************************************************************/
 
 static void 
-_Callback_OnClose(App *pApp, Event *e)
+_Callback_OnClose(AppGUI *pApp, Event *e)
 {
     osapp_finish();
     unref(pApp);
@@ -320,17 +325,17 @@ _Callback_OnClose(App *pApp, Event *e)
  ******************************************************************************/
 
  #include <osapp/osmain.h>
-osmain(_Nappgui_Start, _Nappgui_End, "", App)
+osmain(_Nappgui_Start, _Nappgui_End, "", AppGUI)
 
 /* #include <osmain.h> */
-/* osmain(_Nappgui_Start, _Nappgui_End, "", App) */
+/* osmain(_Nappgui_Start, _Nappgui_End, "", AppGUI) */
 
 /* int main(int argc, char *argv[])
 {
     _argc = argc;
     _argv = argv;
-    FUNC_CHECK_APP_CREATE(_Nappgui_Start, App);
-    FUNC_CHECK_DESTROY(_Nappgui_End, App);
+    FUNC_CHECK_APP_CREATE(_Nappgui_Start, AppGUI);
+    FUNC_CHECK_DESTROY(_Nappgui_End, AppGUI);
     osmain_imp(
         (uint32_t)argc, (char_t **)argv, NULL, 0.,
         (FPtr_app_create)_Nappgui_Start,

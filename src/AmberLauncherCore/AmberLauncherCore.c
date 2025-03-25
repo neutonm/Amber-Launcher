@@ -1,10 +1,13 @@
+#include "core/common.h"
+#include "lua.h"
 #include <AmberLauncherCore.h>
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
-#include <core/common.h>
+#include <core/appcore.h>
 #include <core/command.h>
 #include <core/luastate.h>
 #include <core/opsys.h>
@@ -16,7 +19,8 @@
 
 #include <lauxlib.h>
 
-static ALContext* pContext;
+static const char* STR_AL_GLOBAL    = "AL";
+static const char* STR_AL_APPCORE   = "AL.AppCore";
 
 static void 
 _SCommand_Callback_Null(const SCommand* pSelf, const SCommandArg* pArg)
@@ -62,14 +66,17 @@ _predicate(const void* pElement, const void* pCtx)
     return dResult == 0;
 }
 
-
 static void 
 _SCommand_Callback_LuaCall(const SCommand* pSelf, const SCommandArg* pArg)
 {
-    const int dLuaRef   = pSelf->dLuaRef;
-    ALContext* pCtx     = (ALContext*)(pSelf->pOwner);
-    struct lua_State* L = pCtx->pLuaState->pState;
-    UNUSED(pArg);
+    const int dLuaRef = pSelf->dLuaRef;
+    struct lua_State *L = NULL;
+
+    if (IS_VALID(pArg) && pArg->eType == CTYPE_VOID)
+    {
+        L = (lua_State*)pArg->uData.pValue;
+        assert(IS_VALID(L));
+    }
 
     /* Push the Lua function onto the stack using the reference */
     lua_rawgeti(L, LUA_REGISTRYINDEX, dLuaRef);
@@ -88,7 +95,7 @@ _SCommand_Callback_LuaCall(const SCommand* pSelf, const SCommandArg* pArg)
 }
 
 static void
-_SCommand_AddToList(const char* sName, CommandFunc cbCmdFunction, int dLuaRef, int dPriority)
+_SCommand_AddToList(const char* sName, CommandFunc cbCmdFunction, void* pOwner, int dLuaRef, int dPriority)
 {
     long dSVecFoundIndex;
 
@@ -98,7 +105,7 @@ _SCommand_AddToList(const char* sName, CommandFunc cbCmdFunction, int dLuaRef, i
     tCommand.dLuaRef        = dLuaRef;
     tCommand.dPriority      = dPriority;
     tCommand.dNumArgs       = 0;
-    tCommand.pOwner         = pContext;
+    tCommand.pOwner         = pOwner;
     tCommand.cbExecuteFunc  = cbCmdFunction;
 
     /* Overwrite existing */
@@ -127,6 +134,7 @@ _LUA_CommandAdd(struct lua_State* L)
 {
     int dPriority           = 0;
     int dLuaFuncRef         = 0;
+    void* pAppCore          = NULL; /*!< AppCore */
     const char* sCmdName    = luaL_checkstring(L, 1);
 
     luaL_checktype(L, 2, LUA_TFUNCTION);
@@ -135,7 +143,11 @@ _LUA_CommandAdd(struct lua_State* L)
     lua_pushvalue(L, 2);
     dLuaFuncRef = luaL_ref(L, LUA_REGISTRYINDEX);
 
-    _SCommand_AddToList(sCmdName, _SCommand_Callback_LuaCall, dLuaFuncRef, dPriority);
+    lua_getfield(L, LUA_REGISTRYINDEX, STR_AL_APPCORE);
+    pAppCore = lua_touserdata(L, -1);
+    lua_pop(L, 1);
+
+    _SCommand_AddToList(sCmdName, _SCommand_Callback_LuaCall, pAppCore, dLuaFuncRef, dPriority);
 
     return 0;
 }
@@ -170,14 +182,14 @@ static int
 _LUA_CommandCall(struct lua_State* L)
 {
     long dSVecFoundIndex     = 0;
-    const char      *sKey   = luaL_checkstring(L, 1);
+    const char      *sKey    = luaL_checkstring(L, 1);
 
-    
     dSVecFoundIndex = SVector_FindByPredicate(&tConfigureCommandList, _predicate, sKey);
     if (dSVecFoundIndex != -1)
     {
         SCommand* pObj = (SCommand*)SVector_Get(&tConfigureCommandList, (size_t)dSVecFoundIndex);
-        pObj->cbExecuteFunc(pObj, NULL);
+        SCommandArg pArg = SCommandArg_MakeVoid(L);
+        pObj->cbExecuteFunc(pObj, &pArg);
     }
     else
     {
@@ -204,25 +216,19 @@ luaL_Reg AL[] =
 };
 
 CAPI void
-AmberLauncher_Start(void)
+AmberLauncher_Start(AppCore* pAppCore)
 {
     size_t i = 0;
 
-    /* Allocations */
-    pContext = (ALContext*)malloc(sizeof(ALContext));
-    if (pContext == NULL)
-    {
-        fprintf(stderr, "Couldn't allocate memory for ALContext\n");
-        exit(EXIT_FAILURE);
-    }
-
-    pContext->pLuaState = SLuaState_new();
-
     /* Register C functions to lua */
-    luaL_newlib(pContext->pLuaState->pState, AL);
-    lua_setglobal(pContext->pLuaState->pState, "AL");
+    luaL_newlib(pAppCore->pLuaState->pState, AL);
+    lua_setglobal(pAppCore->pLuaState->pState, STR_AL_GLOBAL);
 
-    LUA_REGISTER_INIConfig(pContext->pLuaState->pState);
+    /* Register pAppCore */
+    lua_pushlightuserdata(pAppCore->pLuaState->pState, (void*)pAppCore);
+    lua_setfield(pAppCore->pLuaState->pState, LUA_REGISTRYINDEX, STR_AL_APPCORE);
+
+    LUA_REGISTER_INIConfig(pAppCore->pLuaState->pState);
 
     /* Command database */
     SVector_Init(&tConfigureCommandList, sizeof(SCommand));
@@ -232,69 +238,68 @@ AmberLauncher_Start(void)
         _SCommand_AddToList(
             SVector_DefaultCommandCallbackNames[i],
             SVector_DefaultCommandCallbacks[i],
+            pAppCore,
             0,
             (int)i);
     }
     
     /* Lua State */
-    SLuaState_Init(pContext->pLuaState);
-    SLuaState_CallEvent(pContext->pLuaState, ELuaFunctionEventTypeStrings[SLUA_EVENT_INIT]);
+    SLuaState_Init(pAppCore->pLuaState);
+    SLuaState_CallEvent(pAppCore->pLuaState, ELuaFunctionEventTypeStrings[SLUA_EVENT_INIT]);
 }
 
 CAPI void
-AmberLauncher_End(void)
+AmberLauncher_End(AppCore* pAppCore)
 {
     /* Lua stuff */
-    SLuaState_CallEvent(pContext->pLuaState, ELuaFunctionEventTypeStrings[SLUA_EVENT_DESTROY]);
-    SLuaState_CallReferencedFunction(pContext->pLuaState, SLUA_FUNC_APPDESTROY);
+    SLuaState_CallEvent(pAppCore->pLuaState, ELuaFunctionEventTypeStrings[SLUA_EVENT_DESTROY]);
+    SLuaState_CallReferencedFunction(pAppCore->pLuaState, SLUA_FUNC_APPDESTROY);
     SVector_ForEach(&tConfigureCommandList)
     {
         SVector_InitIterator(SCommand, &tConfigureCommandList);
         if (SCommand_IsFlagSet(SVECTOR_ITERATOR, SCOMMAND_FLAG_LUA))
         {
-            luaL_unref(pContext->pLuaState->pState, LUA_REGISTRYINDEX, SVECTOR_ITERATOR->dLuaRef);
+            luaL_unref(pAppCore->pLuaState->pState, LUA_REGISTRYINDEX, SVECTOR_ITERATOR->dLuaRef);
         }
     }
-    SLuaState_delete(&pContext->pLuaState);
+    
 
     /* Other shit */
     SVector_Cleanup(&tConfigureCommandList);
-    free(pContext);
-    pContext = NULL;
 }
 
 CAPI void
-AmberLauncher_Test(AppCore* pApp)
+AmberLauncher_Test(AppCore* pAppCore)
 {
-    UNUSED(pApp);
-    /* if (pApp->pText)
+    UNUSED(pAppCore);
+    /* if (pAppCore->pText)
     {
-        textview_printf(pApp->pText, "Library call\n");
+        textview_printf(pAppCore->pText, "Library call\n");
     } */
 
     /* SCommand_Callback_ConvertMusic(NULL,NULL); */
 }
 
 CAPI void
-AmberLauncher_ConfigureStart(AppCore* pApp)
+AmberLauncher_ConfigureStart(AppCore* pAppCore)
 {
-    UNUSED(pApp);
-    /* if (pApp->pText)
+    UNUSED(pAppCore);
+    /* if (pAppCore->pText)
     {
-        textview_printf(pApp->pText, "Configuration start...\n");
+        textview_printf(pAppCore->pText, "Configuration start...\n");
     } */
 
     SLuaState_CallEvent(
-        pContext->pLuaState, 
+        pAppCore->pLuaState, 
         ELuaFunctionEventTypeStrings[SLUA_EVENT_CONFIGURE_BEFORE]
     );
 
-    /* AmberLauncher_Test(pApp); */
+    /* AmberLauncher_Test(pAppCore); */
 
-    SLuaState_CallReferencedFunction(pContext->pLuaState, SLUA_FUNC_APPCONFIGURE);
+    SLuaState_CallReferencedFunction(pAppCore->pLuaState, SLUA_FUNC_APPCONFIGURE);
 
     SLuaState_CallEvent(
-        pContext->pLuaState, 
+        pAppCore->pLuaState, 
         ELuaFunctionEventTypeStrings[SLUA_EVENT_CONFIGURE_AFTER]
     );
 
@@ -302,13 +307,13 @@ AmberLauncher_ConfigureStart(AppCore* pApp)
 }
 
 CAPI void
-AmberLauncher_Play(AppCore* pApp)
+AmberLauncher_Play(AppCore* pAppCore)
 {
     SLuaState_CallEvent(
-        pContext->pLuaState, 
+        pAppCore->pLuaState, 
         ELuaFunctionEventTypeStrings[SLUA_EVENT_PLAY]
     );
     AmberLauncher_ProcessLaunch("mm7.exe", 0, NULL, CTRUE);
-    UNUSED(pApp);
+    UNUSED(pAppCore);
 }
 

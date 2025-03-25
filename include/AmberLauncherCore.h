@@ -9,35 +9,26 @@ __EXTERN_C
  * FORWARD DECLARATION
  ******************************************************************************/
 
-struct SLuaState;
-
-/******************************************************************************
- * STRUCTS
- ******************************************************************************/
-
-typedef struct ALContext_t
-{
-    struct SLuaState* pLuaState;
-} ALContext;
+struct AppCore;
 
 /******************************************************************************
  * HEADER DECLARATIONS
  ******************************************************************************/
 
 extern CAPI void
-AmberLauncher_Start(void);
+AmberLauncher_Start(struct AppCore* pApp);
 
 extern CAPI void
-AmberLauncher_End(void);
+AmberLauncher_End(struct AppCore* pApp);
 
 extern CAPI void
-AmberLauncher_Test(AppCore* pApp);
+AmberLauncher_Test(struct AppCore* pApp);
 
 extern CAPI void
-AmberLauncher_ConfigureStart(AppCore* pApp);
+AmberLauncher_ConfigureStart(struct AppCore* pApp);
 
 extern CAPI void
-AmberLauncher_Play(AppCore* pApp);
+AmberLauncher_Play(struct AppCore* pApp);
 
 __END_C
 

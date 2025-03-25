@@ -32,6 +32,9 @@ Core and GUI libraries
 
 - [ ] Code Review for header/sources
 - [ ] add theoraplay library
+- [ ] save argc/argv into AppCore struct
+- [ ] rename header guards: conform to one convention
+- [ ] extern_c for every header!
  
 #### Lua Module:
 - [ ] Return status code from AL.CommandCall

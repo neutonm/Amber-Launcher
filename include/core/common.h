@@ -47,14 +47,6 @@ typedef enum
     CTYPE_MAX
 } ECType;
 
-/* Intermediate struct for Core/GUI */
-typedef struct _app_core_t AppCore;
-struct _app_core_t
-{
-    int argc;
-    char** argv;
-};
-
 /* Bool for ANSI C / C89 */
 typedef enum {CFALSE, CTRUE = !CFALSE} cbool; 
 #define CBOOL cbool
