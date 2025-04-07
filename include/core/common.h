@@ -1,11 +1,25 @@
 #ifndef __COMMON_H
 #define __COMMON_H
 
-/* POSIX required definition */
-#define _XOPEN_SOURCE 700
+#include <stddef.h>
 
 #include <core/apidef.h>
 #include <core/stdint.h>
+
+/******************************************************************************
+ * CONSTANTS
+ ******************************************************************************/
+
+/* Bool for ANSI C / C89 */
+typedef enum {CFALSE, CTRUE = !CFALSE} cbool;
+#define CBOOL cbool
+
+/* POSIX required definition */
+#define _XOPEN_SOURCE 700
+
+/******************************************************************************
+ * VARIANT / TAGGED UNION PATTERN
+ ******************************************************************************/
 
 /**
  * @brief   Enumeration of C types, sorted by size
@@ -17,8 +31,7 @@ typedef enum
     CTYPE_NULL,                 
     CTYPE_BOOL,                 
     CTYPE_CHAR,                 
-    CTYPE_UNSIGNED_CHAR,        
-    CTYPE_SIGNED_CHAR,          
+    CTYPE_UNSIGNED_CHAR,
     CTYPE_CONST_CHAR,           
     CTYPE_SHORT,                
     CTYPE_UNSIGNED_SHORT,       
@@ -33,27 +46,240 @@ typedef enum
     CTYPE_DOUBLE,               
     CTYPE_LONG_DOUBLE,          
     /* non-trivial */
-    CTYPE_UINT_VEC_2D,          
-    CTYPE_INT_VEC_2D,           
-    CTYPE_UINT8_VEC_2D,         
-    CTYPE_INT8_VEC_2D,          
-    CTYPE_UINT16_VEC_2D,        
-    CTYPE_INT16_VEC_2D,         
-    CTYPE_UINT32_VEC_2D,        
-    CTYPE_INT32_VEC_2D,         
-    CTYPE_FLOAT_VEC_2D,         
-    CTYPE_DOUBLE_VEC_2D,        
-    /*  */
+    CTYPE_LUAREF,
+    /* ...  */
     CTYPE_MAX
 } ECType;
 
-/* Bool for ANSI C / C89 */
-typedef enum {CFALSE, CTRUE = !CFALSE} cbool; 
-#define CBOOL cbool
+typedef union UVarData
+{
+    CBOOL               _bool;              /* CTYPE_BOOL               */
+    char                _char;              /* CTYPE_CHAR               */
+    unsigned char       _uchar;             /* CTYPE_UNSIGNED_CHAR      */
+    const char*         _constchar;         /* CTYPE_CONST_CHAR         */
+    short               _short;             /* CTYPE_SHORT              */
+    unsigned short      _ushort;            /* CTYPE_UNSIGNED_SHORT     */
+    int                 _int;               /* CTYPE_INT                */
+    unsigned int        _uint;              /* CTYPE_UNSIGNED_INT       */
+    long                _long;              /* CTYPE_LONG               */
+    unsigned long       _ulong;             /* CTYPE_UNSIGNED_LONG      */
+    float               _float;             /* CTYPE_FLOAT              */
+    long long           _longlong;          /* CTYPE_LONG_LONG          */
+    unsigned long long  _ulonglong;         /* CTYPE_UNSIGNED_LONG_LONG */
+    void*               _void;              /* CTYPE_VOID               */
+    double              _double;            /* CTYPE_DOUBLE             */
+    long double         _longdouble;        /* CTYPE_LONG_DOUBLE        */
+} UVarData;
 
-/* Common preprocessor stuff */
+typedef struct SVar
+{
+    ECType      eType;
+    uint32      dFlags;
+    size_t      dSize;
+    UVarData    uData;
+} SVar;
+
+#define SVAR_NULL(v)                                \
+    do {                                            \
+        (v).eType       = CTYPE_NULL;               \
+        (v).dFlags      = 0;                        \
+        (v).dSize       = sizeof((v).uData._char);  \
+        (v).uData._char = '\0';                     \
+    } while (0)
+
+#define SVAR_BOOL(v,x)                              \
+    do {                                            \
+        (v).eType = CTYPE_BOOL;                     \
+        (v).dFlags = 0;                             \
+        (v).dSize = sizeof((v).uData._bool);        \
+        (v).uData._bool = (x);                      \
+    } while (0)
+
+#define SVAR_CHAR(v,x)                              \
+    do {                                            \
+        (v).eType = CTYPE_CHAR;                     \
+        (v).dFlags = 0;                             \
+        (v).dSize = sizeof((v).uData._char);        \
+        (v).uData._char = (x);                      \
+    } while (0)
+
+#define SVAR_UCHAR(v,x)                             \
+    do {                                            \
+        (v).eType = CTYPE_UNSIGNED_CHAR;            \
+        (v).dFlags = 0;                             \
+        (v).dSize = sizeof((v).uData._uchar);       \
+        (v).uData._uchar = (x);                     \
+    } while (0)
+
+#define SVAR_CONSTCHAR(v,x)                         \
+    do {                                            \
+        (v).eType = CTYPE_CONST_CHAR;               \
+        (v).dFlags = 0;                             \
+        (v).dSize = sizeof((v).uData._constchar);   \
+        (v).uData._constchar = (x);                 \
+    } while (0)
+
+#define SVAR_SHORT(v,x)                             \
+    do {                                            \
+        (v).eType = CTYPE_SHORT;                    \
+        (v).dFlags = 0;                             \
+        (v).dSize = sizeof((v).uData._short);       \
+        (v).uData._short = (x);                     \
+    } while (0)
+
+#define SVAR_USHORT(v,x)                            \
+    do {                                            \
+        (v).eType = CTYPE_UNSIGNED_SHORT;           \
+        (v).dFlags = 0;                             \
+        (v).dSize = sizeof((v).uData._ushort);      \
+        (v).uData._ushort = (x);                    \
+    } while (0)
+
+#define SVAR_INT(v,x)                               \
+    do {                                            \
+        (v).eType = CTYPE_INT;                      \
+        (v).dFlags = 0;                             \
+        (v).dSize = sizeof((v).uData._int);         \
+        (v).uData._int = (x);                       \
+    } while (0)
+
+#define SVAR_UINT(v,x)                              \
+    do {                                            \
+        (v).eType = CTYPE_UNSIGNED_INT;             \
+        (v).dFlags = 0;                             \
+        (v).dSize = sizeof((v).uData._uint);        \
+        (v).uData._uint = (x);                      \
+    } while (0)
+
+#define SVAR_LONG(v,x)                              \
+    do {                                            \
+        (v).eType = CTYPE_LONG;                     \
+        (v).dFlags = 0;                             \
+        (v).dSize = sizeof((v).uData._long);        \
+        (v).uData._long = (x);                      \
+    } while (0)
+
+#define SVAR_ULONG(v,x)                             \
+    do {                                            \
+        (v).eType = CTYPE_UNSIGNED_LONG;            \
+        (v).dFlags = 0;                             \
+        (v).dSize = sizeof((v).uData._ulong);       \
+        (v).uData._ulong = (x);                     \
+    } while (0)
+
+#define SVAR_FLOAT(v,x)                             \
+    do {                                            \
+        (v).eType = CTYPE_FLOAT;                    \
+        (v).dFlags = 0;                             \
+        (v).dSize = sizeof((v).uData._float);       \
+        (v).uData._float = (x);                     \
+    } while (0)
+
+#define SVAR_LLONG(v,x)                             \
+    do {                                            \
+        (v).eType = CTYPE_LONG_LONG;                \
+        (v).dFlags = 0;                             \
+        (v).dSize = sizeof((v).uData._longlong);    \
+        (v).uData._longlong = (x);                  \
+    } while (0)
+
+#define SVAR_ULLONG(v,x)                            \
+    do {                                            \
+        (v).eType = CTYPE_UNSIGNED_LONG_LONG;       \
+        (v).dFlags = 0;                             \
+        (v).dSize = sizeof((v).uData._ulonglong);   \
+        (v).uData._ulonglong = (x);                 \
+    } while (0)
+
+/* void types are exceptional */
+#define SVAR_VOID(v, ptr, sz)                       \
+    do {                                            \
+        (v).eType         = CTYPE_VOID;             \
+        (v).dFlags        = 0;                      \
+        (v).dSize         = (sz);                   \
+        (v).uData._void   = (ptr);                  \
+    } while (0)
+
+#define SVAR_DOUBLE(v,x)                            \
+    do {                                            \
+        (v).eType = CTYPE_DOUBLE;                   \
+        (v).dFlags = 0;                             \
+        (v).dSize = sizeof((v).uData._double);      \
+        (v).uData._double = (x);                    \
+    } while (0)
+
+#define SVAR_LDOUBLE(v,x)                           \
+    do {                                            \
+        (v).eType = CTYPE_LONG_DOUBLE;              \
+        (v).dFlags = 0;                             \
+        (v).dSize = sizeof((v).uData._longdouble);  \
+        (v).uData._longdouble = (x);                \
+    } while (0)
+
+/**
+ * non-trivial: lua reference as int
+ * @note include lua headers before usage
+ */
+#define SVAR_LUAREF(v, L, id)                               \
+    do {                                                    \
+        (v).eType = CTYPE_LUAREF;                           \
+        (v).dFlags = 0;                                     \
+        lua_pushvalue((L), (id));                           \
+        (v).dSize = sizeof((v).uData._int);                 \
+        (v).uData._int = luaL_ref((L), LUA_REGISTRYINDEX);  \
+    } while (0)
+
+/* Fixed‑width aliases */
+#define SVAR_INT8(v,x)              SVAR_CHAR((v),(x))
+#define SVAR_UINT8(v,x)             SVAR_UCHAR((v),(x))
+#define SVAR_INT16(v,x)             SVAR_SHORT((v),(x))
+#define SVAR_UINT16(v,x)            SVAR_USHORT((v),(x))
+#define SVAR_INT32(v,x)             SVAR_INT((v),(x))
+#define SVAR_UINT32(v,x)            SVAR_UINT((v),(x))
+#define SVAR_INT64(v,x)             SVAR_LLONG((v),(x))
+#define SVAR_UINT64(v,x)            SVAR_ULLONG((v),(x))
+
+/* Getters */
+#define SVAR_GET_BOOL(v)            ((v).uData._bool)
+#define SVAR_GET_CHAR(v)            ((v).uData._char)
+#define SVAR_GET_UCHAR(v)           ((v).uData._uchar)
+#define SVAR_GET_CONSTCHAR(v)       ((v).uData._constchar)
+#define SVAR_GET_SHORT(v)           ((v).uData._short)
+#define SVAR_GET_USHORT(v)          ((v).uData._ushort)
+#define SVAR_GET_INT(v)             ((v).uData._int)
+#define SVAR_GET_UINT(v)            ((v).uData._uint)
+#define SVAR_GET_LONG(v)            ((v).uData._long)
+#define SVAR_GET_ULONG(v)           ((v).uData._ulong)
+#define SVAR_GET_LLONG(v)           ((v).uData._longlong)
+#define SVAR_GET_ULLONG(v)          ((v).uData._ulonglong)
+#define SVAR_GET_FLOAT(v)           ((v).uData._float)
+#define SVAR_GET_DOUBLE(v)          ((v).uData._double)
+#define SVAR_GET_LDOUBLE(v)         ((v).uData._longdouble)
+#define SVAR_GET_VOID(v)            ((v).uData._void)
+#define SVAR_GET_VOID_SIZE(v)       ((v).uData.dSize)
+
+/* Non-trivial getters */
+#define SVAR_GET_LUAREF(v)          ((v).uData._int)
+
+/* Fixed-width getter aliases */
+#define SVAR_GET_INT8(v)            SVAR_GET_CHAR(v)
+#define SVAR_GET_UINT8(v)           SVAR_GET_UCHAR(v)
+#define SVAR_GET_INT16(v)           SVAR_GET_SHORT(v)
+#define SVAR_GET_UINT16(v)          SVAR_GET_USHORT(v)
+#define SVAR_GET_INT32(v)           SVAR_GET_INT(v)
+#define SVAR_GET_UINT32(v)          SVAR_GET_UINT(v)
+#define SVAR_GET_INT64(v)           SVAR_GET_LLONG(v)
+#define SVAR_GET_UINT64(v)          SVAR_GET_ULLONG(v)
+
+/******************************************************************************
+ * COMMON PREPROCESSOR FUNCTIONALITY
+ ******************************************************************************/
+
+/* Supressed unused variable compiler warning */
 #define UNUSED(x) (void)x
-#define IS_VALID(ptr) ((ptr) != 0x0 && (ptr) != NULL) /**< General check for pointers */
+
+/* General check for pointers */
+#define IS_VALID(ptr) ((ptr) != 0x0 && (ptr) != NULL)
 
 #ifdef __cplusplus
 #define __EXTERN_C \
