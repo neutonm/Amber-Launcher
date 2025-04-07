@@ -40,7 +40,7 @@ function dump(o)
     else
        return tostring(o)
     end
- end
+end
 
 -- Main launcher calls
 function AppInit()

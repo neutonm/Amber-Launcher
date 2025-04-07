@@ -311,11 +311,16 @@ function GetDirectory(full_path)
     end
 end
 
-local function _DetectAndCopyGame()
+local function _DetectAndCopyGame(dst)
 
     print("Detecting game...")
 
-    -- [[CHECK CURRENT FOLDER]]
+    local gameFolders = GAME_EXECUTABLE_FOLDERS
+    if dst then
+        gameFolders = {
+            dst
+        }
+    end
     -- check if game is already installed in the same folder
     local foundGamePath = nil
     if IsFilePresent(GAME_DESTINATION_FOLDER..OS_FILE_SEPARATOR..GAME_EXECUTABLE_NAME) then
@@ -324,7 +329,7 @@ local function _DetectAndCopyGame()
 
         -- Check if all files are installed
         if not CheckFiles(GAME_DESTINATION_FOLDER, MM7_FILES) then
-            
+            print("Some game files are missing.")
             return
         end
 
@@ -335,7 +340,7 @@ local function _DetectAndCopyGame()
 
     -- [[FIND]]
     -- Find missing game
-    for _, file in ipairs(GAME_EXECUTABLE_FOLDERS) do
+    for _, file in ipairs(gameFolders) do
         local foundFile = IsFilePresent(file)
         if foundFile then
             if IsFileExecutable(foundFile) then
@@ -349,6 +354,18 @@ local function _DetectAndCopyGame()
         -- @todo Tell player that game wasn't found and offer to find it manually
         -- abort on failure
         print("Failed to find the game!")
+
+        newPath = AL.UICall(UIEVENT.MODAL_GAMENOTFOUND)
+        if newPath and newPath ~= "" then
+            local f = io.open(newPath, "rb") 
+            if f then
+                f:close()
+                _DetectAndCopyGame(newPath)
+            else
+                print("Invalid or nonexistent file path: " .. newPath)
+            end
+        end
+        
         return
     end
 

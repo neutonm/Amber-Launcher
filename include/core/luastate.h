@@ -5,9 +5,7 @@
 #include <core/vector.h>
 #include <core/luacommon.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+__EXTERN_C
 
 /******************************************************************************
  * FORWARD DECLARATIONS
@@ -164,8 +162,35 @@ SLuaState_CallReferencedFunction(
     ELuaFunctionRefType eRefType
 );
 
+/**
+ * @relatedalso     SLuaState
+ * @brief           Calls app Lua event (function events.<sEventName>())
+ *
+ * @param           pLuaState
+ * @param           sEventName
+ */
 extern CAPI void 
 SLuaState_CallEvent(SLuaState* pLuaState, const char* sEventName);
+
+/**
+ * @relatedalso     SLuaState
+ * @brief           Calls app Lua event with variadic arguments (function events.<sEventName>(...))
+ *
+ * @param           pLuaState
+ * @param           sEventName
+ */
+extern CAPI void
+SLuaState_CallEventArgs(SLuaState* pLuaState, const char* sEventName, const SVar* pArgs, size_t dNumArgs);
+
+/**
+ * @relatedalso     SLuaState
+ * @brief           Pushes variable (SVar) into stack
+ *
+ * @param           pLuaState
+ * @param           pVar
+ */
+extern CAPI void
+SLuaState_PushVariable(SLuaState* pLuaState, const SVar *pVar);
 
 /**
  * @relatedalso     SLuaState
@@ -186,8 +211,6 @@ SCommand_ExecuteLuaBasedCommand(
     const struct SCommandArg* pArg
 );
 
-#ifdef __cplusplus
-}
-#endif
+__END_C
 
 #endif

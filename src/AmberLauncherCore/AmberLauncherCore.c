@@ -1,5 +1,3 @@
-#include "core/common.h"
-#include "lua.h"
 #include <AmberLauncherCore.h>
 
 #include <stdio.h>
@@ -7,6 +5,9 @@
 #include <string.h>
 #include <assert.h>
 
+#include <core/common.h>
+#include <core/observer.h>
+#include <core/vector.h>
 #include <core/appcore.h>
 #include <core/command.h>
 #include <core/luastate.h>
@@ -17,6 +18,7 @@
 #include <commands/regedit.h>
 #include <commands/music.h>
 
+#include <lua.h>
 #include <lauxlib.h>
 
 static const char* STR_AL_GLOBAL    = "AL";
@@ -178,6 +180,143 @@ _LUA_GetTableOfCommands(struct lua_State* L)
     return 1;
 }
 
+static int
+_LUA_UICall(lua_State* L)
+{
+    AppCore *pAppCore   = NULL;
+    uint32   dID        = 0;
+    SVar     tRetVal;
+
+    /* AppCore struct */
+    lua_getfield(L, LUA_REGISTRYINDEX, STR_AL_APPCORE);
+    pAppCore = lua_touserdata(L, -1);
+    lua_pop(L, 1);
+
+    if (pAppCore->cbUIEvent == NULL)
+    {
+        return luaL_error(L, "Appcore->cbUIEvent is NULL");
+    }
+
+    /* Ensure first argument as event name */
+    dID = luaL_checkunsigned(L, 1);
+
+    /* Will work but... probably callback would be nice */
+    /* observer pattern expects behavior with multiple subscribers - you're thinking to return value for one response... */
+    /* Here, replace SSubject_Notify with (most likely) callback (from, possibly AppCore) */
+    tRetVal = pAppCore->cbUIEvent(pAppCore, dID, NULL);
+    /* SSubject_Notify(pAppCore->pOnUserEventNotifier, 0, &dID); */
+
+    if (tRetVal.eType != CTYPE_NULL)
+    {
+        SLuaState_PushVariable(pAppCore->pLuaState, &tRetVal);
+        return 1;
+    }
+
+    return 0;
+}
+
+/* Call any event from lua */
+static int
+_LUA_EventCall(lua_State* L)
+{
+    AppCore        *pAppCore = NULL;
+    SVar           *pVarArgs = NULL;
+    unsigned int    dNumArgs = 0;
+    unsigned int    i;
+    const char     *sEventName;
+
+    /* AppCore struct */
+    lua_getfield(L, LUA_REGISTRYINDEX, STR_AL_APPCORE);
+    pAppCore = lua_touserdata(L, -1);
+    lua_pop(L, 1);
+
+    /* Ensure first argument as event name */
+    sEventName = luaL_checkstring(L, 1);
+
+    /* Acquire variadic args from lua */
+    {
+        unsigned int    dTop;
+        unsigned int    dType;
+
+        dTop            = lua_gettop(L);
+        dType           = 0;
+        pVarArgs        = (SVar*)calloc(dTop, sizeof(SVar));
+
+        assert(pVarArgs);
+
+        /* Loop through variadic args */
+        for(i = 2; i <= dTop; i++)
+        {
+            dType = lua_type(L, i);
+            printf("Arg[%d]: %s -> ", i, lua_typename(L, dType));
+
+            if (lua_isnumber(L, i))
+            {
+                lua_Number fNum = lua_tonumber(L, i);
+                printf("%.2f\n", fNum);
+                SVAR_DOUBLE(pVarArgs[dNumArgs], fNum);
+                dNumArgs++;
+            }
+            else if (lua_isboolean(L, i))
+            {
+                int bArg = lua_toboolean(L, i);
+                printf("%s\n", bArg ? "true" : "false");
+                SVAR_BOOL(pVarArgs[dNumArgs], bArg);
+                dNumArgs++;
+            }
+            else if (lua_isstring(L, i))
+            {
+                const char* sArg = lua_tostring(L, i);
+                printf("%s\n", sArg);
+                SVAR_CONSTCHAR(pVarArgs[dNumArgs], sArg);
+                dNumArgs++;
+            }
+            else
+            {
+                switch (dType)
+                {
+                    case LUA_TTABLE:
+                    case LUA_TFUNCTION:
+                    case LUA_TUSERDATA:
+                        {
+                            const void* pLuaObj;
+
+                            /* Get pointer to lua object (debug) */
+                            lua_pushvalue(L, i);
+                            pLuaObj = lua_topointer(L, -1);
+                            lua_pop(L, 1);
+                            printf("%p", pLuaObj);
+
+                            /* Store reference */
+                            SVAR_LUAREF(pVarArgs[dNumArgs], L, i);
+                            dNumArgs++;
+                        }
+                        break;
+
+                    default:
+                        printf("???\n");
+                        break;
+                }
+            }
+        }
+    }
+
+    SSubject_Notify(pAppCore->pOnUserEventNotifier, 0, (void*)sEventName);
+    SLuaState_CallEventArgs(pAppCore->pLuaState, sEventName, pVarArgs, dNumArgs);
+
+    /* Cleanup */
+    for(i = 0; i < dNumArgs; i++)
+    {
+        if (pVarArgs[i].eType == CTYPE_LUAREF)
+        {
+            luaL_unref(L, LUA_REGISTRYINDEX, SVAR_GET_LUAREF(pVarArgs[i]));
+        }
+    }
+    free(pVarArgs);
+
+    return 0;
+}
+
 static int 
 _LUA_CommandCall(struct lua_State* L)
 {
@@ -205,6 +344,8 @@ luaL_Reg AL[] =
     {"CommandAdd",                  _LUA_CommandAdd             },
     {"CommandCall",                 _LUA_CommandCall            },
     {"GetTableOfCommands",          _LUA_GetTableOfCommands     },
+    {"EventCall",                   _LUA_EventCall              },
+    {"UICall",                      _LUA_UICall                 },
     {"SetRegistryKey",              LUA_SetRegistryKey          },
     {"GetRegistryKey",              LUA_GetRegistryKey          },
     {"ConvertMP3ToWAV",             LUA_ConvertMP3ToWAV         },

@@ -295,6 +295,7 @@ SLuaState_GetGlobalVariable(
 CAPI CBOOL 
 SLuaVar_IsOfType(const SLuaVar* pVar, ELuaVarType eType)
 {
+    /** remove this func + there are already lua object types defined */
     if (!IS_VALID(pVar))
     {
         return CFALSE;
@@ -444,35 +445,117 @@ SLuaState_CallReferencedFunction(
     return CTRUE;
 }
 
-CAPI void 
+CAPI void
 SLuaState_CallEvent(SLuaState* pLuaState, const char* sEventName)
 {
-    lua_getglobal(pLuaState->pState, "events");
-    if (!lua_istable(pLuaState->pState, -1)) 
+    SLuaState_CallEventArgs(pLuaState, sEventName, NULL, 0);
+}
+
+CAPI void
+SLuaState_CallEventArgs(SLuaState* pLuaState, const char* sEventName, const SVar* pArgs, size_t dNumArgs)
+{
+    size_t i;
+    lua_State *L = pLuaState->pState;
+
+    /* Call it as function events.<functionName>() */
+    lua_getglobal(L, "events");
+    if (!lua_istable(L, -1))
     {
-        lua_pop(pLuaState->pState, 1);
+        lua_pop(L, 1);
         return;
     }
 
-    lua_getfield(pLuaState->pState, -1, sEventName);
-    if (lua_isfunction(pLuaState->pState, -1)) 
+    lua_getfield(L, -1, sEventName);
+    if (!lua_isfunction(L, -1))
     {
-        if (lua_pcall(pLuaState->pState, 0, 0, 0) != LUA_OK) 
-        {
-            fprintf
-            (
-                stderr, 
-                "Error calling event handler '%s': %s\n", 
-                sEventName, lua_tostring(pLuaState->pState, -1)
-            );
-            lua_pop(pLuaState->pState, 1);
-        }
+        lua_pop(L, 2);
+        return;
     }
-    else 
+
+    /* Process and push arguments */
+    for (i = 0; i < dNumArgs; i++)
     {
-        lua_pop(pLuaState->pState, 1);
+        SLuaState_PushVariable(pLuaState, &pArgs[i]);
     }
-    lua_pop(pLuaState->pState, 1);
+
+    /* Execute function */
+    if (lua_pcall(L, (int)dNumArgs, 0, 0) != LUA_OK)
+    {
+        fprintf
+        (
+            stderr,
+            "Error calling event handler '%s': %s\n",
+            sEventName, lua_tostring(L, -1)
+        );
+        lua_pop(L, 1);
+    }
+
+    lua_pop(L, 1);
+}
+
+CAPI void
+SLuaState_PushVariable(SLuaState* pLuaState, const SVar *pVar)
+{
+    lua_State *L = pLuaState->pState;
+
+    switch (pVar->eType)
+    {
+        case CTYPE_BOOL:
+            lua_pushboolean(L, pVar->uData._bool);
+            break;
+        case CTYPE_CHAR:
+            lua_pushinteger(L, pVar->uData._char);
+            break;
+        case CTYPE_UNSIGNED_CHAR:
+            lua_pushinteger(L, pVar->uData._uchar);
+            break;
+        case CTYPE_CONST_CHAR:
+            lua_pushstring(L, pVar->uData._constchar);
+            break;
+        case CTYPE_SHORT:
+            lua_pushinteger(L, pVar->uData._short);
+            break;
+        case CTYPE_UNSIGNED_SHORT:
+            lua_pushinteger(L, pVar->uData._ushort);
+            break;
+        case CTYPE_INT:
+            lua_pushinteger(L, pVar->uData._int);
+            break;
+        case CTYPE_UNSIGNED_INT:
+            lua_pushinteger(L, pVar->uData._uint);
+            break;
+        case CTYPE_LONG:
+            lua_pushinteger(L, pVar->uData._long);
+            break;
+        case CTYPE_UNSIGNED_LONG:
+            lua_pushinteger(L, pVar->uData._ulong);
+            break;
+        case CTYPE_LONG_LONG:
+            lua_pushinteger(L, pVar->uData._longlong);
+            break;
+        case CTYPE_UNSIGNED_LONG_LONG:
+            lua_pushinteger(L, pVar->uData._ulonglong);
+            break;
+        case CTYPE_FLOAT:
+            lua_pushnumber(L, (lua_Number)pVar->uData._float);
+            break;
+        case CTYPE_DOUBLE:
+            lua_pushnumber(L, pVar->uData._double);
+            break;
+        case CTYPE_LONG_DOUBLE:
+            lua_pushnumber(L, (lua_Number)pVar->uData._longdouble);
+            break;
+        case CTYPE_VOID:
+            lua_pushlightuserdata(L, pVar->uData._void);
+            break;
+        case CTYPE_LUAREF:
+            lua_rawgeti(L, LUA_REGISTRYINDEX, pVar->uData._int);
+            break;
+        case CTYPE_NULL:
+        default:
+            lua_pushnil(L);
+            break;
+    }
 }
 
 CAPI void 

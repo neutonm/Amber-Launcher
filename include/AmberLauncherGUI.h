@@ -1,18 +1,14 @@
 #ifndef __AMBER_LAUNCHER_GUI_H
 #define __AMBER_LAUNCHER_GUI_H
 
-#include <core/common.h>
 #include <nappgui.h>
-
-#include "core/appcore.h"
-#include "res_app.h"
-#include <gui/guiall.h>
 
 /******************************************************************************
  * FORWARD DECLARATION
  ******************************************************************************/
 
 struct AppCore;
+struct SObserver;
 
 /******************************************************************************
  * STRUCTS
@@ -22,24 +18,43 @@ typedef struct
 {
     struct AppCore  *pAppCore;
     Window          *pWindow;
-    TextView        *pText;
+    Window          *pWindowModal;
+    Edit            *pEdit;
+    TextView        *pTextView;
     ImageView       *pImageView;
     Layout          *pLayout;
+    String          *pString;
+
+    struct SObserver *pOnUserEvent;
 } AppGUI;
+
+/******************************************************************************
+ * ENUMS
+ ******************************************************************************/
 
 typedef enum
 {
     CPANEL_NULL,
     CPANEL_AUTOCONFIG,
     CPANEL_MAIN,
+    CPANEL_MODAL,
     CPANEL_MAX
 } EPanelType;
 
-__EXTERN_C
+typedef enum
+{
+    USEREVENT_NULL = 0,
+    USEREVENT_MODAL_GAMENOTFOUND,
+    USEREVENT_MAX
+} EUserEventType;
+
+extern const char* EUserEventTypeStrings[];
 
 /******************************************************************************
  * HEADER DECLARATIONS
  ******************************************************************************/
+
+__EXTERN_C
 
 /**
  * @relatedalso Panel
@@ -76,13 +91,23 @@ Panel_GetAutoConfigure(AppGUI* pApp);
 
 /**
  * @relatedalso Panel
- * @brief       Returns predefined panel responsbile for core launcher options
+ * @brief       Returns predefined panel responsible for core launcher options
  * 
  * @param       pApp 
  * @return      Panel* 
  */
 extern Panel* 
 Panel_GetMain(AppGUI* pApp);
+
+/**
+ * @relatedalso Panel
+ * @brief       Returns predefined panel for Modal Window related to GameNotFound UI event
+ *
+ * @param       pApp
+ * @return      Panel*
+ */
+extern Panel*
+Panel_GetModalGameNotFound(AppGUI* pApp);
 
 /******************************************************************************
  * HEADER CALLBACK DECLARATIONS
@@ -107,6 +132,26 @@ Callback_OnButtonConfigure(AppGUI* pApp, Event *e);
  */
 extern void
 Callback_OnButtonPlay(AppGUI* pApp, Event *e);
+
+/**
+ * @relatedalso Callback
+ * @brief       Generic callback for confirming operations
+ *
+ * @param       pApp
+ * @param       e
+ */
+ extern void
+ Callback_OnButtonSubmit(AppGUI* pApp, Event *e);
+
+/**
+ * @relatedalso Callback
+ * @brief       Generic callback for acquring file paths via file browser
+ *
+ * @param       pApp
+ * @param       e
+ */
+extern void
+Callback_OnButtonBrowseFile(AppGUI* pApp, Event *e);
 
 __END_C
 

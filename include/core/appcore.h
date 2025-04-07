@@ -8,17 +8,24 @@
  ******************************************************************************/
 
  struct SLuaState;
+ struct SSubject;
 
  /******************************************************************************
   * STRUCTS
   ******************************************************************************/
 
-typedef struct AppCore
+typedef struct AppCore AppCore;
+typedef SVar (*UICallback)(AppCore *pAppCore, uint32 ID, SVar *pUserData);
+
+struct AppCore
 {
     int argc;
-    char** argv;
+    char **argv;
+    void *pOwner;
     struct SLuaState* pLuaState;
-} AppCore;
+    struct SSubject* pOnUserEventNotifier;
+    UICallback cbUIEvent;
+};
 
 /******************************************************************************
  * HEADER DECLARATIONS

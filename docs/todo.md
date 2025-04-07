@@ -12,12 +12,9 @@ Table Of Contents:
     - [Lua Module:](#lua-module)
 - [GUI Library](#gui-library)
 - [Lua Scripts](#lua-scripts)
- 
-> **CURRENT:** Figure how to show file browser via lua and connect UI and logic somehow with 
-Core and GUI libraries
 
 ## Main
-*General points  towards development*
+*General points towards development*
 
 - [ ] Write code style document
 - [ ] Clang format
@@ -32,19 +29,25 @@ Core and GUI libraries
 
 - [ ] Code Review for header/sources
 - [ ] add theoraplay library
+- - [ ] test video playback via theoraplay (required for illustrating option tweaking)
+- - Maybe ditch it and just stick to GIF? Nappgui already provides support for gif playback.
 - [ ] save argc/argv into AppCore struct
 - [ ] rename header guards: conform to one convention
 - [ ] extern_c for every header!
+- [ ] lua error report
+- [ ] SCOmmand - change SCommandArg to SVar
  
 #### Lua Module:
 - [ ] Return status code from AL.CommandCall
+- [ ] SLuaState_PushGlobalVariable should utilize SVar
 
 ## GUI Library 
 *NAPPGUI user interface library that wraps Core Library calls.* 
 
 - [ ] Autoconfigure should handle failed state
-- [ ] Figure out how to show file browser (required for non-found game)
-- [ ] test video playback via theoraplay (required for illustrating option tweaking)
+- [x] Figure out how to show file browser (required for non-found game)
+- [ ] Re-design Modal: GameNotFound
+- - extra: put a header picture
 
 ## Lua Scripts
 *Provide alternative and/or extended functionality for the launcher.*
@@ -52,6 +55,12 @@ Core and GUI libraries
 - [ ] ConfigTweak.lua
 - [ ] ConvertMusic.lua
 - [ ] DetectAndCopyGame.lua
+- - Set file browser to start with working directory
+- - if there's no mm7.exe then don't report missing files, instead report wrong file or game
+- - File browser should clear itself after confirming game path (rendering issue - it does't look great)
+- - Errors should show modal window with error message and allow to continue or abort operation.
+- - - UserEvent call can be utilized here (or separate internal errorReport event)
+- - printfs should really print to pApp->pTextView
 - [ ] DetectAndInstallMod.lua
 - [ ] MergeAndRename.lua
 - [ ] RegistryTweaks

@@ -1,6 +1,7 @@
-#include "core/common.h"
+#include <core/common.h>
 #include <core/appcore.h>
 #include <core/luastate.h>
+#include <core/observer.h>
 
 #include <stddef.h>
 #include <stdlib.h>
@@ -29,9 +30,10 @@ AppCore_init(AppCore *pAppCore)
 {
     if (IS_VALID(pAppCore))
     {
-        pAppCore->argc      = 0;
-        pAppCore->argv      = NULL;
-        pAppCore->pLuaState = SLuaState_new();
+        pAppCore->argc                  = 0;
+        pAppCore->argv                  = NULL;
+        pAppCore->pLuaState             = SLuaState_new();
+        pAppCore->pOnUserEventNotifier  = SSubject_new();
         return CTRUE;
     }
 
@@ -53,6 +55,7 @@ AppCore_free(AppCore** pAppCore)
     }
 
     SLuaState_delete(&(*pAppCore)->pLuaState);
+    SSubject_delete(&(*pAppCore)->pOnUserEventNotifier);
 
     free(*pAppCore);
     *pAppCore = NULL;

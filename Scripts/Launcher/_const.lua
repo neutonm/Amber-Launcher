@@ -15,6 +15,13 @@ else
     end
 end
 
+-- enums
+UIEVENT = {
+    NULL                = 0,
+    MODAL_GAMENOTFOUND  = 1,
+    MAX
+}
+
 -- Variables
 OS_NAME                 = OS_NAME or "Unknown"
 GAME_FOLDER_NAME        = GAME_FOLDER_NAME or {
