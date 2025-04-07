@@ -49,7 +49,7 @@ typedef struct SCommandArg
     
 } SCommandArg;
 
-typedef void (*CommandFunc)(const SCommand* pSelf, const SCommandArg* tArg);
+typedef void (*CommandFunc)(const SCommand* pSelf, const SCommandArg *pArg);
 
 /**
  * @brief   Command pattern realization
