@@ -62,7 +62,7 @@ _join_paths(const char *path1, const char *path2, char *output, size_t size)
     snprintf(output, size, "%s/%s", path1, path2);
 }
 
-static void 
+static CBOOL
 _ExtractArchive(const char* sArchivePath, const char* sExtractPath)
 {
     int dFileCount;
@@ -75,7 +75,7 @@ _ExtractArchive(const char* sArchivePath, const char* sExtractPath)
     if (!mz_zip_reader_init_file(&tZipArchive, sArchivePath, 0)) 
     {
         fprintf(stderr, "Failed to initialize zip archive: %s\n", sArchivePath);
-        return;
+        return CFALSE;
     }
 
     /* Get the number of files in the archive */
@@ -84,7 +84,7 @@ _ExtractArchive(const char* sArchivePath, const char* sExtractPath)
     {
         fprintf(stderr, "Failed to get number of files in zip archive.\n");
         mz_zip_reader_end(&tZipArchive);
-        return;
+        return CFALSE;
     }
 
     /* Iterate through each file in the archive */
@@ -143,19 +143,22 @@ _ExtractArchive(const char* sArchivePath, const char* sExtractPath)
     /* Close the Zip reader */
     mz_zip_reader_end(&tZipArchive);
 
-    return;
+    return CTRUE;
 }
 
-CAPI void 
+CAPI CBOOL
 SCommand_Callback_Archive(const SCommand* pSelf, const SCommandArg* pArg)
 {
     const char *zip_filename = "assets/archive2.zip";
     const char *extract_path = "tests/extract";
+    CBOOL bResult;
 
     UNUSED(pSelf);
     UNUSED(pArg);
 
-    _ExtractArchive(zip_filename, extract_path);
+    bResult = _ExtractArchive(zip_filename, extract_path);
+
+    return bResult;
 }
 
 CAPI int

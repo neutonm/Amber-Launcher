@@ -13,25 +13,30 @@ typedef struct lua_ini_t
     ini_t *pConfig;
 } lua_ini_t;
 
-CAPI void 
+CAPI CBOOL
 SCommand_Callback_TweakConfig(const SCommand* pSelf, const SCommandArg* pArg)
 {
     ini_t* config;
+    const char *ViewDistanceD3D;
 
     UNUSED(pSelf);
     UNUSED(pArg);
 
     config = ini_load("mm7.ini");
-    if (config)
+    if (!config)
     {
-        const char *ViewDistanceD3D = ini_get(config, "Settings", "ViewDistanceD3D");
-        if (ViewDistanceD3D) 
-        {
-            fprintf(stderr, "ViewDistanceD3D: %s\n", ViewDistanceD3D);
-        }
+        return CFALSE;
+    }
+
+    ViewDistanceD3D = ini_get(config, "Settings", "ViewDistanceD3D");
+    if (ViewDistanceD3D)
+    {
+        fprintf(stdout, "ViewDistanceD3D: %s\n", ViewDistanceD3D);
     }
 
     ini_free(config);
+
+    return CTRUE;
 }
 
 CAPI int

@@ -24,13 +24,15 @@
 static const char* STR_AL_GLOBAL    = "AL";
 static const char* STR_AL_APPCORE   = "AL.AppCore";
 
-static void 
+static CBOOL
 _SCommand_Callback_Null(const SCommand* pSelf, const SCommandArg* pArg)
 {
     UNUSED(pSelf);
     UNUSED(pArg);
 
     printf("Null command call\n");
+
+    return CTRUE;
 }
 
 static const CommandFunc 
@@ -68,11 +70,12 @@ _predicate(const void* pElement, const void* pCtx)
     return dResult == 0;
 }
 
-static void 
+static CBOOL
 _SCommand_Callback_LuaCall(const SCommand* pSelf, const SCommandArg* pArg)
 {
-    const int dLuaRef = pSelf->dLuaRef;
+    const int dLuaRef   = pSelf->dLuaRef;
     struct lua_State *L = NULL;
+    CBOOL bResult       = CFALSE;
 
     if (IS_VALID(pArg) && pArg->eType == CTYPE_VOID)
     {
@@ -83,7 +86,7 @@ _SCommand_Callback_LuaCall(const SCommand* pSelf, const SCommandArg* pArg)
     /* Push the Lua function onto the stack using the reference */
     lua_rawgeti(L, LUA_REGISTRYINDEX, dLuaRef);
 
-    if (lua_pcall(L, 0, 0, 0) != LUA_OK) 
+    if (lua_pcall(L, 0, 1, 0) != LUA_OK)
     {
         /* Handle error */
         fprintf
@@ -93,10 +96,20 @@ _SCommand_Callback_LuaCall(const SCommand* pSelf, const SCommandArg* pArg)
             lua_tostring(L, -1)
         );
         lua_pop(L, 1);
+        return CFALSE;
     }
+
+    /* Handle 'bool' return from lua call */
+    if (lua_isboolean(L, -1))
+    {
+        bResult = (CBOOL)lua_toboolean(L, -1);
+    }
+    lua_pop(L, 1);
+
+    return bResult;
 }
 
-static void
+static CBOOL
 _SCommand_AddToList(const char* sName, CommandFunc cbCmdFunction, void* pOwner, int dLuaRef, int dPriority)
 {
     long dSVecFoundIndex;
@@ -124,11 +137,13 @@ _SCommand_AddToList(const char* sName, CommandFunc cbCmdFunction, void* pOwner, 
             pObj->cbExecuteFunc = _SCommand_Callback_LuaCall;
         }
 
-        return;
+        return CTRUE;
     }
 
     /* Add new element */
     SVector_PushBack(&tConfigureCommandList, &tCommand);
+
+    return CTRUE;
 }
 
 static int
@@ -317,25 +332,28 @@ _LUA_EventCall(lua_State* L)
     return 0;
 }
 
-static int 
+static int
 _LUA_CommandCall(struct lua_State* L)
 {
     long dSVecFoundIndex     = 0;
     const char      *sKey    = luaL_checkstring(L, 1);
+    CBOOL           bResult  = CTRUE;
 
     dSVecFoundIndex = SVector_FindByPredicate(&tConfigureCommandList, _predicate, sKey);
     if (dSVecFoundIndex != -1)
     {
         SCommand* pObj = (SCommand*)SVector_Get(&tConfigureCommandList, (size_t)dSVecFoundIndex);
         SCommandArg pArg = SCommandArg_MakeVoid(L);
-        pObj->cbExecuteFunc(pObj, &pArg);
+        bResult = pObj->cbExecuteFunc(pObj, &pArg);
     }
     else
     {
         return luaL_error(L, "LUA_CallCommand failed to find element %s", sKey);
     }
 
-    return 0;
+    lua_pushboolean(L, (int)bResult);
+
+    return 1;
 }
 
 static const 

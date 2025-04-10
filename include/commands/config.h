@@ -14,7 +14,7 @@ struct lua_State;
  * @param pSelf 
  * @param pArg 
  */
-extern CAPI void 
+extern CAPI CBOOL
 SCommand_Callback_TweakConfig(const struct SCommand* pSelf, const struct SCommandArg* pArg);
 
 extern CAPI int

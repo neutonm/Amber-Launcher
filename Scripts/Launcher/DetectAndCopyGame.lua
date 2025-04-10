@@ -330,12 +330,11 @@ local function _DetectAndCopyGame(dst)
         -- Check if all files are installed
         if not CheckFiles(GAME_DESTINATION_FOLDER, MM7_FILES) then
             print("Some game files are missing.")
-            return
+            return false
         end
 
         print("No need for copying game files.")
-        
-        return
+        return true
     end
 
     -- [[FIND]]
@@ -351,22 +350,22 @@ local function _DetectAndCopyGame(dst)
     end
 
     if not foundGamePath then
-        -- @todo Tell player that game wasn't found and offer to find it manually
-        -- abort on failure
+
         print("Failed to find the game!")
+        local newRetVal
 
         newPath = AL.UICall(UIEVENT.MODAL_GAMENOTFOUND)
         if newPath and newPath ~= "" then
             local f = io.open(newPath, "rb") 
             if f then
                 f:close()
-                _DetectAndCopyGame(newPath)
+                newRetVal = _DetectAndCopyGame(newPath)
             else
                 print("Invalid or nonexistent file path: " .. newPath)
             end
         end
         
-        return
+        return newRetVal
     end
 
     print("Found game at: "..foundGamePath)
@@ -375,7 +374,7 @@ local function _DetectAndCopyGame(dst)
     if not CheckFiles(foundDirPath, MM7_FILES) then
 
         print("It looks like found folder has a broken MM7 installation (missing content files)")
-        return
+        return false
     end
 
     print("Game successfuly detected and verified.")
@@ -388,10 +387,11 @@ local function _DetectAndCopyGame(dst)
     if not CheckFiles(GAME_DESTINATION_FOLDER, MM7_FILES) then
 
         print("Couldn't verify files after copying from source folder.")
-        return
+        return false
     end
 
     print("Copying operation is succesful!")
+    return true
 end
 
 function events.InitLauncher()

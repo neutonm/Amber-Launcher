@@ -7,19 +7,22 @@
 #include <lauxlib.h>
 #include <lualib.h>
 
-CAPI void 
+CAPI CBOOL
 SCommand_Callback_RegEdit(const SCommand* pSelf, const SCommandArg* pArg)
 {
+    CBOOL bResult;
     UNUSED(pSelf);
     UNUSED(pArg);
 
-    AmberLauncher_SetRegistryKey("2dacceloff",      0);
-    AmberLauncher_SetRegistryKey("3DSoundAvailable",1);
-    AmberLauncher_SetRegistryKey("D3DAvailable",    1);
-    AmberLauncher_SetRegistryKey("Colored Lights",  0);
-    AmberLauncher_SetRegistryKey("Use D3D",         1);
-    AmberLauncher_SetRegistryKey("Disable3DSound",  0);
-    AmberLauncher_SetRegistryKey("startinwindow",   0);
+    bResult = AmberLauncher_SetRegistryKey("2dacceloff",      0);
+    bResult = AmberLauncher_SetRegistryKey("3DSoundAvailable",1);
+    bResult = AmberLauncher_SetRegistryKey("D3DAvailable",    1);
+    bResult = AmberLauncher_SetRegistryKey("Colored Lights",  0);
+    bResult = AmberLauncher_SetRegistryKey("Use D3D",         1);
+    bResult = AmberLauncher_SetRegistryKey("Disable3DSound",  0);
+    bResult = AmberLauncher_SetRegistryKey("startinwindow",   0);
+
+    return bResult;
 }
 
 CAPI int 
@@ -27,13 +30,16 @@ LUA_SetRegistryKey(lua_State *L)
 {
     const char      *sKey   = luaL_checkstring(L, 1);
     const uint32    dValue  = (uint32)luaL_checkinteger(L, 2);
+    CBOOL bResult;
 
-    if (AmberLauncher_SetRegistryKey(sKey, dValue) != 0)
+    bResult = AmberLauncher_SetRegistryKey(sKey, dValue) == 0;
+    if (!bResult)
     {
         return luaL_error(L, "AmberLauncher_SetRegistryKey failed to execute properly");
     }
 
-    return 0;
+    lua_pushboolean(L, (CBOOL)bResult);
+    return 1;
 }
 
 CAPI int 

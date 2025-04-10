@@ -13,9 +13,12 @@ Table Of Contents:
 - [GUI Library](#gui-library)
 - [Lua Scripts](#lua-scripts)
 
+> Current: Show Error message via LUA. Allow aborting configuration during unsolved cases (game not found -> player clicks "abort" -> autoconfig stop)
+
 ## Main
 *General points towards development*
 
+- [ ] Update LICENSE file
 - [ ] Write code style document
 - [ ] Clang format
 - [ ] Separate GUI  (cmake)
@@ -55,9 +58,14 @@ Table Of Contents:
 - [ ] ConfigTweak.lua
 - [ ] ConvertMusic.lua
 - [ ] DetectAndCopyGame.lua
+- - if during game detection issues occur - decide whether to continue searching game or not
+- - UI:
+- - - GameNotFound: add Abort button
+- - - Error modal:  should show current game path (for local issues)
+- - - Error modal:  continue and abort button
 - - Set file browser to start with working directory
 - - if there's no mm7.exe then don't report missing files, instead report wrong file or game
-- - File browser should clear itself after confirming game path (rendering issue - it does't look great)
+- - File browser should visually clear itself after confirming game path (rendering issue - it does't look great)
 - - Errors should show modal window with error message and allow to continue or abort operation.
 - - - UserEvent call can be utilized here (or separate internal errorReport event)
 - - printfs should really print to pApp->pTextView
