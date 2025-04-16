@@ -15,7 +15,7 @@ struct lua_State;
  * @param pArg 
  */
 extern CAPI CBOOL
-SCommand_Callback_Archive(const struct SCommand* pSelf, const struct SCommandArg* pArg);
+SCommand_Callback_Archive(const struct SCommand* pSelf, const struct SCommandArg* pArgs, const unsigned int dNumArgs);
 
 extern CAPI int
 LUA_ArchiveExtract(struct lua_State* L);

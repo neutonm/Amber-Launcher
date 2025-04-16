@@ -147,14 +147,15 @@ _ExtractArchive(const char* sArchivePath, const char* sExtractPath)
 }
 
 CAPI CBOOL
-SCommand_Callback_Archive(const SCommand* pSelf, const SCommandArg* pArg)
+SCommand_Callback_Archive(const SCommand* pSelf, const SCommandArg* pArgs, const unsigned int dNumArgs)
 {
     const char *zip_filename = "assets/archive2.zip";
     const char *extract_path = "tests/extract";
     CBOOL bResult;
 
     UNUSED(pSelf);
-    UNUSED(pArg);
+    UNUSED(pArgs);
+    UNUSED(dNumArgs);
 
     bResult = _ExtractArchive(zip_filename, extract_path);
 

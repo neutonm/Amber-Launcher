@@ -14,13 +14,14 @@ typedef struct lua_ini_t
 } lua_ini_t;
 
 CAPI CBOOL
-SCommand_Callback_TweakConfig(const SCommand* pSelf, const SCommandArg* pArg)
+SCommand_Callback_TweakConfig(const SCommand* pSelf, const SCommandArg* pArgs, const unsigned int dNumArgs)
 {
     ini_t* config;
     const char *ViewDistanceD3D;
 
     UNUSED(pSelf);
-    UNUSED(pArg);
+    UNUSED(pArgs);
+    UNUSED(dNumArgs);
 
     config = ini_load("mm7.ini");
     if (!config)

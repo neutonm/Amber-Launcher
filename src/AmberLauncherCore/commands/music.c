@@ -332,10 +332,11 @@ static int _test(void)
 }
 
 CAPI void 
-SCommand_Callback_ConvertMusic(const SCommand* pSelf, const SCommandArg* pArg)
+SCommand_Callback_ConvertMusic(const SCommand* pSelf, const SCommandArg* pArgs, const unsigned int dNumArgs)
 {
     UNUSED(pSelf);
-    UNUSED(pArg);
+    UNUSED(pArgs);
+    UNUSED(dNumArgs);
 
     _test();
 }

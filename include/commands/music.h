@@ -15,7 +15,7 @@ struct lua_State;
  * @param pArg 
  */
 extern CAPI void 
-SCommand_Callback_ConvertMusic(const struct SCommand* pSelf, const struct SCommandArg* pArg);
+SCommand_Callback_ConvertMusic(const struct SCommand* pSelf, const struct SCommandArg* pArg, const unsigned int dNumArgs);
 
 
 extern CAPI int

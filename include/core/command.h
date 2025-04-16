@@ -49,7 +49,7 @@ typedef struct SCommandArg
     
 } SCommandArg;
 
-typedef CBOOL (*CommandFunc)(const SCommand* pSelf, const SCommandArg *pArg);
+typedef CBOOL (*CommandFunc)(const SCommand* pSelf, const SCommandArg *pArgs, const unsigned int dNumArgs);
 
 /**
  * @brief   Command pattern realization

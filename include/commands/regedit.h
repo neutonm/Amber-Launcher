@@ -15,7 +15,7 @@ struct lua_State;
  * @param pArg 
  */
 extern CAPI CBOOL
-SCommand_Callback_RegEdit(const struct SCommand* pSelf, const struct SCommandArg* pArg);
+SCommand_Callback_RegEdit(const struct SCommand* pSelf, const struct SCommandArg* pArgs, const unsigned int dNumArgs);
 
 /**
  * @brief                   Lua Function to register keys

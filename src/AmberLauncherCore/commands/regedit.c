@@ -8,11 +8,12 @@
 #include <lualib.h>
 
 CAPI CBOOL
-SCommand_Callback_RegEdit(const SCommand* pSelf, const SCommandArg* pArg)
+SCommand_Callback_RegEdit(const SCommand* pSelf, const SCommandArg* pArgs, const unsigned int dNumArgs)
 {
     CBOOL bResult;
     UNUSED(pSelf);
-    UNUSED(pArg);
+    UNUSED(pArgs);
+    UNUSED(dNumArgs);
 
     bResult = AmberLauncher_SetRegistryKey("2dacceloff",      0);
     bResult = AmberLauncher_SetRegistryKey("3DSoundAvailable",1);

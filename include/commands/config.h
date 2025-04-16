@@ -15,7 +15,7 @@ struct lua_State;
  * @param pArg 
  */
 extern CAPI CBOOL
-SCommand_Callback_TweakConfig(const struct SCommand* pSelf, const struct SCommandArg* pArg);
+SCommand_Callback_TweakConfig(const struct SCommand* pSelf, const struct SCommandArg* pArgs, const unsigned int dNumArgs);
 
 extern CAPI int
 LUA_REGISTER_INIConfig(struct lua_State* L);
