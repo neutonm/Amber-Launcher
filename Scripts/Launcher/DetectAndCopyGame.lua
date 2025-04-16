@@ -313,6 +313,21 @@ end
 
 local function _DetectAndCopyGame(dst)
 
+    --[[ 
+    General idea:
+        * Scan for a game in same folder
+        * * if found and all files are OK - success
+        * * If found, but some files are missing - consider it as failed (remember this choice)
+        * If failed, then proceed to scan game in predefined folder list
+        * * if found and all files are OK - success
+        * if failed, report for GameNotFound and state extra info (e.g: )
+        * * if found and all files are OK - success
+
+        * Copy game files
+    
+    Would be nice to:
+        * report exact missing files
+    ]]
     print("Detecting game...")
 
     local gameFolders = GAME_EXECUTABLE_FOLDERS
@@ -324,17 +339,17 @@ local function _DetectAndCopyGame(dst)
     -- check if game is already installed in the same folder
     local foundGamePath = nil
     if IsFilePresent(GAME_DESTINATION_FOLDER..OS_FILE_SEPARATOR..GAME_EXECUTABLE_NAME) then
-    
+        
         print("Game is located in same folder as launcher is.")
 
         -- Check if all files are installed
-        if not CheckFiles(GAME_DESTINATION_FOLDER, MM7_FILES) then
-            print("Some game files are missing.")
-            return false
+        if CheckFiles(GAME_DESTINATION_FOLDER, MM7_FILES) then
+            print("No need for copying game files.")
+            return true
         end
 
-        print("No need for copying game files.")
-        return true
+        -- If not, ask if user wants to copy missing files
+        print("Some game files are missing.")
     end
 
     -- [[FIND]]
@@ -353,15 +368,20 @@ local function _DetectAndCopyGame(dst)
 
         print("Failed to find the game!")
         local newRetVal
+        local uiRetTable = AL.UICall(UIEVENT.MODAL_GAMENOTFOUND)
 
-        newPath = AL.UICall(UIEVENT.MODAL_GAMENOTFOUND)
-        if newPath and newPath ~= "" then
-            local f = io.open(newPath, "rb") 
+        if uiRetTable and uiRetTable.status == false then
+            print("Canceled")
+            return false -- cancel
+        end
+        
+        if uiRetTable.path and uiRetTable.path ~= "" then
+            local f = io.open(uiRetTable.path, "rb") 
             if f then
                 f:close()
-                newRetVal = _DetectAndCopyGame(newPath)
+                --newRetVal = _DetectAndCopyGame(uiRetTable.path)
             else
-                print("Invalid or nonexistent file path: " .. newPath)
+                print("Invalid or nonexistent file path: " .. uiRetTable.path)
             end
         end
         

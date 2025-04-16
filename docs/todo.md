@@ -13,11 +13,12 @@ Table Of Contents:
 - [GUI Library](#gui-library)
 - [Lua Scripts](#lua-scripts)
 
-> Current: Show Error message via LUA. Allow aborting configuration during unsolved cases (game not found -> player clicks "abort" -> autoconfig stop)
+> Current: n/a
 
 ## Main
 *General points towards development*
 
+- [ ] Refactor whole number variables - change d to n
 - [ ] Update LICENSE file
 - [ ] Write code style document
 - [ ] Clang format
@@ -26,6 +27,7 @@ Table Of Contents:
 - [x] tools folder for auxilary bash/python scripts
 - [x] video conversion script (for tweak previews)
 - [ ] add cpack (cmake): pack release into "distr" folder
+- [ ] SVar: should rather utilize #define _SVAR_GET_WHATEVER(v) and then #define SVAR_GET_WHATEVER(v) _SVAR_GET_WHATEVER(v) rather than wrap everything in do-while loop
 
 ## Core Library
 *Responsible for providing main functionality for the launcher app. Must be independent module.* 
@@ -43,6 +45,7 @@ Table Of Contents:
 #### Lua Module:
 - [ ] Return status code from AL.CommandCall
 - [ ] SLuaState_PushGlobalVariable should utilize SVar
+- [ ] add small variable reflection (from c) so we can auto-generate lua tables for enums, etc.
 
 ## GUI Library 
 *NAPPGUI user interface library that wraps Core Library calls.* 
@@ -58,9 +61,11 @@ Table Of Contents:
 - [ ] ConfigTweak.lua
 - [ ] ConvertMusic.lua
 - [ ] DetectAndCopyGame.lua
+- - check and warn if user suddenly points to mm6 or mm8 (optional)
+- - Browse button: if file browser window is canceled without specifiying, you get appcrash (nappgui error)
 - - if during game detection issues occur - decide whether to continue searching game or not
 - - UI:
-- - - GameNotFound: add Abort button
+- - - Add event for "Edit" as well, user might manually type game path (currently, pApp->pString won't update if done manuallly)
 - - - Error modal:  should show current game path (for local issues)
 - - - Error modal:  continue and abort button
 - - Set file browser to start with working directory

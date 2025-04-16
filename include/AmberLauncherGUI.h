@@ -1,6 +1,7 @@
 #ifndef __AMBER_LAUNCHER_GUI_H
 #define __AMBER_LAUNCHER_GUI_H
 
+#include <core/core.hxx>
 #include <nappgui.h>
 
 /******************************************************************************
@@ -25,6 +26,7 @@ typedef struct
     Layout          *pLayout;
     String          *pString;
 
+    struct SVar      *pRetVal;
     struct SObserver *pOnUserEvent;
 } AppGUI;
 
@@ -43,10 +45,12 @@ typedef enum
 
 typedef enum
 {
-    USEREVENT_NULL = 0,
-    USEREVENT_MODAL_GAMENOTFOUND,
-    USEREVENT_MAX
-} EUserEventType;
+    UIEVENT_NULL = 0,
+    UIEVENT_MODAL_MESSAGE,
+    UIEVENT_MODAL_QUESTION,
+    UIEVENT_MODAL_GAMENOTFOUND,
+    UIEVENT_MAX
+} EUIEventType;
 
 extern const char* EUserEventTypeStrings[];
 
@@ -101,6 +105,26 @@ Panel_GetMain(AppGUI* pApp);
 
 /**
  * @relatedalso Panel
+ * @brief       Returns predefined panel for Modal Window related to Message UI event
+ *
+ * @param       pApp
+ * @return      Panel*
+ */
+extern Panel*
+Panel_GetModalMessage(AppGUI* pApp);
+
+/**
+ * @relatedalso Panel
+ * @brief       Returns predefined panel for Modal Window related to Yes/No style confirmation UI event.
+ *
+ * @param       pApp
+ * @return      Panel*
+ */
+extern Panel*
+Panel_GetModalQuestion(AppGUI* pApp);
+
+/**
+ * @relatedalso Panel
  * @brief       Returns predefined panel for Modal Window related to GameNotFound UI event
  *
  * @param       pApp
@@ -135,13 +159,23 @@ Callback_OnButtonPlay(AppGUI* pApp, Event *e);
 
 /**
  * @relatedalso Callback
- * @brief       Generic callback for confirming operations
+ * @brief       Generic callback for non-instrusive operations
  *
  * @param       pApp
  * @param       e
  */
- extern void
- Callback_OnButtonSubmit(AppGUI* pApp, Event *e);
+extern void
+Callback_OnButtonModalMessage(AppGUI* pApp, Event *e);
+
+/**
+ * @relatedalso Callback
+ * @brief       Generic callback for aborting current operations
+ *
+ * @param       pApp
+ * @param       e
+ */
+extern void
+Callback_OnButtonModalQuestion(AppGUI* pApp, Event *e);
 
 /**
  * @relatedalso Callback
@@ -151,7 +185,7 @@ Callback_OnButtonPlay(AppGUI* pApp, Event *e);
  * @param       e
  */
 extern void
-Callback_OnButtonBrowseFile(AppGUI* pApp, Event *e);
+Callback_OnButtonModalGameNotFound(AppGUI* pApp, Event *e);
 
 __END_C
 

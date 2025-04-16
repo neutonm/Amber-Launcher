@@ -15,7 +15,11 @@
   ******************************************************************************/
 
 typedef struct AppCore AppCore;
-typedef SVar (*UICallback)(AppCore *pAppCore, uint32 ID, SVar *pUserData);
+typedef SVarKeyBundle (*UICallback)(
+  AppCore *pAppCore,
+  uint32 ID,
+  const SVar *pUserData,
+  const unsigned int dNumArgs);
 
 struct AppCore
 {

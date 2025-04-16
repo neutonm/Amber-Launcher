@@ -1,10 +1,11 @@
 #include <AmberLauncherGUI.h>
 #include <AmberLauncherCore.h>
 
+#include <core/common.h>
 #include <core/appcore.h>
 
 #include <nappgui.h>
-#include "res_app.h"
+#include <res_app.h>
 
 #include <assert.h>
 
@@ -12,16 +13,19 @@
  * CONSTANTS
  ******************************************************************************/
 
-const char* EUserEventTypeStrings[] = {
+const char* EUIEventTypeStrings[] = {
     "NULL",
+    "MODAL_MESSAGE",
+    "MODAL_QUESTION",
     "MODAL_GAMENOTFOUND",
     NULL
 };
 
 static const int32_t TITLE_PNG_W = 672;
 static const int32_t TITLE_PNG_H = 200;
-/* static const uint32_t MODAL_CANCEL = 10; */
-static const uint32_t MODAL_ACCEPT = 11;
+#define MODAL_CANCEL 1001
+#define MODAL_ACCEPT 1002
+#define MODAL_BROWSE 1003
 
 /******************************************************************************
  * STATIC DECLARATIONS
@@ -38,7 +42,7 @@ static Panel*
 _Panel_GetRoot(AppGUI *pApp);
 
 /**
- * @relatedalso Core
+ * @relatedalso GUI
  * @brief       Initializes NappGUI instance
  * 
  * @return      App* 
@@ -47,13 +51,24 @@ static AppGUI*
 _Nappgui_Start(void);
 
 /**
- * @relatedalso Core
+ * @relatedalso GUI
  * @brief       Terminates and cleans up NappGUI instance
- * 
- * @param       pApp 
+ *
+ * @param       pApp
  */
 static void 
 _Nappgui_End(AppGUI **pApp);
+
+/**
+ * @relatedalso GUI
+ * @brief       Shows modal window
+ *
+ * @param       pApp
+ * @param       pPanel
+ * @param       sTitle
+ */
+static uint32_t
+_Nappgui_ShowModal( AppGUI *pApp, Panel *pPanel, const char* sTitle);
 
 /******************************************************************************
  * STATIC CALLBACK DECLARATIONS
@@ -77,8 +92,12 @@ _Callback_OnClose(AppGUI* pApp, Event* e);
  * @param       dID         EUserEventType
  * @param       pUserData
  */
-static SVar
-_Callback_UIEvent(AppCore *pAppCore, uint32 dID, SVar *pUserData);
+static SVarKeyBundle
+_Callback_UIEvent(
+    AppCore *pAppCore,
+    uint32 dID,
+    const SVar *pUserData,
+    const unsigned int dNumArgs);
 
 /******************************************************************************
  * HEADER DEFINITIONS
@@ -227,6 +246,84 @@ Panel_GetMain(AppGUI* pApp)
     unref(pApp);
     return pPanelMain;
 }
+Panel*
+Panel_GetModalMessage(AppGUI* pApp)
+{
+    Panel   *pPanelMain     = panel_create();
+    Layout  *pLayoutMain    = layout_create(1,2);
+    Label   *pLabelMessage  = label_create();
+    Button  *pButtonOK      = button_push();
+
+    /* Label: Message */
+    label_text(pLabelMessage, TXT_NULL);
+    if (pApp)
+    {
+        if (pApp->pString)
+        {
+            label_text(pLabelMessage, tc(pApp->pString));
+        }
+    }
+
+    /* Button: OK */
+    button_text(pButtonOK, TXT_BTN_OK);
+    button_tag(pButtonOK, MODAL_ACCEPT);
+    button_OnClick(pButtonOK, listener(pApp, Callback_OnButtonModalMessage, AppGUI));
+
+    /* Layout: Main */
+    layout_label(pLayoutMain, pLabelMessage,0,0);
+    layout_button(pLayoutMain, pButtonOK, 0, 1);
+
+    panel_layout(pPanelMain, pLayoutMain);
+
+    unref(pApp);
+
+    return pPanelMain;
+}
+
+Panel*
+Panel_GetModalQuestion(AppGUI* pApp)
+{
+    Panel   *pPanelMain     = panel_create();
+    Layout  *pLayoutMain    = layout_create(1,2);
+    Layout  *pLayoutButtons = layout_create(2,1);
+    Label   *pLabelMessage  = label_create();
+    Button  *pButtonContinue= button_push();
+    Button  *pButtonCancel  = button_push();
+
+    /* Label: Message */
+    label_text(pLabelMessage, TXT_NULL);
+    if (pApp)
+    {
+        if (pApp->pString)
+        {
+            label_text(pLabelMessage, tc(pApp->pString));
+        }
+    }
+
+    /* Button: OK */
+    button_text(pButtonContinue, TXT_BTN_ACCEPT);
+    button_tag(pButtonContinue, MODAL_ACCEPT);
+    button_OnClick(pButtonContinue, listener(pApp, Callback_OnButtonModalQuestion, AppGUI));
+
+    /* Button: Cancel */
+    button_text(pButtonCancel, TXT_BTN_CANCEL);
+    button_tag(pButtonCancel, MODAL_CANCEL);
+    button_OnClick(pButtonCancel, listener(pApp, Callback_OnButtonModalQuestion, AppGUI));
+
+    /* Layout: Buttons */
+    layout_button(pLayoutButtons, pButtonCancel, 0, 0);
+    layout_button(pLayoutButtons, pButtonContinue, 1, 0);
+
+    /* Layout: Main */
+    layout_label(pLayoutMain, pLabelMessage,0,0);
+    layout_layout(pLayoutMain, pLayoutButtons, 0, 1);
+
+    panel_layout(pPanelMain, pLayoutMain);
+
+    unref(pApp);
+
+    return pPanelMain;
+}
 
 Panel*
 Panel_GetModalGameNotFound(AppGUI* pApp)
@@ -235,30 +332,41 @@ Panel_GetModalGameNotFound(AppGUI* pApp)
     Layout      *pLayoutMain    = layout_create(1,3);
     Layout      *pLayoutPath    = layout_create(2,1);
     Layout      *pLayoutTxt     = layout_create(1,1);
+    Layout      *pLayoutButtons = layout_create(2, 1);
     Edit        *pEditPath      = edit_create();
     Label       *pLabelInfo     = label_create();
     Button      *pButtonSubmit  = button_push();
+    Button      *pButtonCancel  = button_push();
     Button      *pButtonBrowse  = button_push();
     Font        *pFontInfo      = font_system(18, ekFNORMAL | ekFPIXELS);
     Font        *pFontSubmit    = font_system(24, ekFNORMAL | ekFPIXELS);
 
     /* Label: Greetings Text */
-    label_text(pLabelInfo, "Launcher couldn\'t locate the Might and Magic 7 installation. Please select the game\'s folder.");
+    label_text(pLabelInfo, TXT_GAMENOTFOUND);
     label_font(pLabelInfo, pFontInfo);
 
     /* Edit: Game Path */
     pApp->pEdit = pEditPath;
 
-    /* Button: Browse (file) */
-    button_text(pButtonBrowse, TXT_BTN_BROWSE);
-    button_font(pButtonBrowse, pFontInfo);
-    button_OnClick(pButtonBrowse, listener(pApp, Callback_OnButtonBrowseFile, AppGUI));
-
     /* Button: Submit */
     button_text(pButtonSubmit, TXT_BTN_SUBMIT);
     button_font(pButtonSubmit, pFontSubmit);
     button_vpadding (pButtonSubmit, 16);
-    button_OnClick(pButtonSubmit, listener(pApp, Callback_OnButtonSubmit, AppGUI));
+    button_tag(pButtonSubmit, MODAL_ACCEPT);
+    button_OnClick(pButtonSubmit, listener(pApp, Callback_OnButtonModalGameNotFound, AppGUI));
+
+    /* Button: Cancel */
+    button_text(pButtonCancel, TXT_BTN_CANCEL);
+    button_font(pButtonCancel, pFontSubmit);
+    button_vpadding (pButtonCancel, 16);
+    button_tag(pButtonCancel, MODAL_CANCEL);
+    button_OnClick(pButtonCancel, listener(pApp, Callback_OnButtonModalGameNotFound, AppGUI));
+
+    /* Button: Browse (file) */
+    button_text(pButtonBrowse, TXT_BTN_BROWSE);
+    button_font(pButtonBrowse, pFontInfo);
+    button_tag(pButtonBrowse, MODAL_BROWSE);
+    button_OnClick(pButtonBrowse, listener(pApp, Callback_OnButtonModalGameNotFound, AppGUI));
 
     /* Layout: Text */
     layout_margin(pLayoutTxt, 4);
@@ -268,11 +376,15 @@ Panel_GetModalGameNotFound(AppGUI* pApp)
     layout_edit(pLayoutPath, pEditPath, 0,0);
     layout_button(pLayoutPath, pButtonBrowse, 1, 0);
 
+    /* Layout: Buttons */
+    layout_button(pLayoutButtons,pButtonCancel,0, 0);
+    layout_button(pLayoutButtons,pButtonSubmit,1, 0);
+
     /* Layout: Main */
     layout_hsize(pLayoutMain, 0, 250);
     layout_layout(pLayoutMain, pLayoutTxt, 0, 0);
     layout_layout(pLayoutMain, pLayoutPath, 0, 1);
-    layout_button(pLayoutMain,pButtonSubmit,0, 2);
+    layout_layout(pLayoutMain,pLayoutButtons,0, 2);
 
     /* Panel: Main */
     panel_layout(pPanelMain, pLayoutMain);
@@ -292,24 +404,49 @@ Panel_GetModalGameNotFound(AppGUI* pApp)
 void 
 Callback_OnButtonConfigure(AppGUI *pApp, Event *e)
 {
+    Button *pButton = event_sender(e, Button);
     AmberLauncher_ConfigureStart(pApp->pAppCore);
+    unref(pButton);
     unref(e);
 }
 
 void
-Callback_OnButtonSubmit(AppGUI *pApp, Event *e)
+Callback_OnButtonModalMessage(AppGUI *pApp, Event *e)
 {
-    window_stop_modal(pApp->pWindowModal, MODAL_ACCEPT);
+    Button *pButton = event_sender(e, Button);
+    uint32_t dButtonTag = button_get_tag(pButton);
+    window_stop_modal(pApp->pWindowModal, dButtonTag);
+    unref(pButton);
     unref(e);
 }
 
 void
-Callback_OnButtonBrowseFile(AppGUI *pApp, Event *e)
+Callback_OnButtonModalQuestion(AppGUI *pApp, Event *e)
+{
+    Button *pButton = event_sender(e, Button);
+    uint32_t dButtonTag = button_get_tag(pButton);
+    window_stop_modal(pApp->pWindowModal, dButtonTag);
+    unref(pButton);
+    unref(e);
+}
+
+void
+Callback_OnButtonModalGameNotFound(AppGUI *pApp, Event *e)
 {
     const char *sFileFormat[] = {
         "exe",
     };
+    Button *pButton     = event_sender(e, Button);
+    uint32_t dButtonTag = button_get_tag(pButton);
 
+    /* Button clicked: Submit or Cancel */
+    if (dButtonTag != MODAL_BROWSE)
+    {
+        window_stop_modal(pApp->pWindowModal, dButtonTag);
+        return;
+    }
+
+    /* Button clicked: Browse */
     if (pApp->pString)
     {
         str_destroy(&pApp->pString);
@@ -326,14 +463,15 @@ Callback_OnButtonBrowseFile(AppGUI *pApp, Event *e)
     {
         textview_printf(pApp->pTextView,"Game path: %s\n", tc(pApp->pString));
     }
-    unref(e);
 }
 
 void 
 Callback_OnButtonPlay(AppGUI *pApp, Event *e)
 {
+    Button *pButton = event_sender(e, Button);
     AmberLauncher_Play(pApp->pAppCore);
     /* AmberLauncher_ProcessLaunch("mm7.exe", _argc, _argv, TRUE); */
+    unref(pButton);
     unref(e);
 }
 
@@ -439,6 +577,20 @@ _Nappgui_End(AppGUI **pApp)
     heap_delete(pApp, AppGUI);
 }
 
+static uint32_t
+_Nappgui_ShowModal( AppGUI *pApp, Panel *pPanel, const char* sTitle)
+{
+    uint32_t dRet;
+
+    pApp->pWindowModal = window_create(ekWINDOW_STD | ekWINDOW_ESC);
+    window_panel (pApp->pWindowModal, pPanel);
+    window_title (pApp->pWindowModal, sTitle);
+    dRet = window_modal(pApp->pWindowModal, pApp->pWindow);
+    window_destroy(&pApp->pWindowModal);
+
+    return dRet;
+}
+
 /******************************************************************************
  * STATIC CALLBACK DEFINITIONS
  ******************************************************************************/
@@ -451,53 +603,125 @@ _Callback_OnClose(AppGUI *pApp, Event *e)
     unref(e);
 }
 
-static SVar
-_Callback_UIEvent(AppCore *pAppCore, uint32 dID, SVar *pUserData)
+static SVarKeyBundle
+_Callback_UIEvent(
+    AppCore *pAppCore,
+    uint32 dID,
+    const SVar *pUserData,
+    const unsigned int dNumArgs)
 {
     AppGUI *pApp;
-    SVar tRetVal;
+    SVarKeyBundle tRetVal;
+    uint32_t dModalRetVal;
+    const char *sStatusKey = "status";
 
-    SVAR_NULL(tRetVal);
+    SVARKEYB_INIT(tRetVal);
 
     assert(IS_VALID(pAppCore));
     pApp = (AppGUI*)pAppCore->pOwner;
 
-    if (pApp->pTextView && dID < USEREVENT_MAX)
+    if (pApp->pTextView && dID < UIEVENT_MAX)
     {
-        textview_printf(pApp->pTextView,"USEREVENT: %s\n", EUserEventTypeStrings[dID]);
+        textview_printf(pApp->pTextView,"UI EVENT: %s\n", EUIEventTypeStrings[dID]);
+    }
+
+    if (pApp->pString)
+    {
+        str_destroy(&pApp->pString);
     }
 
     switch(dID)
     {
-        case USEREVENT_MODAL_GAMENOTFOUND:
+        case UIEVENT_MODAL_MESSAGE:
             {
-                /** @todo wip. Maybe this whole _Callback_UserEvent should we completely removed */
-                Panel  *pPanelModal;
+                assert(pUserData);
+                assert(dNumArgs >= 1);
 
-                pApp->pWindowModal  = window_create(ekWINDOW_STD | ekWINDOW_ESC);
-                pPanelModal         = Panel_GetModalGameNotFound(pApp);
+                pApp->pString = str_c(SVAR_GET_CONSTCHAR(pUserData[0]));
 
-                window_panel(pApp->pWindowModal, pPanelModal);
-                window_title(pApp->pWindowModal, TXT_TITLE_GAMENOTFOUND);
-                window_modal(pApp->pWindowModal, pApp->pWindow);
-                window_destroy(&pApp->pWindowModal);
-
-                /* Return value (file path) */
-                if (pApp->pString)
+                dModalRetVal = _Nappgui_ShowModal
+                (
+                    pApp,
+                    Panel_GetModalMessage(pApp),
+                    TXT_TITLE_MESSAGE
+                );
+                switch (dModalRetVal)
                 {
-                    const char* pGamePath = tc(pApp->pString);
-                    SVAR_CONSTCHAR(tRetVal, pGamePath);
+                    default:
+                        SVARKEYB_BOOL(tRetVal, sStatusKey, CTRUE);
+                        break;
+                }
+            }
+            break;
+
+        case UIEVENT_MODAL_QUESTION:
+            {
+                assert(pUserData);
+                assert(dNumArgs >= 1);
+
+                pApp->pString = str_c(SVAR_GET_CONSTCHAR(pUserData[0]));
+
+                dModalRetVal = _Nappgui_ShowModal
+                (
+                    pApp,
+                    Panel_GetModalQuestion(pApp),
+                    TXT_TITLE_QUESTION
+                );
+                switch (dModalRetVal)
+                {
+                    case ekGUI_CLOSE_BUTTON:
+                    case ekGUI_CLOSE_ESC:
+                    case MODAL_CANCEL:
+                        SVARKEYB_BOOL(tRetVal, sStatusKey, CFALSE);
+                        break;
+                    default:
+                        SVARKEYB_BOOL(tRetVal, sStatusKey, CTRUE);
+                        break;
+                }
+            }
+            break;
+
+        case UIEVENT_MODAL_GAMENOTFOUND:
+            {
+                const char *sPathKey = "path";
+
+                dModalRetVal = _Nappgui_ShowModal
+                (
+                    pApp,
+                    Panel_GetModalGameNotFound(pApp),
+                    TXT_TITLE_GAMENOTFOUND
+                );
+                switch (dModalRetVal)
+                {
+                    case ekGUI_CLOSE_BUTTON:
+                    case ekGUI_CLOSE_ESC:
+                    case MODAL_CANCEL:
+                        SVARKEYB_BOOL(tRetVal, sStatusKey, CFALSE);
+                        SVARKEYB_NULL(tRetVal, sPathKey);
+                        break;
+                    default:
+                        SVARKEYB_BOOL(tRetVal, sStatusKey, CTRUE);
+                        if (pApp->pString)
+                        {
+                            const char* pGamePath = tc(pApp->pString);
+                            SVARKEYB_CONSTCHAR(tRetVal, sPathKey, pGamePath);
+                            break;
+                        }
+                        SVARKEYB_NULL(tRetVal, sPathKey);
+                        break;
                 }
             }
             break;
 
         default:
+            SVARKEYB_NULL(tRetVal, sStatusKey);
+
             if (pApp->pTextView)
             {
                 textview_printf(
                     pApp->pTextView,
                     "Behavior for %s (%d) is not defined!\n",
-                    dID < USEREVENT_MAX ? EUserEventTypeStrings[dID] : "?", dID);
+                    dID < UIEVENT_MAX ? EUIEventTypeStrings[dID] : "?", dID);
             }
             break;
     }

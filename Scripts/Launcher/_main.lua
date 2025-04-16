@@ -55,6 +55,7 @@ end
 
 function AppConfigure()
 
+    local configSuccessful = true
     -- Execute all available commands
     local commandTable = AL.GetTableOfCommands()
     table.sort(commandTable, function(a, b)
@@ -68,14 +69,17 @@ function AppConfigure()
     -- Execute all commands
     print("Configuration start...")
     for _, cmd in ipairs(commandTable) do
-        --AL.CommandCall(cmd.name)
+        -- if not AL.CommandCall(cmd.name) then
+        --     configSuccessful = false
+        --     break
+        -- end
     end
 
     --temp
-    AL.CommandCall("DetectAndCopyGame")
+    configSuccessful = AL.CommandCall("DetectAndCopyGame")
     --AL.CommandCall("MergeAndRename")
     --AL.CommandCall("DetectAndInstallMod")
     
-    print("Configuration Successful!")
+    print("Configuration "..(configSuccessful and "succesful!" or "failed."))
 end
 

@@ -18,7 +18,9 @@ end
 -- enums
 UIEVENT = {
     NULL                = 0,
-    MODAL_GAMENOTFOUND  = 1,
+    MODAL_MESSAGE       = 1,
+    MODAL_QUESTION      = 2,
+    MODAL_GAMENOTFOUND  = 3,
     MAX
 }
 
