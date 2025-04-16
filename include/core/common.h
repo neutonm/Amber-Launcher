@@ -28,23 +28,23 @@ typedef enum {CFALSE, CTRUE = !CFALSE} cbool;
 typedef enum 
 {
     /* trivial */
-    CTYPE_NULL,                 
-    CTYPE_BOOL,                 
-    CTYPE_CHAR,                 
+    CTYPE_NULL,
+    CTYPE_CHAR,
     CTYPE_UNSIGNED_CHAR,
-    CTYPE_CONST_CHAR,           
+    CTYPE_CONST_CHAR,
     CTYPE_SHORT,                
-    CTYPE_UNSIGNED_SHORT,       
-    CTYPE_INT,                  
-    CTYPE_UNSIGNED_INT,         
-    CTYPE_LONG,                 
-    CTYPE_UNSIGNED_LONG,        
-    CTYPE_FLOAT,                
-    CTYPE_LONG_LONG,            
-    CTYPE_UNSIGNED_LONG_LONG,   
-    CTYPE_VOID,                 
-    CTYPE_DOUBLE,               
-    CTYPE_LONG_DOUBLE,          
+    CTYPE_UNSIGNED_SHORT,
+    CTYPE_BOOL,
+    CTYPE_INT,
+    CTYPE_UNSIGNED_INT,
+    CTYPE_LONG,
+    CTYPE_UNSIGNED_LONG,
+    CTYPE_FLOAT,
+    CTYPE_LONG_LONG,
+    CTYPE_UNSIGNED_LONG_LONG,
+    CTYPE_VOID,
+    CTYPE_DOUBLE,
+    CTYPE_LONG_DOUBLE,
     /* non-trivial */
     CTYPE_LUAREF,
     /* ...  */
@@ -53,22 +53,22 @@ typedef enum
 
 typedef union UVarData
 {
-    CBOOL               _bool;              /* CTYPE_BOOL               */
-    char                _char;              /* CTYPE_CHAR               */
-    unsigned char       _uchar;             /* CTYPE_UNSIGNED_CHAR      */
-    const char*         _constchar;         /* CTYPE_CONST_CHAR         */
-    short               _short;             /* CTYPE_SHORT              */
-    unsigned short      _ushort;            /* CTYPE_UNSIGNED_SHORT     */
-    int                 _int;               /* CTYPE_INT                */
-    unsigned int        _uint;              /* CTYPE_UNSIGNED_INT       */
-    long                _long;              /* CTYPE_LONG               */
-    unsigned long       _ulong;             /* CTYPE_UNSIGNED_LONG      */
-    float               _float;             /* CTYPE_FLOAT              */
-    long long           _longlong;          /* CTYPE_LONG_LONG          */
-    unsigned long long  _ulonglong;         /* CTYPE_UNSIGNED_LONG_LONG */
-    void*               _void;              /* CTYPE_VOID               */
-    double              _double;            /* CTYPE_DOUBLE             */
-    long double         _longdouble;        /* CTYPE_LONG_DOUBLE        */
+    char                    _char;              /* CTYPE_CHAR               */
+    unsigned char           _uchar;             /* CTYPE_UNSIGNED_CHAR      */
+    const char*             _constchar;         /* CTYPE_CONST_CHAR         */
+    short                   _short;             /* CTYPE_SHORT              */
+    unsigned short          _ushort;            /* CTYPE_UNSIGNED_SHORT     */
+    CBOOL                   _bool;              /* CTYPE_BOOL               */
+    int                     _int;               /* CTYPE_INT                */
+    unsigned int            _uint;              /* CTYPE_UNSIGNED_INT       */
+    long                    _long;              /* CTYPE_LONG               */
+    unsigned long           _ulong;             /* CTYPE_UNSIGNED_LONG      */
+    float                   _float;             /* CTYPE_FLOAT              */
+    long long               _longlong;          /* CTYPE_LONG_LONG          */
+    unsigned long long      _ulonglong;         /* CTYPE_UNSIGNED_LONG_LONG */
+    void*                   _void;              /* CTYPE_VOID               */
+    double                  _double;            /* CTYPE_DOUBLE             */
+    long double             _longdouble;        /* CTYPE_LONG_DOUBLE        */
 } UVarData;
 
 typedef struct SVar
@@ -270,6 +270,62 @@ typedef struct SVar
 #define SVAR_GET_UINT32(v)          SVAR_GET_UINT(v)
 #define SVAR_GET_INT64(v)           SVAR_GET_LLONG(v)
 #define SVAR_GET_UINT64(v)          SVAR_GET_ULLONG(v)
+
+/* SVar Key */
+#define SVAR_KEYBUNDLE_CAP   4
+
+typedef struct SVarKey
+{
+    const char      *sKey;
+    SVar            tVar;
+} SVarKey;
+
+typedef struct SVarKeyBundle
+{
+    size_t  dCount;
+    SVarKey tKeys[SVAR_KEYBUNDLE_CAP];
+} SVarKeyBundle;
+
+#define SVARKEYB_INIT(b)   do { (b).dCount = 0; } while (0)
+#define SVARKEYB_PUSH(bundle, keyname, SVAR_SET_MACRO, val)                 \
+    do {                                                                    \
+        assert((bundle).dCount < SVAR_KEYBUNDLE_CAP);                       \
+        SVAR_SET_MACRO((bundle).tKeys[(bundle).dCount].tVar, (val));        \
+        (bundle).tKeys[(bundle).dCount].sKey = (keyname);                   \
+        ++(bundle).dCount;                                                  \
+    } while (0)
+
+#define SVARKEYB_NULL(b,k)                                                  \
+    do {                                                                    \
+        assert((b).dCount < SVAR_KEYBUNDLE_CAP);                            \
+        SVAR_NULL((b).tKeys[(b).dCount].tVar);                              \
+        (b).tKeys[(b).dCount].sKey = (k);                                   \
+        ++(b).dCount;                                                       \
+    } while (0)
+
+#define SVARKEYB_CHAR(b,k,v)            SVARKEYB_PUSH(b, k, SVAR_CHAR,            v)
+#define SVARKEYB_UCHAR(b,k,v)           SVARKEYB_PUSH(b, k, SVAR_UCHAR,           v)
+#define SVARKEYB_CONSTCHAR(b,k,v)       SVARKEYB_PUSH(b, k, SVAR_CONSTCHAR,       v)
+#define SVARKEYB_SHORT(b,k,v)           SVARKEYB_PUSH(b, k, SVAR_SHORT,           v)
+#define SVARKEYB_USHORT(b,k,v)          SVARKEYB_PUSH(b, k, SVAR_USHORT,          v)
+#define SVARKEYB_BOOL(b,k,v)            SVARKEYB_PUSH(b, k, SVAR_BOOL,            v)
+#define SVARKEYB_INT(b,k,v)             SVARKEYB_PUSH(b, k, SVAR_INT,             v)
+#define SVARKEYB_UINT(b,k,v)            SVARKEYB_PUSH(b, k, SVAR_UINT,            v)
+#define SVARKEYB_LONG(b,k,v)            SVARKEYB_PUSH(b, k, SVAR_LONG,            v)
+#define SVARKEYB_ULONG(b,k,v)           SVARKEYB_PUSH(b, k, SVAR_ULONG,           v)
+#define SVARKEYB_FLOAT(b,k,v)           SVARKEYB_PUSH(b, k, SVAR_FLOAT,           v)
+#define SVARKEYB_LLONG(b,k,v)           SVARKEYB_PUSH(b, k, SVAR_LLONG,           v)
+#define SVARKEYB_ULLONG(b,k,v)          SVARKEYB_PUSH(b, k, SVAR_ULLONG,          v)
+#define SVARKEYB_DOUBLE(b,k,v)          SVARKEYB_PUSH(b, k, SVAR_DOUBLE,          v)
+#define SVARKEYB_LDOUBLE(b,k,v)         SVARKEYB_PUSH(b, k, SVAR_LDOUBLE,         v)
+
+#define SVARKEYB_VOID(b,k,ptr,sz)                                           \
+    do {                                                                    \
+        assert((b).dCount < SVAR_KEYBUNDLE_CAP);                            \
+        SVAR_VOID((b).tKeys[(b).dCount].tVar, (ptr), (sz));                 \
+        (b).tKeys[(b).dCount].sKey = (k);                                   \
+        ++(b).dCount;                                                       \
+    } while (0)
 
 /******************************************************************************
  * COMMON PREPROCESSOR FUNCTIONALITY
