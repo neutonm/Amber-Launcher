@@ -36,7 +36,7 @@ end
 
 local function _ConvertMusic()
 
-    directory = "Music"
+    directory = GAME_DESTINATION_FOLDER..OS_FILE_SEPARATOR.."Music"
     print("Converting music files in directory: "..directory)
 
     local pathSeparator = package.config:sub(1,1) -- Get the directory separator
@@ -59,22 +59,25 @@ local function _ConvertMusic()
                         fullPath = dir .. pathSeparator .. fileName
                     end
                     print("Track: "..fullPath)
-                    AL.ConvertMP3ToWAV(fullPath)
+                    if not AL.ConvertMP3ToWAV(fullPath) then
+                        print("Failed to convert "..fileName)
+                        return false
+                    end
                 end
             end
         end
     else
         print("Converting failed!!!")
-        return
+        return false
     end
 
     print("Converting done!")
+    return true
 end
 
 function events.InitLauncher()
 
     print("Initialize ConvertMusic.lua")
-
-    --[[ AL.CommandAdd("ConvertMusic", _ConvertMusic) ]]
+    AL.CommandAdd("ConvertMusic", _ConvertMusic)
 
 end

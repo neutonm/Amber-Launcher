@@ -428,6 +428,7 @@ _LUA_CommandCall(struct lua_State* L)
         SCommand* pObj = (SCommand*)SVector_Get(&tConfigureCommandList, (size_t)dSVecFoundIndex);
         SCommandArg pArg = SCommandArg_MakeVoid(L);
         bResult = pObj->cbExecuteFunc(pObj, &pArg, 1);
+        printf("Calling [%s]: %s\n", sKey, bResult ? "success!" : "fail.");
     }
     else
     {

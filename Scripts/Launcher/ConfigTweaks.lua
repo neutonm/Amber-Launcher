@@ -4,8 +4,9 @@
 local function _ConfigTweaks()
 
     print("Tweaking mm7 config...")
+    iniPath = GAME_DESTINATION_FOLDER..OS_FILE_SEPARATOR.."mm7.ini"
 
-    local ini = AL.INILoad("mm7.ini")
+    local ini = AL.INILoad(iniPath)
     if ini then
         local myStr = AL.INIGet(ini, "Settings", "ViewDistanceD3D")
         if myStr then
@@ -13,11 +14,13 @@ local function _ConfigTweaks()
         end
         AL.INIClose(ini)
     else
-        print("Failed to load INI file.")
+        print("Failed to load INI file: "..iniPath)
+        return false
     end
 
     print("Tweaking done!")
 
+    return true
 end
 
 function events.InitLauncher()

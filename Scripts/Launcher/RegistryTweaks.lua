@@ -16,16 +16,17 @@ local function _RegistryTweaks()
 
     print("Tweaking windows registry...")
 
-    for _, key in _GameRegistryValues do
-        AL.SetRegistryKey(key[1], key[2])
+    for i = 1, #_GameRegistryValues do
+        local entry = _GameRegistryValues[i]
+        AL.SetRegistryKey(entry.key, entry.value)
     end
 
     print("Tweaking done!")
-
+    return true
 end
 
 function events.InitLauncher()
 
     print("Initialize RegistryTweaks.lua")
-    --[[ AL.CommandAdd("RegistryTweaks", _RegistryTweaks) ]] -- overwrites internal cmd
+    AL.CommandAdd("RegistryTweaks", _RegistryTweaks) -- overwrites internal cmd
 end

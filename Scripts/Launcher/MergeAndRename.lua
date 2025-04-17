@@ -247,10 +247,14 @@ end
 local function _MergeAndRename()
 
     print("Merging/Renaming files...")
+
     -- Run the processing function
     process_folders(GAME_DESTINATION_FOLDER, correct_folder_names)
     process_files(GAME_DESTINATION_FOLDER, correct_file_names)
+
     print("Done!")
+
+    return true
 end
 
 function events.InitLauncher()

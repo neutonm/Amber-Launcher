@@ -1,3 +1,4 @@
+#include "core/common.h"
 #include <commands/archive.h>
 
 #include <core/command.h>
@@ -167,8 +168,11 @@ LUA_ArchiveExtract(struct lua_State* L)
 {
     const char* sZipPath        = luaL_checkstring(L, 1);
     const char* sExtractPath    = luaL_checkstring(L, 2);
+    CBOOL bResult;
 
-    _ExtractArchive(sZipPath, sExtractPath);
+    bResult = _ExtractArchive(sZipPath, sExtractPath);
 
-    return 0;
+    lua_pushboolean(L, bResult);
+
+    return 1;
 }

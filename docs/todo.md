@@ -43,17 +43,16 @@ Table Of Contents:
 - [ ] SCOmmand - change SCommandArg to SVar
  
 #### Lua Module:
-- [ ] Return status code from AL.CommandCall
+- [x] Return status code from AL.CommandCall
 - [ ] SLuaState_PushGlobalVariable should utilize SVar
 - [ ] add small variable reflection (from c) so we can auto-generate lua tables for enums, etc.
 
 ## GUI Library 
 *NAPPGUI user interface library that wraps Core Library calls.* 
 
-- [ ] Autoconfigure should handle failed state
+- [x] Autoconfigure should handle failed state
 - [x] Figure out how to show file browser (required for non-found game)
 - [ ] Re-design Modal: GameNotFound
-- - extra: put a header picture
 
 ## Lua Scripts
 *Provide alternative and/or extended functionality for the launcher.*
@@ -65,6 +64,7 @@ Table Of Contents:
 - - Browse button: if file browser window is canceled without specifiying, you get appcrash (nappgui error)
 - - if during game detection issues occur - decide whether to continue searching game or not
 - - UI:
+- - - extra: put a header picture
 - - - Add event for "Edit" as well, user might manually type game path (currently, pApp->pString won't update if done manuallly)
 - - - Error modal:  should show current game path (for local issues)
 - - - Error modal:  continue and abort button

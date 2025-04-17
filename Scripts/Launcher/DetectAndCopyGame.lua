@@ -379,7 +379,7 @@ local function _DetectAndCopyGame(dst)
             local f = io.open(uiRetTable.path, "rb") 
             if f then
                 f:close()
-                --newRetVal = _DetectAndCopyGame(uiRetTable.path)
+                newRetVal = _DetectAndCopyGame(uiRetTable.path)
             else
                 print("Invalid or nonexistent file path: " .. uiRetTable.path)
             end

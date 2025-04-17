@@ -65,9 +65,17 @@ end
 local function InstallMod(destinationFolder)
 
     local dataFolder = "Data"..OS_FILE_SEPARATOR.."Launcher"..OS_FILE_SEPARATOR
+    
+    if not AL.ArchiveExtract(dataFolder.."_grayfacePatch257.zip", destinationFolder) then
+        print("Failed to extract _grayfacePatch257")
+        return false
+    end
+    if not AL.ArchiveExtract(dataFolder.."_mod.zip", destinationFolder) then
+        print("Failed to extract _mod.zip")
+        return false
+    end
 
-    AL.ArchiveExtract(dataFolder.."_grayfacePatch257.zip", destinationFolder)
-    AL.ArchiveExtract(dataFolder.."_mod.zip", destinationFolder)
+    return true
 end
 
 local function _DetectAndInstallMod()
@@ -79,9 +87,13 @@ local function _DetectAndInstallMod()
     end
 
     print("Amber Island mod is not detected. Installing it now...")
-    InstallMod(GAME_DESTINATION_FOLDER)
+    if not InstallMod(GAME_DESTINATION_FOLDER) then
+        return false
+    end
 
     print("Done!")
+
+    return true
 end
 
 function events.InitLauncher()
