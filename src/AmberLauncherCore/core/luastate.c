@@ -186,50 +186,6 @@ SLuaState_RegisterFunctionReference(
 }
 
 CAPI CBOOL 
-SLuaState_PushGlobalVariable(
-    SLuaState* pLuaState, 
-    const char* sVariableName, 
-    const char* sValue, 
-    ELuaVarType eType) 
-{
-    /** @todo Luastate: Proper error handle */
-    if (!IS_VALID(pLuaState) || !IS_VALID(pLuaState->pState) || !IS_VALID(sVariableName))
-    {
-        fprintf
-        (   
-            stderr, 
-            "SLuaState_PushGlobalVariable"
-            "(SLuaState* pLuaState,"
-            "const char* sVariableName,"
-            "const char* sValue, ELuaVarType eType) -> "
-            "received \"LuaState\" as NULL."
-        );
-        return CFALSE;
-    }
-
-    switch (eType) 
-    {
-        case SLUA_TYPE_NIL:
-            lua_pushnil(pLuaState->pState);
-            break;
-        case SLUA_TYPE_BOOL:
-            lua_pushboolean(pLuaState->pState, strcmp(sValue, "true") == 0);
-            break;
-        case SLUA_TYPE_NUMBER:
-            lua_pushnumber(pLuaState->pState, atof(sValue));
-            break;
-        case SLUA_TYPE_STRING:
-            lua_pushstring(pLuaState->pState, sValue);
-            break;
-        default:
-            return CFALSE;
-    }
-
-    lua_setglobal(pLuaState->pState, sVariableName);
-    return CTRUE;
-}
-
-CAPI CBOOL 
 SLuaState_GetGlobalVariable(
     const SLuaState* pLuaState, 
     const char* sVariableName, 

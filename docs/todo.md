@@ -44,7 +44,7 @@ Table Of Contents:
  
 #### Lua Module:
 - [x] Return status code from AL.CommandCall
-- [ ] SLuaState_PushGlobalVariable should utilize SVar
+- [x] SLuaState_PushGlobalVariable should utilize SVar (edit: removed it, no use)
 - [ ] add small variable reflection (from c) so we can auto-generate lua tables for enums, etc.
 
 ## GUI Library 

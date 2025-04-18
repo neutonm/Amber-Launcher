@@ -84,23 +84,6 @@ SLuaState_RegisterFunctionReference(
 );
 
 /**
- * @relatedalso     SLuaState
- * @brief           Pushes global variable of specified type into lua stack 
- * 
- * @param           pLuaState
- * @param           sVariableName
- * @param           sValue 
- * @param           eType 
- * @return          CBOOL 
- */
-extern CAPI CBOOL
-SLuaState_PushGlobalVariable(
-    SLuaState* pLuaState,
-    const char* sVariableName, 
-    const char* sValue, 
-    ELuaVarType eType);
-
-/**
  * @relatedalso     pLuaState
  * @brief           Retrieves global variable from lua state
  * 
