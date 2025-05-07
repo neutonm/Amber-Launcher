@@ -119,8 +119,9 @@ install_manifest.txt
 build/
 bin/
 
-# Temp directory
+# Temp directories
 tmp/
+DST/
 
 # ---> VisualStudioCode
 .settings
