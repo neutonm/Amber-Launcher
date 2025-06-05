@@ -3,6 +3,7 @@ TXT_TITLE_LAUNCHER      Amber Island Launcher
 TXT_TITLE_GAMENOTFOUND  Game not found!
 TXT_TITLE_MESSAGE       Message
 TXT_TITLE_QUESTION      Question
+TXT_TITLE_TWEAKER       Tweaker
 
 /* Buttons */
 TXT_BTN_YES             Yes
@@ -15,6 +16,8 @@ TXT_BTN_ACCEPT          Accept
 TXT_BTN_CANCEL          Cancel
 TXT_BTN_OK              OK
 TXT_BTN_CONTINUE        Continue
+TXT_BTN_NEXT            Next
+TXT_BTN_PREVIOUS        Previous
 
 /* Texts */
 TXT_NULL                Null

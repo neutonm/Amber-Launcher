@@ -198,6 +198,45 @@ _LUA_GetTableOfCommands(struct lua_State* L)
     return 1;
 }
 
+static void
+_DisposeRecursive(lua_State *L, SVar *pVar)
+{
+    size_t i;
+    assert(IS_VALID(pVar));
+
+    switch (pVar->eType)
+    {
+        case CTYPE_LUAREF:
+            luaL_unref(L, LUA_REGISTRYINDEX, SVAR_GET_LUAREF(*pVar));
+            break;
+
+        case CTYPE_LUATABLE:
+        {
+            SVarTable *pTable = pVar->uData._void;
+            assert(IS_VALID(pTable));
+
+            for (i = 0; i < pTable->dCount; ++i)
+            {
+                _DisposeRecursive(L,&pTable->pEntries[i].tKey);
+                _DisposeRecursive(L,&pTable->pEntries[i].tValue);
+            }
+
+            if (pTable->dLuaRef != LUA_REFNIL)
+            {
+                luaL_unref(L, LUA_REGISTRYINDEX, pTable->dLuaRef);
+            }
+
+            free(pTable->pEntries);
+            free(pTable);
+        }
+        break;
+
+        default:
+            break;
+    }
+    pVar->eType = CTYPE_NULL;
+}
+
 static int
 _LUA_UICall(lua_State* L)
 {
@@ -219,7 +258,7 @@ _LUA_UICall(lua_State* L)
     }
 
     /* Ensure first argument as event name */
-    dID = luaL_checkunsigned(L, 1);
+    dID = (uint32)luaL_checkinteger(L, 1);
 
     /* Acquire variadic args from lua */
     /** @todo this code repeats twice here, refactor */
@@ -262,29 +301,13 @@ _LUA_UICall(lua_State* L)
             }
             else
             {
-                switch (dType)
+                if (!SLuaState_LuaObjectToSVar(pAppCore->pLuaState, &pVarArgs[dNumArgs],i,  0)) {
+                    printf("unsupported\n");
+                }
+                else
                 {
-                    case LUA_TTABLE:
-                    case LUA_TFUNCTION:
-                    case LUA_TUSERDATA:
-                        {
-                            const void* pLuaObj;
-
-                            /* Get pointer to lua object (debug) */
-                            lua_pushvalue(L, i);
-                            pLuaObj = lua_topointer(L, -1);
-                            lua_pop(L, 1);
-                            printf("%p", pLuaObj);
-
-                            /* Store reference */
-                            SVAR_LUAREF(pVarArgs[dNumArgs], L, i);
-                            dNumArgs++;
-                        }
-                        break;
-
-                    default:
-                        printf("???\n");
-                        break;
+                    printf("marshal[%d]: type %d\n", i, pVarArgs[dNumArgs].eType);
+                    ++dNumArgs;
                 }
             }
         }
@@ -303,10 +326,7 @@ _LUA_UICall(lua_State* L)
     /* Cleanup */
     for(i = 0; i < dNumArgs; i++)
     {
-        if (pVarArgs[i].eType == CTYPE_LUAREF)
-        {
-            luaL_unref(L, LUA_REGISTRYINDEX, SVAR_GET_LUAREF(pVarArgs[i]));
-        }
+        _DisposeRecursive(L, &pVarArgs[i]);
     }
     free(pVarArgs);
 

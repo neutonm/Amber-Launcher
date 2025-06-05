@@ -21,6 +21,7 @@ UIEVENT = {
     MODAL_MESSAGE       = 1,
     MODAL_QUESTION      = 2,
     MODAL_GAMENOTFOUND  = 3,
+    MODAL_TWEAKER       = 4,
     MAX
 }
 

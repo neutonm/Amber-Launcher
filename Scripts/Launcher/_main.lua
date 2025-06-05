@@ -68,15 +68,15 @@ function AppConfigure()
 
     -- Execute all commands
     print("Configuration start...")
-    for _, cmd in ipairs(commandTable) do
-        if not AL.CommandCall(cmd.name) then
-            configSuccessful = false
-            break
-        end
-    end
+    -- for _, cmd in ipairs(commandTable) do
+    --     if not AL.CommandCall(cmd.name) then
+    --         configSuccessful = false
+    --         break
+    --     end
+    -- end
 
     --temp
-    --configSuccessful = AL.CommandCall("DetectAndCopyGame")
+    configSuccessful = AL.CommandCall("ConfigTweaks")
     --AL.CommandCall("MergeAndRename")
     --AL.CommandCall("DetectAndInstallMod")
     
