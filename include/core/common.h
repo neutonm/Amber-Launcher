@@ -47,6 +47,7 @@ typedef enum
     CTYPE_LONG_DOUBLE,
     /* non-trivial */
     CTYPE_LUAREF,
+    CTYPE_LUATABLE,
     /* ...  */
     CTYPE_MAX
 } ECType;
@@ -78,6 +79,17 @@ typedef struct SVar
     size_t      dSize;
     UVarData    uData;
 } SVar;
+
+typedef struct SVarTableEntry {
+    SVar tKey;
+    SVar tValue;
+} SVarTableEntry;
+
+typedef struct SVarTable {
+    size_t           dCount;
+    SVarTableEntry  *pEntries;
+    int              dLuaRef;
+} SVarTable;
 
 #define SVAR_NULL(v)                                \
     do {                                            \
@@ -260,6 +272,7 @@ typedef struct SVar
 
 /* Non-trivial getters */
 #define SVAR_GET_LUAREF(v)          ((v).uData._int)
+#define SVAR_GET_LUATABLE(v)        ((v).uData._void)
 
 /* Fixed-width getter aliases */
 #define SVAR_GET_INT8(v)            SVAR_GET_CHAR(v)
@@ -272,7 +285,7 @@ typedef struct SVar
 #define SVAR_GET_UINT64(v)          SVAR_GET_ULLONG(v)
 
 /* SVar Key */
-#define SVAR_KEYBUNDLE_CAP   4
+#define SVAR_KEYBUNDLE_MAX          8
 
 typedef struct SVarKey
 {
@@ -283,13 +296,13 @@ typedef struct SVarKey
 typedef struct SVarKeyBundle
 {
     size_t  dCount;
-    SVarKey tKeys[SVAR_KEYBUNDLE_CAP];
+    SVarKey tKeys[SVAR_KEYBUNDLE_MAX];
 } SVarKeyBundle;
 
 #define SVARKEYB_INIT(b)   do { (b).dCount = 0; } while (0)
 #define SVARKEYB_PUSH(bundle, keyname, SVAR_SET_MACRO, val)                 \
     do {                                                                    \
-        assert((bundle).dCount < SVAR_KEYBUNDLE_CAP);                       \
+        assert((bundle).dCount < SVAR_KEYBUNDLE_MAX);                       \
         SVAR_SET_MACRO((bundle).tKeys[(bundle).dCount].tVar, (val));        \
         (bundle).tKeys[(bundle).dCount].sKey = (keyname);                   \
         ++(bundle).dCount;                                                  \
@@ -297,27 +310,27 @@ typedef struct SVarKeyBundle
 
 #define SVARKEYB_NULL(b,k)                                                  \
     do {                                                                    \
-        assert((b).dCount < SVAR_KEYBUNDLE_CAP);                            \
+        assert((b).dCount < SVAR_KEYBUNDLE_MAX);                            \
         SVAR_NULL((b).tKeys[(b).dCount].tVar);                              \
         (b).tKeys[(b).dCount].sKey = (k);                                   \
         ++(b).dCount;                                                       \
     } while (0)
 
-#define SVARKEYB_CHAR(b,k,v)            SVARKEYB_PUSH(b, k, SVAR_CHAR,            v)
-#define SVARKEYB_UCHAR(b,k,v)           SVARKEYB_PUSH(b, k, SVAR_UCHAR,           v)
-#define SVARKEYB_CONSTCHAR(b,k,v)       SVARKEYB_PUSH(b, k, SVAR_CONSTCHAR,       v)
-#define SVARKEYB_SHORT(b,k,v)           SVARKEYB_PUSH(b, k, SVAR_SHORT,           v)
-#define SVARKEYB_USHORT(b,k,v)          SVARKEYB_PUSH(b, k, SVAR_USHORT,          v)
-#define SVARKEYB_BOOL(b,k,v)            SVARKEYB_PUSH(b, k, SVAR_BOOL,            v)
-#define SVARKEYB_INT(b,k,v)             SVARKEYB_PUSH(b, k, SVAR_INT,             v)
-#define SVARKEYB_UINT(b,k,v)            SVARKEYB_PUSH(b, k, SVAR_UINT,            v)
-#define SVARKEYB_LONG(b,k,v)            SVARKEYB_PUSH(b, k, SVAR_LONG,            v)
-#define SVARKEYB_ULONG(b,k,v)           SVARKEYB_PUSH(b, k, SVAR_ULONG,           v)
-#define SVARKEYB_FLOAT(b,k,v)           SVARKEYB_PUSH(b, k, SVAR_FLOAT,           v)
-#define SVARKEYB_LLONG(b,k,v)           SVARKEYB_PUSH(b, k, SVAR_LLONG,           v)
-#define SVARKEYB_ULLONG(b,k,v)          SVARKEYB_PUSH(b, k, SVAR_ULLONG,          v)
-#define SVARKEYB_DOUBLE(b,k,v)          SVARKEYB_PUSH(b, k, SVAR_DOUBLE,          v)
-#define SVARKEYB_LDOUBLE(b,k,v)         SVARKEYB_PUSH(b, k, SVAR_LDOUBLE,         v)
+#define SVARKEYB_CHAR(b,k,v)     SVARKEYB_PUSH(b, k, SVAR_CHAR,            v)
+#define SVARKEYB_UCHAR(b,k,v)    SVARKEYB_PUSH(b, k, SVAR_UCHAR,           v)
+#define SVARKEYB_CONSTCHAR(b,k,v)SVARKEYB_PUSH(b, k, SVAR_CONSTCHAR,       v)
+#define SVARKEYB_SHORT(b,k,v)    SVARKEYB_PUSH(b, k, SVAR_SHORT,           v)
+#define SVARKEYB_USHORT(b,k,v)   SVARKEYB_PUSH(b, k, SVAR_USHORT,          v)
+#define SVARKEYB_BOOL(b,k,v)     SVARKEYB_PUSH(b, k, SVAR_BOOL,            v)
+#define SVARKEYB_INT(b,k,v)      SVARKEYB_PUSH(b, k, SVAR_INT,             v)
+#define SVARKEYB_UINT(b,k,v)     SVARKEYB_PUSH(b, k, SVAR_UINT,            v)
+#define SVARKEYB_LONG(b,k,v)     SVARKEYB_PUSH(b, k, SVAR_LONG,            v)
+#define SVARKEYB_ULONG(b,k,v)    SVARKEYB_PUSH(b, k, SVAR_ULONG,           v)
+#define SVARKEYB_FLOAT(b,k,v)    SVARKEYB_PUSH(b, k, SVAR_FLOAT,           v)
+#define SVARKEYB_LLONG(b,k,v)    SVARKEYB_PUSH(b, k, SVAR_LLONG,           v)
+#define SVARKEYB_ULLONG(b,k,v)   SVARKEYB_PUSH(b, k, SVAR_ULLONG,          v)
+#define SVARKEYB_DOUBLE(b,k,v)   SVARKEYB_PUSH(b, k, SVAR_DOUBLE,          v)
+#define SVARKEYB_LDOUBLE(b,k,v)  SVARKEYB_PUSH(b, k, SVAR_LDOUBLE,         v)
 
 #define SVARKEYB_VOID(b,k,ptr,sz)                                           \
     do {                                                                    \
@@ -332,10 +345,10 @@ typedef struct SVarKeyBundle
  ******************************************************************************/
 
 /* Supressed unused variable compiler warning */
-#define UNUSED(x) (void)x
+#define UNUSED(x) ((void)x)
 
 /* General check for pointers */
-#define IS_VALID(ptr) ((ptr) != 0x0 && (ptr) != NULL)
+#define IS_VALID(ptr) ((ptr) != NULL)
 
 #ifdef __cplusplus
 #define __EXTERN_C \
