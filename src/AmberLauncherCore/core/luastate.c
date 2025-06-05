@@ -773,7 +773,7 @@ _LuaTableToSVar(
     }
 
     pTable = (SVarTable*)calloc(1, sizeof(SVarTable));
-    assert(!IS_VALID(pTable));
+    assert(IS_VALID(pTable));
 
     pTable->pEntries  = (SVarTableEntry*)calloc(dCapacity,sizeof(SVarTableEntry));
     if (!IS_VALID(pTable->pEntries))
