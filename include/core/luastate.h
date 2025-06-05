@@ -184,6 +184,25 @@ SLuaState_PushVariable(SLuaState* pLuaState, const SVar *pVar);
 extern CAPI void 
 SLuaState_ClearGlobalTable(SLuaState* pLuaState);
 
+/**
+ * @relatedalso     SLuaState
+ * @brief           Clears tables (Global Environment)
+ * 
+ * @param           pLuaState
+ * @param           pOut        Output SVar
+ * @param           dIdx        Lua stack index
+ * @param           dDepth      Lua table depth        
+ *
+ * @return          CBOOL
+ */
+extern CAPI CBOOL
+SLuaState_LuaObjectToSVar(
+    SLuaState* pLuaState, 
+    SVar* pOut, 
+    int dIdx, 
+    int dDepth
+);
+
 /******************************************************************************
  * HEADER CALLBACK DECLARATIONS
  ******************************************************************************/

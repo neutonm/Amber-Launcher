@@ -1,3 +1,4 @@
+#include "core/common.h"
 #include <core/luastate.h>
 
 #include <core/luacommon.h>
@@ -7,6 +8,7 @@
 #include <lauxlib.h>
 #include <lualib.h>
 
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -27,10 +29,27 @@
 #define LUA_OK 0
 #endif
 
+#define MAX_TABLE_DEPTH  8
+
 /******************************************************************************
  * STATIC FUNCTION DECLARATION
  ******************************************************************************/
-void _LoadAllLuaScripts(lua_State* L, const char* folder_path);
+static void
+_LoadAllLuaScripts(lua_State* L, const char* folder_path);
+
+static CBOOL
+_LuaObjectToSVar(
+    lua_State *L,
+    SVar *pOut,
+    int dIdx,
+    int dDepth);
+
+static CBOOL
+_LuaTableToSVar(
+    lua_State *L,
+    int dIdx,
+    SVar *pOut,
+    int depth);
 
 /******************************************************************************
  * HEADER FUNCTION DEFINITIONS
@@ -43,8 +62,8 @@ SLuaState_new(void)
     if (!IS_VALID(pLuaState))
     {
         fprintf
-        (   
-            stderr, 
+        (
+            stderr,
             "SLuaState_new() -> Failed to allocate memory."
         );
         return NULL;
@@ -71,8 +90,8 @@ SLuaState_delete(SLuaState** pLuaState)
     if (!IS_VALID(pLuaState) || !IS_VALID(*pLuaState))
     {
         fprintf
-        (   
-            stderr, 
+        (
+            stderr,
             "SLuaState_delete(SLuaState** LuaState) -> \
             received \"LuaState\" as NULL."
         );
@@ -507,6 +526,19 @@ SLuaState_PushVariable(SLuaState* pLuaState, const SVar *pVar)
         case CTYPE_LUAREF:
             lua_rawgeti(L, LUA_REGISTRYINDEX, pVar->uData._int);
             break;
+        case CTYPE_LUATABLE:
+            {
+                size_t j;
+                SVarTable *t = pVar->uData._void;
+                lua_newtable(L); /* push empty */
+                for (j = 0; j < t->dCount; ++j)
+                {
+                    SLuaState_PushVariable(pLuaState, &t->pEntries[j].tKey);
+                    SLuaState_PushVariable(pLuaState, &t->pEntries[j].tValue);
+                    lua_settable(L, -3); /* table[key]=value */
+                }
+            }
+            break;
         case CTYPE_NULL:
         default:
             lua_pushnil(L);
@@ -520,8 +552,8 @@ SLuaState_ClearGlobalTable(SLuaState* pLuaState)
     if (!IS_VALID(pLuaState) || !IS_VALID(pLuaState->pState))
     {
         fprintf
-        (   
-            stderr, 
+        (
+            stderr,
             "SLuaState_ClearGlobalTable(SLuaState** LuaState)-> \
             received \"LuaState\" as NULL or LuaState->pState is NULL."
         );
@@ -530,6 +562,28 @@ SLuaState_ClearGlobalTable(SLuaState* pLuaState)
 
     lua_pushnil(pLuaState->pState);
     lua_setglobal(pLuaState->pState, "_G");
+}
+
+CAPI CBOOL
+SLuaState_LuaObjectToSVar(
+    SLuaState* pLuaState,
+    SVar* pOut,
+    int dIdx,
+    int dDepth
+)
+{
+    if (!IS_VALID(pLuaState) || !IS_VALID(pLuaState->pState))
+    {
+        fprintf
+        (
+            stderr,
+            "SLuaState_LuaObjectToSVar(SLuaState* pLuaState, SVar* pOut, int dIdx, int dDepth)-> \
+            received \"LuaState\" as NULL or LuaState->pState is NULL."
+        );
+        return CFALSE;
+    }
+
+    return _LuaObjectToSVar(pLuaState->pState, pOut, dIdx, dDepth);
 }
 
 /******************************************************************************
@@ -569,7 +623,8 @@ SCommand_ExecuteLuaBasedCommand(
  * STATIC FUNCTION DEFINITIONS
  ******************************************************************************/
 
-void _LoadAllLuaScripts(lua_State* L, const char* folder_path) 
+static void
+_LoadAllLuaScripts(lua_State* L, const char* folder_path)
 {
 #ifdef _WIN32
 
@@ -663,5 +718,106 @@ void _LoadAllLuaScripts(lua_State* L, const char* folder_path)
     }
     closedir(dir);
 #endif
+}
+
+static CBOOL
+_LuaObjectToSVar(
+    lua_State *L,
+    SVar *pOut,
+    int dIdx,
+    int dDepth)
+{
+    int dType = lua_type(L, dIdx);
+    switch (dType)
+    {
+        case LUA_TNIL:
+            SVAR_NULL(*pOut);
+            break;
+        case LUA_TBOOLEAN:
+            SVAR_BOOL(*pOut,lua_toboolean(L, dIdx));
+            break;
+        case LUA_TNUMBER:
+            SVAR_DOUBLE(*pOut,lua_tonumber(L, dIdx));
+            break;
+        case LUA_TSTRING:
+            SVAR_CONSTCHAR(*pOut,lua_tostring(L, dIdx));
+            break;
+        case LUA_TTABLE:
+            return _LuaTableToSVar(L, dIdx, pOut, dDepth);
+        case LUA_TFUNCTION:
+        case LUA_TUSERDATA:
+        default:
+            SVAR_LUAREF(*pOut, L, dIdx);
+            pOut->dFlags = dType;
+            break;
+    }
+
+    return CTRUE;
+}
+
+static CBOOL
+_LuaTableToSVar(
+    lua_State *L,
+    int dIdx,
+    SVar *pOut,
+    int dDepth)
+{
+    SVarTable *pTable   = NULL;
+    size_t dCapacity    = 8;
+    size_t dCount       = 0;
+    int dTableIdx       = 0;
+
+    if (dDepth > MAX_TABLE_DEPTH)
+    {
+        return CFALSE;
+    }
+
+    pTable = (SVarTable*)calloc(1, sizeof(SVarTable));
+    assert(!IS_VALID(pTable));
+
+    pTable->pEntries  = (SVarTableEntry*)calloc(dCapacity,sizeof(SVarTableEntry));
+    if (!IS_VALID(pTable->pEntries))
+    {
+        free(pTable);
+        return CFALSE;
+    }
+
+    lua_pushvalue(L, dIdx);
+    dTableIdx = lua_gettop(L);
+
+    /* keep a Lua ref so values remain valid if caller needs them */
+    lua_pushvalue(L, dTableIdx);
+    pTable->dLuaRef = luaL_ref(L, LUA_REGISTRYINDEX);
+
+    lua_pushnil(L); /* first key */
+    while (lua_next(L, dTableIdx) != 0)
+    {
+        if (dCount == dCapacity)
+        {
+            dCapacity <<= 1;
+            pTable->pEntries = (SVarTableEntry*)realloc
+            (
+                pTable->pEntries,
+                dCapacity * sizeof(SVarTableEntry)
+            );
+            assert(pTable->pEntries);
+        }
+
+        /* key at -2, value at -1 */
+        _LuaObjectToSVar(L, &pTable->pEntries[dCount].tKey, -2, dDepth+1);
+        _LuaObjectToSVar(L, &pTable->pEntries[dCount].tValue, -1, dDepth+1);
+        ++dCount;
+
+        lua_pop(L, 1);
+    }
+
+    lua_pop(L, 1);
+
+    pTable->dCount    = dCount;
+    pOut->eType       = CTYPE_LUATABLE;
+    pOut->dSize       = sizeof(*pTable);
+    pOut->uData._void = pTable;
+
+    return CTRUE;
 }
 
