@@ -29,6 +29,7 @@ typedef struct
     String          *pStringImageTitle[APP_MAX_ELEMENTS];
     String          *pStringImagePath[APP_MAX_ELEMENTS];
     int             dSelectedOption;
+    int             dMaxOptions;
 } GUITweaker;
 
 typedef struct

@@ -492,20 +492,17 @@ _Panel_TweakerOptionsSelector(AppGUI *pApp)
     const GUITweaker* pTweaker;
     Panel       *pPanelMain         = panel_create();
     Layout      *pLayoutMain        = layout_create(APP_MAX_ELEMENTS,1);
-    Label       *pLabelError        = label_create();
+    Label       *pLabelError;
     Button      *pButtonOpt[APP_MAX_ELEMENTS];
     int i;
 
     pTweaker = &pApp->tGUITweaker[pApp->dPage];
     assert(IS_VALID(pTweaker));
 
-    /* Label: Error about option absence */
-    label_text(pLabelError, "Error: no options provided!");
-
     /* Buttons: Tweak Options */
-    for (i = 0; i < APP_MAX_ELEMENTS; i++)
+    for (i = 0; i < pTweaker->dMaxOptions; i++)
     {
-        if (pTweaker->pStringImageTitle[i])
+        if (!str_empty(pTweaker->pStringImageTitle[i]))
         {
             pButtonOpt[i] = button_radio();
             button_text(pButtonOpt[i], tc(pTweaker->pStringImageTitle[i]));
@@ -525,9 +522,9 @@ _Panel_TweakerOptionsSelector(AppGUI *pApp)
     }
 
     /* Layout: Selector */
-    for (i = 0; i < APP_MAX_ELEMENTS; i++)
+    for (i = 0; i < pTweaker->dMaxOptions; i++)
     {
-        if (pTweaker->pStringImageTitle[i])
+        if (!str_empty(pTweaker->pStringImageTitle[i]))
         {
             layout_button(pLayoutMain, pButtonOpt[i], i,0);
             layout_hsize(pLayoutMain, i, 150);
@@ -535,13 +532,16 @@ _Panel_TweakerOptionsSelector(AppGUI *pApp)
         }
     }
     layout_hmargin(pLayoutMain, 0, 5);
-    if (!pTweaker->pStringImageTitle[0])
-    {
-        layout_label(pLayoutMain, pLabelError, 0, 0);
-    }
-    layout_update(pLayoutMain);
     layout_margin4(pLayoutMain, 5, 10, 10, 10);
     layout_skcolor(pLayoutMain, gui_line_color());
+
+    /* Label: Error about option absence */
+    if (str_empty(pTweaker->pStringImageTitle[0]))
+    {
+        pLabelError = label_create();
+        label_text(pLabelError, "Error: No options provided!");
+        layout_label(pLayoutMain, pLabelError, 0, 0);
+    }
 
     /* Panel: Main */
     panel_layout(pPanelMain, pLayoutMain);
@@ -799,6 +799,7 @@ Callback_OnButtonModalTweaker(AppGUI *pApp, Event *e)
         }
     }
 
+    str_destopt(&pApp->pString);
     pApp->pString = str_copy(pTweaker->pStringImagePath[dImageIndex]);
     layout_panel_replace(pApp->pLayoutModalMain, Panel_GetImageDemo(pApp), 0, 2);
 
@@ -905,12 +906,30 @@ _Nappgui_Start(void)
 static void 
 _Nappgui_End(AppGUI **pApp)
 {
-    if ((*pApp)->pString)
+    size_t i;
+    size_t j;
+
+    /* APPGUI */
+    for(i = 0; i < APP_MAX_ELEMENTS; i++)
     {
-        str_destroy(&(*pApp)->pString);
+        GUITweaker *pTweaker = &(*pApp)->tGUITweaker[i];
+        str_destopt(&pTweaker->pStringTag);
+        str_destopt(&pTweaker->pStringTweakerInfo);
+
+        for(j = 0; j < APP_MAX_ELEMENTS; j++)
+        {
+            str_destopt(&pTweaker->pStringImageTitle[j]);
+            str_destopt(&pTweaker->pStringImagePath[j]);
+        }
     }
 
+    str_destopt(&(*pApp)->pString);
+
     AmberLauncher_End((*pApp)->pAppCore);
+    if ((*pApp)->pWindowModal)
+    {
+        window_destroy(&(*pApp)->pWindowModal);
+    }
     window_destroy(&(*pApp)->pWindow);
     AppCore_free(&(*pApp)->pAppCore);
     heap_delete(pApp, AppGUI);
@@ -1175,6 +1194,8 @@ _Callback_UIEvent(
                         }
                     }
 
+                    pApp->tGUITweaker[i].dMaxOptions = dOptionIndex;
+
                     textview_printf(pApp->pTextView, "Group %zu Info: %s (%zu options)\n",
                                 i + 1,
                                 sGroupInfo ? sGroupInfo : "No description",
@@ -1188,15 +1209,13 @@ _Callback_UIEvent(
                 pApp->dPageMax  = dGroupCount;
                 for(i = 0; i < APP_MAX_ELEMENTS; i++)
                 {
-                    pApp->tGUITweaker[i].dSelectedOption = 0;
+                    pApp->tGUITweaker[i].dSelectedOption    = 0;
                 }
 
                 /* Set initial image to first option of first group if available */
                 if (dGroupCount > 0 && pApp->tGUITweaker[0].pStringImagePath[0])
                 {
-                    if (pApp->pString)
-                        str_destroy(&pApp->pString);
-                    pApp->pString = str_copy(pApp->tGUITweaker[0].pStringImagePath[0]);
+                    str_upd(&pApp->pString, tc(pApp->tGUITweaker[0].pStringImagePath[0]));
                 }
 
                 textview_printf(pApp->pTextView, "Total groups processed: %zu\n", dGroupCount);
