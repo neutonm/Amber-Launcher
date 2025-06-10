@@ -31,9 +31,8 @@ local function _ConfigTweaks()
     if ini then
         local myStr = AL.INIGet(ini, "Settings", "ViewDistanceD3D")
         if myStr then
-            --print(myStr)
+            print(myStr)
         end
-        AL.INIClose(ini)
     else
         print("Failed to load INI file: "..iniPath)
         return false
@@ -45,19 +44,30 @@ local function _ConfigTweaks()
         print(dump(uiResponse))
 
         if uiResponse.strafe then
-            --AL.INISet(ini, "Settings", "AlwaysStrafe", 1 - uiResponse.strafe)
+            local myStr = AL.INIGet(ini, "Settings", "AlwaysStrafe")
+            print("uiResponse.strafe before: "..myStr)
+            AL.INISet(ini, "Settings", "AlwaysStrafe", tostring(1 - uiResponse.strafe))
+            myStr = AL.INIGet(ini, "Settings", "AlwaysStrafe")
+            print("uiResponse.strafe after: "..myStr)
         end
 
         if uiResponse.gui then
-            --AL.INISet(ini, "Settings", "UILayout", uiResponse.gui == 0 and "UI" or "")
+            local myStr = AL.INIGet(ini, "Settings", "UILayout")
+            print("uiResponse.gui before: "..myStr)
+            AL.INISet(ini, "Settings", "UILayout", uiResponse.gui == 0 and "UI" or "0")
+            myStr = AL.INIGet(ini, "Settings", "UILayout")
+            print("uiResponse.gui after: "..myStr)
         end
 
         if uiResponse.david then
             -- special non-ini case...
         end
+
+        AL.INISave(ini, iniPath)
     end
 
     print("Tweaking done!")
+    AL.INIClose(ini)
 
     return true
 end

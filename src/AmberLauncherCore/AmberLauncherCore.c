@@ -473,8 +473,10 @@ luaL_Reg AL[] =
     {"ConvertMP3ToWAV",             LUA_ConvertMP3ToWAV         },
     {"ArchiveExtract",              LUA_ArchiveExtract          },
     {"INILoad",                     LUA_INILoad                 },
+    {"INISave",                     LUA_INISave                 },
     {"INIClose",                    LUA_INIClose                },
     {"INIGet",                      LUA_INIGet                  },
+    {"INISet",                      LUA_INISet                  },
     {NULL, NULL}
 };
 

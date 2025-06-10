@@ -83,6 +83,7 @@ Table Of Contents:
 *Provide alternative and/or extended functionality for the launcher.*
 
 - [ ] ConfigTweak.lua
+- - import precached default mm7.ini
 > Tweaker: 
 > - language select (audio, game, mod)
 > - mouse look start

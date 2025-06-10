@@ -24,9 +24,15 @@ extern CAPI int
 LUA_INILoad(struct lua_State* L);
 
 extern CAPI int
+LUA_INISave(struct lua_State* L);
+
+extern CAPI int
 LUA_INIClose(struct lua_State* L);
 
 extern CAPI int
 LUA_INIGet(struct lua_State* L);
+
+extern CAPI int
+LUA_INISet(struct lua_State *L);
 
 #endif

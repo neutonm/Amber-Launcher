@@ -1,3 +1,4 @@
+#include "core/common.h"
 #include <commands/config.h>
 
 #include <core/command.h>
@@ -93,6 +94,30 @@ LUA_INILoad(struct lua_State* L)
 }
 
 CAPI int
+LUA_INISave(struct lua_State* L)
+{
+    lua_ini_t*  pIniUserData = (lua_ini_t*)luaL_checkudata(L, 1, "INIConfig");
+    const char* sFilename    = luaL_checkstring(L, 2);
+    int         dResult      = 0;
+
+    if (!IS_VALID(pIniUserData))
+    {
+        lua_pushnil(L);
+        return 1;
+    }
+
+    dResult = ini_save(pIniUserData->pConfig, sFilename);
+    if (dResult == 0)
+    {
+        lua_pushnil(L);
+        return 1;
+    }
+
+    lua_pushboolean(L, 1);
+    return 1;
+}
+
+CAPI int
 LUA_INIClose(struct lua_State* L)
 {
     lua_ini_t* pIniUserData = (lua_ini_t*)luaL_checkudata(L, 1, "INIConfig");
@@ -126,3 +151,22 @@ LUA_INIGet(struct lua_State* L)
     return 1;
 }
 
+CAPI int
+LUA_INISet(struct lua_State *L)
+{
+    lua_ini_t *pIniUserData = (lua_ini_t *)luaL_checkudata(L, 1, "INIConfig");
+    const char *sSection    = luaL_checkstring(L, 2);
+    const char *sKey        = luaL_checkstring(L, 3);
+    const char *sValue      = luaL_checkstring(L, 4);
+
+    if (ini_set(pIniUserData->pConfig, sSection, sKey, sValue))
+    {
+        lua_pushboolean(L, 1);
+    }
+    else
+    {
+        lua_pushboolean(L, 0);
+    }
+
+    return 1;
+}

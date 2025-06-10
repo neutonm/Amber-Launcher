@@ -17,4 +17,9 @@ void        ini_free(ini_t *ini);
 const char* ini_get(ini_t *ini, const char *section, const char *key);
 int         ini_sget(ini_t *ini, const char *section, const char *key, const char *scanfmt, void *dst);
 
+/* amber launcher */
+int         ini_set(ini_t *ini, const char *section, const char *key, const char *value);
+int         ini_save(ini_t *ini, const char *filename);
+
+
 #endif

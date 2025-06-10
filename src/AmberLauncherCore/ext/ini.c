@@ -272,3 +272,150 @@ int ini_sget(
   }
   return 1;
 }
+
+/* amber launcher */
+static int _ini_grow(ini_t *ini, size_t extra)
+{
+  size_t old_sz = (size_t)(ini->end - ini->data);
+  char  *tmp    = realloc(ini->data, old_sz + extra + 1);
+  if (!tmp) return 0;
+
+  ini->data = tmp;
+  ini->end  = tmp + old_sz + extra;
+  return 1;
+}
+
+int ini_set(ini_t *ini, const char *section, const char *key, const char *value)
+{
+  size_t off_val;
+  size_t tail_off;
+  size_t tail_sz;
+  size_t old_len;
+  size_t new_len;
+  char *val;
+
+  val = (char*)ini_get(ini, section, key);
+  if (!val)
+  {
+    return 0;
+  }
+
+  old_len = strlen(val);
+  new_len = strlen(value);
+
+  if (new_len <= old_len)
+  {
+    memcpy(val, value, new_len + 1);
+    memset(val + new_len + 1, '\0', old_len - new_len);
+    return 1;
+  }
+
+  /* Need more space */
+  off_val  = (size_t)(val - ini->data);
+  tail_off = off_val + old_len + 1;
+  tail_sz  = (size_t)(ini->end - (ini->data + tail_off));
+
+  if (!_ini_grow(ini, new_len - old_len))
+  {
+    return 0;
+  }
+
+  /* Re-establish pointers after possible realloc */
+  val       = ini->data + off_val;
+  char *src = ini->data + tail_off;
+  char *dst = src + (new_len - old_len);
+
+  /* Slide the tail section up to make room */
+  memmove(dst, src, tail_sz);
+
+  memcpy(val, value, new_len + 1);
+
+  return 1;
+}
+
+static void fput_escaped_value(FILE *fp, const char *val)
+{
+  int needs_quote = 0;
+  const char *s   = val;
+
+  /* Decide whether the value must be quoted */
+  for (; *s; s++)
+  {
+    if (*s == ' ' || *s == '\t' || *s == ';' || *s == '#' ||
+        *s == '\r' || *s == '\n')
+    {
+      needs_quote = 1;
+      break;
+    }
+  }
+
+  if (!needs_quote)
+  {
+    fputs(val, fp);
+    return;
+  }
+
+  fputc('"', fp);
+  for (s = val; *s; s++)
+  {
+    switch (*s)
+    {
+      case '\\': fputs("\\\\", fp); break;
+      case '\r': fputs("\\r",  fp); break;
+      case '\n': fputs("\\n",  fp); break;
+      case '\t': fputs("\\t",  fp); break;
+      case '"' : fputs("\\\"", fp); break;
+      default  : fputc(*s, fp);    break;
+    }
+  }
+  fputc('"', fp);
+}
+
+int ini_save(ini_t *ini, const char *filename)
+{
+  char *p;
+  FILE *fp = fopen(filename, "wb");
+
+  if (!fp)
+  {
+    return 0;
+  }
+
+  if (*(ini->data) == '\0')
+  {
+    /* First token may be empty (file started with blank line) */
+    char *tmp = ini->data;
+    while (tmp < ini->end && *tmp == '\0')
+    {
+      tmp++;
+    }
+    ini->data = tmp;
+  }
+
+  p = ini->data;
+  while (p < ini->end)
+  {
+    if (*p == '[')
+    {
+      /* Section header token: write “[…]”                      */
+      if (fprintf(fp, "%s]\n", p) < 0) goto io_fail;
+    }
+    else
+    {
+      char *val = next(ini, p);
+      if (fprintf(fp, "%s=", p) < 0) goto io_fail;
+      fput_escaped_value(fp, val);
+      if (fputc('\n', fp) == EOF) goto io_fail;
+      p = val;
+    }
+
+    p = next(ini, p);
+  }
+
+  fclose(fp);
+  return 1;
+
+io_fail:
+  fclose(fp);
+  return 0;
+}
