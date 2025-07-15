@@ -13,30 +13,15 @@ Table Of Contents:
 - [GUI Library](#gui-library)
 - [Lua Scripts](#lua-scripts)
 
-> CURRENT:
-> - code review & refactor this commit
-
-> ARCHIVED:
-> UPD 30 may: shit left to do:
-> - process selected options
-> - do something about them (in lua)
-> - - let user define the name of the option (in lua) so he can check/process later (uiResponse)
-> - previous button: should remember last choice
-> - code review/refactor
-> UPD 21 may: implement grouped _TWEAKER processing (e.g: local t = { {info = 'derp'},{info = 'hoho'} })
-> UPD 7 may: i need:
-> - The major goal is to convert lua to SVAR from UI Module
-> - SVAR_ARRAY of sorts
-> - UICall converts lua variadic argument (which is table) which is decomposed inside UI module into smaller SVARs. 
-> - So, at the end:
-> - - LUA: ideally we pass lua tables with whatever there is (e.g: table of tables)
-> - - UI Module: converts lua tables into SVAR and pass it to MODAL window
-> - - *Modal Tweaker turns into wizard*
+> Current:  Auto-Updater / Downloader
+> Next:     Options menu (tweak separate options, change language and all that shit from config wizard)
+> Next:     Core  Launcher GUI
+> The END
 
 ## Main
 *General points towards development*
 
-- [ ] Fix memory leaks
+- [X] Fix memory leaks
 - [ ] Revert/Enable/Disable features for every command
 - [ ] Uninstall Mod feature (should totally revert everything + backup saves)
 - [ ] App and scripts must be based on specified game (Amber Island by default)
@@ -56,7 +41,7 @@ Table Of Contents:
 *Responsible for providing main functionality for the launcher app. Must be independent module.* 
 
 - [ ] Code Review for header/sources
-- [ ] add theoraplay library
+- [X] add theoraplay library
 - - [ ] test video playback via theoraplay (required for illustrating option tweaking)
 - - Maybe ditch it and just stick to GIF? Nappgui already provides support for gif playback.
 - [ ] save argc/argv into AppCore struct
@@ -82,16 +67,6 @@ Table Of Contents:
 ## Lua Scripts
 *Provide alternative and/or extended functionality for the launcher.*
 
-- [ ] ConfigTweak.lua
-- - import precached default mm7.ini
-> Tweaker: 
-> - language select (audio, game, mod)
-> - mouse look start
-> - old/grayface gui
-> - W and D strafe or turn
-> - David's HD sprite pack
-> - 
-- [ ] ConvertMusic.lua
 - [ ] DetectAndCopyGame.lua
 - - check and warn if user suddenly points to mm6 or mm8 (optional)
 - - Browse button: if file browser window is canceled without specifiying, you get appcrash (nappgui error)
@@ -109,4 +84,19 @@ Table Of Contents:
 - - printfs should really print to pApp->pTextView
 - [ ] DetectAndInstallMod.lua
 - [ ] MergeAndRename.lua
-- [ ] RegistryTweaks
+- [ ] ConvertMusic.lua
+- [ ] RegistryTweaks.lua
+- [ ] ConfigTweak.lua
+- - import precached default mm7.ini
+> Tweaker: 
+> - mouse look start
+> - old/grayface gui
+> - W and D strafe or turn
+> - David's HD sprite pack
+> - 
+- [ ] Localization.lua
+- - localization types: vanilla game, sound, mod
+- - - each one should have its own recipe
+- - - should be done via renaming inside Scripts/Localization
+- - GUI widget (after tweaker)
+- - public functionality for later tweaking

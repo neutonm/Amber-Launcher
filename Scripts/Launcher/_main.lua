@@ -76,7 +76,8 @@ function AppConfigure()
     -- end
 
     --temp
-    configSuccessful = AL.CommandCall("ConfigTweaks")
+    configSuccessful = AL.CommandCall("Localisation")
+    --configSuccessful = AL.CommandCall("ConfigTweaks")
     --AL.CommandCall("MergeAndRename")
     --AL.CommandCall("DetectAndInstallMod")
     

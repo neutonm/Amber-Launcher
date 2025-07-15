@@ -4,6 +4,7 @@
 #include <AmberLauncherGUI.h>
 #include <AmberLauncherCore.h>
 
+#include <bits/stdint-uintn.h>
 #include <bits/types/error_t.h>
 #include <core/common.h>
 #include <core/appcore.h>
@@ -26,6 +27,7 @@ const char* EUIEventTypeStrings[] = {
     "MODAL_QUESTION",
     "MODAL_GAMENOTFOUND",
     "MODAL_TWEAKER",
+    "MODAL_LOCALISATION",
     NULL
 };
 
@@ -96,6 +98,9 @@ _Panel_TweakerOptionsSelector(AppGUI *pApp);
 static Panel*
 _Panel_TweakerButtons(AppGUI *pApp);
 
+static void
+_LocalisationFillPopup(AppGUI *pApp, PopUp *pPop, LocTier eTier);
+
 /******************************************************************************
  * STATIC CALLBACK DECLARATIONS
  ******************************************************************************/
@@ -124,6 +129,10 @@ _Callback_UIEvent(
     uint32 dID,
     const SVar *pUserData,
     const unsigned int dNumArgs);
+
+
+static void
+_Callback_LocalisationPopupSelector(AppGUI *pApp, Event *e);
 
 /******************************************************************************
  * HEADER DEFINITIONS
@@ -684,6 +693,139 @@ Panel_GetModalTweaker(AppGUI *pApp)
     return pPanelMain;
 }
 
+static void
+_Callback_LocalisationPopupSelector(AppGUI *pApp, Event *e)
+{
+    /* Since there's no way to "tag" popups, just acquire data from all widgets */
+    pApp->dLocaleSelected[LOC_CORE] = popup_get_selected(pApp->pPopupCore);
+    pApp->dLocaleSelected[LOC_MOD]  = popup_get_selected(pApp->pPopupMod);
+
+    view_update(pApp->pLocaleView);
+
+    unref(e);
+
+    /* gui_language(lang); */
+}
+
+static void 
+_LocalisationFillPopup(AppGUI *pApp, PopUp *pPop, LocTier eTier)
+{
+    size_t i;
+
+    popup_clear(pPop);
+    for (i = 0; i < pApp->dLocaleCount; ++i)
+    {
+        const LangInfo *li = &pApp->tLocale[i];
+        bool_t bOk = (eTier == LOC_CORE  && li->bCore ) ||
+                 (eTier == LOC_MOD   && li->bMod  );
+
+        if (bOk)
+        {
+            popup_add_elem(pPop, li->sCode, NULL);
+        }
+    }
+    popup_selected(pPop, 0);
+}
+
+Panel*
+Panel_GetModalLocalisation(AppGUI *pApp)
+{
+    Panel       *pPanelMain         = panel_create();
+    /* Panel       *pPanelImage        = Panel_GetImageDemo(pApp); */
+    Layout      *pLayoutMain        = layout_create(1,6);
+    Layout      *pLayoutPopupLabels = layout_create(3,1);
+    Layout      *pLayoutPopups      = layout_create(3,1);
+    Layout      *pLayoutButtons     = layout_create(4,1);
+    Label       *pLabelDescription  = label_create();
+    Label       *pLabelLocCore      = label_create();
+    Label       *pLabelLocMod       = label_create();
+    View        *pViewPreview       = view_create();
+    Button      *pButtonAccept      = button_push();
+    Button      *pButtonCancel      = button_push();
+    PopUp       *pPopUpCore         = popup_create();
+    PopUp       *pPopUpMod          = popup_create();
+
+    pApp->pPopupCore    = pPopUpCore;
+    pApp->pPopupMod     = pPopUpMod;
+    pApp->pLocaleView   = pViewPreview;
+
+    /* Label: Description */
+    label_multiline(pLabelDescription, TRUE);
+    label_text(pLabelDescription, TXT_LOCALISATION);
+
+    /* Label: Languages */
+    label_text(pLabelLocCore, TXT_LOC_CORE);
+    label_text(pLabelLocMod, TXT_LOC_MOD);
+    label_align(pLabelLocCore, ekLEFT);
+    label_align(pLabelLocMod, ekLEFT);
+
+    /* Popups: Languages */
+    _LocalisationFillPopup(pApp, pPopUpCore,  LOC_CORE);
+    _LocalisationFillPopup(pApp, pPopUpMod,   LOC_MOD);
+
+    /* gui_image(USA_PNG) */
+    /* popup_add_elem(pPopUpCore, TXT_LOC_ENGLISH, NULL);
+    popup_add_elem(pPopUpCore, TXT_LOC_SPANISH, NULL);
+    popup_add_elem(pPopUpCore, TXT_LOC_FRENCH, NULL);
+    popup_add_elem(pPopUpCore, TXT_LOC_POLISH, NULL);
+    popup_add_elem(pPopUpCore, TXT_LOC_CZECH, NULL);
+    popup_add_elem(pPopUpCore, TXT_LOC_HUNGARIAN, NULL);
+    popup_add_elem(pPopUpCore, TXT_LOC_UKRAINIAN, NULL);
+    popup_add_elem(pPopUpCore, TXT_LOC_RUSSIAN, NULL); */
+
+    popup_OnSelect(pPopUpCore, listener(pApp, _Callback_LocalisationPopupSelector, AppGUI));
+
+    /* popup_add_elem(pPopUpMod, TXT_LOC_ENGLISH, NULL); */
+    popup_OnSelect(pPopUpMod, listener(pApp, _Callback_LocalisationPopupSelector, AppGUI));
+
+    /* View: Localisation image preview */
+    view_size(pViewPreview, s2df(640, 360));
+    view_OnDraw(pViewPreview, listener(pApp, Callback_OnDrawLocalisation, AppGUI));
+
+    /* Button: Accept */
+    button_text(pButtonAccept, TXT_BTN_ACCEPT);
+    button_tag(pButtonAccept, MODAL_ACCEPT);
+    button_OnClick(pButtonAccept, listener(pApp, Callback_OnButtonModalLocalisation, AppGUI));
+
+    /* Button: Cancel */
+    button_text(pButtonCancel, TXT_BTN_CANCEL);
+    button_tag(pButtonCancel, MODAL_CANCEL);
+    button_OnClick(pButtonCancel, listener(pApp, Callback_OnButtonModalLocalisation, AppGUI));
+
+    /* Layout: Popup Labels */
+    layout_hsize(pLayoutPopupLabels, 0, 200);
+    layout_hsize(pLayoutPopupLabels, 1, 200);
+    layout_hsize(pLayoutPopupLabels, 2, 200);
+    layout_label(pLayoutPopupLabels, pLabelLocCore, 0, 0);
+    layout_label(pLayoutPopupLabels, pLabelLocMod, 1, 0);
+
+    /* Layout: Popups */
+    layout_hsize(pLayoutPopups, 0, 200);
+    layout_hsize(pLayoutPopups, 1, 200);
+    layout_hsize(pLayoutPopups, 2, 200);
+    layout_popup(pLayoutPopups, pPopUpCore, 0, 0);
+    layout_popup(pLayoutPopups, pPopUpMod, 1, 0);
+
+    /* Layout: Buttons */
+    layout_button(pLayoutButtons, pButtonCancel, 0, 0);
+    layout_button(pLayoutButtons, pButtonAccept, 3, 0);
+
+    /* Layout: Main */
+    layout_hsize(pLayoutMain, 0, 640);
+
+    layout_label(pLayoutMain, pLabelDescription, 0, 0);
+    layout_layout(pLayoutMain, pLayoutPopupLabels, 0,1);
+    layout_layout(pLayoutMain, pLayoutPopups, 0,2);
+    layout_view(pLayoutMain, pViewPreview, 0, 4);
+    layout_layout(pLayoutMain, pLayoutButtons, 0, 5);
+    /* layout_panel(pLayoutMain, pPanelImage, 0, 4); */
+
+    /* Panel: Main */
+    panel_layout(pPanelMain, pLayoutMain);
+
+    return pPanelMain;
+}
+
 void 
 Callback_OnButtonConfigure(AppGUI *pApp, Event *e)
 {
@@ -806,6 +948,21 @@ Callback_OnButtonModalTweaker(AppGUI *pApp, Event *e)
     layout_update(pApp->pLayoutModalMain);
 }
 
+void
+Callback_OnButtonModalLocalisation(AppGUI *pApp, Event *e)
+{
+    Button *pButton     = event_sender(e, Button);
+    uint32_t dButtonTag = button_get_tag(pButton);
+
+    pApp->dLocaleSelected[LOC_CORE] = popup_get_selected(pApp->pPopupCore);
+    pApp->dLocaleSelected[LOC_MOD]  = popup_get_selected(pApp->pPopupMod);
+
+    window_stop_modal(pApp->pWindowModal, dButtonTag);
+
+    unref(pButton);
+    unref(e);
+}
+
 void 
 Callback_OnButtonPlay(AppGUI *pApp, Event *e)
 {
@@ -814,6 +971,37 @@ Callback_OnButtonPlay(AppGUI *pApp, Event *e)
     /* AmberLauncher_ProcessLaunch("mm7.exe", _argc, _argv, TRUE); */
     unref(pButton);
     unref(e);
+}
+
+void
+Callback_OnDrawLocalisation(AppGUI *pApp, Event *e)
+{
+    ferror_t        eError1, eError2;
+    Image           *pImageBG = NULL;
+    Image           *pImageFG = NULL;
+    const EvDraw    *pEvDraw  = event_params(e, EvDraw);
+    DCtx            *pCtx = pEvDraw ? pEvDraw->ctx : NULL;
+
+    assert(pApp->tLocale[pApp->dLocaleSelected[LOC_CORE]].bCore);
+    assert(pApp->tLocale[pApp->dLocaleSelected[LOC_MOD]].bMod);
+
+    pImageBG = image_from_file(pApp->tLocale[pApp->dLocaleSelected[LOC_CORE]].sCorePath,&eError1);
+    pImageFG = image_from_file(pApp->tLocale[pApp->dLocaleSelected[LOC_MOD]].sModPath,&eError2);
+
+    assert(eError1 == ekFOK);
+    assert(eError2 == ekFOK);
+
+    draw_clear(pCtx, color_rgb(0, 0, 0));
+
+    if (IS_VALID(pImageBG))
+        draw_image(pCtx, pImageBG, 0, 0);
+
+    if (IS_VALID(pImageFG))
+        draw_image(pCtx, pImageFG, 0, 0);
+
+    image_destroy(&pImageBG);
+    image_destroy(&pImageFG);
+    unref(pApp);
 }
 
 /******************************************************************************
@@ -1256,6 +1444,94 @@ _Callback_UIEvent(
                                 SVARKEYB_INT(tRetVal, bIsEmpty ? tc(pApp->tGUITweaker[i].pStringTag) : sOptName[i], pApp->tGUITweaker[i].dSelectedOption);
                             }
                         }
+                        break;
+                }
+            }
+            break;
+
+        case UIEVENT_MODAL_LOCALISATION:
+            {
+                size_t i, k;
+                SVarTable *pTable;
+
+                assert(pUserData);
+                assert(dNumArgs == 1);
+                assert(pUserData[0].eType == CTYPE_LUATABLE);
+
+                pTable = (SVarTable *)SVAR_GET_LUATABLE(pUserData[0]);
+
+                /* Reset */
+                pApp->dLocaleCount = 0;
+                memset(pApp->dLocaleSelected, 0, sizeof(pApp->dLocaleSelected));
+
+                /* Fill pApp->tLocale[] from Lua */
+                for (i = 0; i < pTable->dCount && i < APP_MAX_LOCALES; ++i)
+                {
+                    SVarTable *pLoc;
+                    const char_t *sCode;
+                    const char_t *sCorePath;
+                    const char_t *sModPath;
+
+                    if (pTable->pEntries[i].tValue.eType != CTYPE_LUATABLE)
+                    {
+                        continue;
+                    }
+
+                    pLoc = (SVarTable *)SVAR_GET_LUATABLE(
+                                            pTable->pEntries[i].tValue);
+
+                    /* read one localisation record */
+                    for (k = 0; k < pLoc->dCount; ++k)
+                    {
+                        const char *key =
+                            SVAR_GET_CONSTCHAR(pLoc->pEntries[k].tKey);
+
+                        if (strcmp(key, "code") == 0)
+                            sCode = SVAR_GET_CONSTCHAR(pLoc->pEntries[k].tValue);
+                        else if (strcmp(key, "core") == 0)
+                            sCorePath = SVAR_GET_CONSTCHAR(pLoc->pEntries[k].tValue);
+                        else if (strcmp(key, "mod") == 0)
+                            sModPath = SVAR_GET_CONSTCHAR(pLoc->pEntries[k].tValue);
+                    }
+
+                    if (sCode)
+                    {
+                        LangInfo *dst   = &pApp->tLocale[pApp->dLocaleCount++];
+                        dst->sCode      = sCode;
+                        dst->sCorePath  = sCorePath;
+                        dst->sModPath   = sModPath;
+                        dst->bCore      = !str_empty_c(sCorePath);
+                        dst->bMod       = !str_empty_c(sModPath);
+
+                        textview_printf(pApp->pTextView,
+                            "Language detected: %s\n\tCore path: %s\n\tMod Path: %s\n",
+                            sCode,sCorePath,sModPath);
+                    }
+                }
+
+                /* note: pop-ups will be filled from tLocale[] */
+                dModalRetVal = _Nappgui_ShowModal(
+                                    pApp,
+                                    Panel_GetModalLocalisation(pApp),
+                                    TXT_TITLE_LOCALISATION );
+
+                switch (dModalRetVal)
+                {
+                    case ekGUI_CLOSE_BUTTON:
+                    case ekGUI_CLOSE_ESC:
+                    case MODAL_CANCEL:
+                        SVARKEYB_BOOL(tRetVal, sStatusKey, CFALSE);
+                        break;
+
+                    default:
+                    {
+                        /* gather what the user picked */
+                        uint32_t dCore  = pApp->dLocaleSelected[LOC_CORE];
+                        uint32_t dMod   = pApp->dLocaleSelected[LOC_MOD];
+                        SVARKEYB_BOOL(tRetVal,sStatusKey, CTRUE);
+                        SVARKEYB_CONSTCHAR(tRetVal,"core",  pApp->tLocale[dCore].sCode);
+                        SVARKEYB_CONSTCHAR(tRetVal,"mod",   pApp->tLocale[dMod].sCode);
+                    }
                         break;
                 }
             }

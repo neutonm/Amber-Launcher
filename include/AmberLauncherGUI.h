@@ -17,6 +17,7 @@ struct SObserver;
  ******************************************************************************/
 
 #define APP_MAX_ELEMENTS 8
+#define APP_MAX_LOCALES 8
 
 /******************************************************************************
  * STRUCTS
@@ -31,6 +32,18 @@ typedef struct
     int             dSelectedOption;
     int             dMaxOptions;
 } GUITweaker;
+
+typedef struct
+{
+    const char_t *sCode;
+    const char_t *sDisplay;
+
+    const char_t *sCorePath;
+    const char_t *sModPath;
+
+    bool_t bCore;
+    bool_t bMod;
+} LangInfo;
 
 typedef struct
 {
@@ -49,6 +62,13 @@ typedef struct
     GUITweaker      tGUITweaker[APP_MAX_ELEMENTS];
     unsigned int    dPage;
     unsigned int    dPageMax;
+
+    LangInfo        tLocale[APP_MAX_LOCALES];
+    unsigned int    dLocaleCount;
+    unsigned int    dLocaleSelected[2];
+    PopUp           *pPopupCore;
+    PopUp           *pPopupMod;
+    View            *pLocaleView;
 
     struct SObserver *pOnUserEvent;
 } AppGUI;
@@ -74,8 +94,11 @@ typedef enum
     UIEVENT_MODAL_QUESTION,
     UIEVENT_MODAL_GAMENOTFOUND,
     UIEVENT_MODAL_TWEAKER,
+    UIEVENT_MODAL_LOCALISATION,
     UIEVENT_MAX
 } EUIEventType;
+
+typedef enum { LOC_CORE, LOC_MOD } LocTier;
 
 extern const char* EUserEventTypeStrings[];
 
@@ -178,6 +201,16 @@ Panel_GetModalGameNotFound(AppGUI* pApp);
 extern Panel*
 Panel_GetModalTweaker(AppGUI *pApp);
 
+/**
+ * @relatedalso Panel
+ * @brief       Returns predefined panel for Modal Window related to game/mod Localisation tweaks 
+ *
+ * @param       pApp
+ * @return      Panel*
+ */
+extern Panel*
+Panel_GetModalLocalisation(AppGUI *pApp);
+
 /******************************************************************************
  * HEADER CALLBACK DECLARATIONS
  ******************************************************************************/
@@ -241,6 +274,26 @@ Callback_OnButtonModalGameNotFound(AppGUI* pApp, Event *e);
  */
 extern void
 Callback_OnButtonModalTweaker(AppGUI* pApp, Event *e);
+
+/**
+ * @relatedalso Callback
+ * @brief       Generic callback for processing localisation tweak window
+ *
+ * @param       pApp
+ * @param       e
+ */
+extern void
+Callback_OnButtonModalLocalisation(AppGUI* pApp, Event *e);
+
+/**
+ * @relatedalso Callback
+ * @brief       Draw callback for localisation window gui-view
+ *
+ * @param       pApp
+ * @param       e
+ */
+extern void
+Callback_OnDrawLocalisation(AppGUI* pApp, Event *e);
 
 __END_C
 
