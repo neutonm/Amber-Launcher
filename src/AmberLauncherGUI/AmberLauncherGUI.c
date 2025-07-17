@@ -23,6 +23,7 @@
 
 const char* EUIEventTypeStrings[] = {
     "NULL",
+    "PRINT",
     "MODAL_MESSAGE",
     "MODAL_QUESTION",
     "MODAL_GAMENOTFOUND",
@@ -1167,10 +1168,12 @@ _Callback_UIEvent(
     assert(IS_VALID(pAppCore));
     pApp = (AppGUI*)pAppCore->pOwner;
 
+    #ifdef __DEBUG__
     if (pApp->pTextView && dID < UIEVENT_MAX)
     {
         textview_printf(pApp->pTextView,"UI EVENT: %s\n", EUIEventTypeStrings[dID]);
     }
+    #endif
 
     if (pApp->pString)
     {
@@ -1179,6 +1182,26 @@ _Callback_UIEvent(
 
     switch(dID)
     {
+        case UIEVENT_PRINT:
+            {
+                const char* sMessage;
+
+                assert(pUserData);
+                assert(dNumArgs >= 1);
+
+                sMessage = SVAR_GET_CONSTCHAR(pUserData[0]);
+
+                if (pApp->pTextView)
+                {
+                    textview_printf(pApp->pTextView,"%s\n", sMessage);
+                    SVARKEYB_BOOL(tRetVal, sStatusKey, CTRUE);
+                    break;
+                }
+
+                SVARKEYB_BOOL(tRetVal, sStatusKey, CFALSE);
+            }
+            break;
+
         case UIEVENT_MODAL_MESSAGE:
             {
                 assert(pUserData);

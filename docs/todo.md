@@ -13,9 +13,9 @@ Table Of Contents:
 - [GUI Library](#gui-library)
 - [Lua Scripts](#lua-scripts)
 
-> Current:  Auto-Updater / Downloader
 > Next:     Options menu (tweak separate options, change language and all that shit from config wizard)
 > Next:     Core  Launcher GUI
+> Next:     Auto-Updater / Downloader
 > The END
 
 ## Main

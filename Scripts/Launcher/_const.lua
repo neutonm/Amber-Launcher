@@ -18,11 +18,12 @@ end
 -- enums
 UIEVENT = {
     NULL                = 0,
-    MODAL_MESSAGE       = 1,
-    MODAL_QUESTION      = 2,
-    MODAL_GAMENOTFOUND  = 3,
-    MODAL_TWEAKER       = 4,
-    MODAL_LOCALISATION  = 5,
+    PRINT               = 1,
+    MODAL_MESSAGE       = 2,
+    MODAL_QUESTION      = 3,
+    MODAL_GAMENOTFOUND  = 4,
+    MODAL_TWEAKER       = 5,
+    MODAL_LOCALISATION  = 6,
     MAX
 }
 
