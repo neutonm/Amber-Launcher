@@ -284,6 +284,38 @@ typedef struct SVarTable {
 #define SVAR_GET_INT64(v)           SVAR_GET_LLONG(v)
 #define SVAR_GET_UINT64(v)          SVAR_GET_ULLONG(v)
 
+/* Individual type checks */
+#define SVAR_TYPE(v)              ((v).eType)
+#define SVAR_IS_NULL(v)           (SVAR_TYPE(v) == CTYPE_NULL)
+#define SVAR_IS_CHAR(v)           (SVAR_TYPE(v) == CTYPE_CHAR)
+#define SVAR_IS_UCHAR(v)          (SVAR_TYPE(v) == CTYPE_UNSIGNED_CHAR)
+#define SVAR_IS_CONSTCHAR(v)      (SVAR_TYPE(v) == CTYPE_CONST_CHAR)
+#define SVAR_IS_SHORT(v)          (SVAR_TYPE(v) == CTYPE_SHORT)
+#define SVAR_IS_USHORT(v)         (SVAR_TYPE(v) == CTYPE_UNSIGNED_SHORT)
+#define SVAR_IS_BOOL(v)           (SVAR_TYPE(v) == CTYPE_BOOL)
+#define SVAR_IS_INT(v)            (SVAR_TYPE(v) == CTYPE_INT)
+#define SVAR_IS_UINT(v)           (SVAR_TYPE(v) == CTYPE_UNSIGNED_INT)
+#define SVAR_IS_LONG(v)           (SVAR_TYPE(v) == CTYPE_LONG)
+#define SVAR_IS_ULONG(v)          (SVAR_TYPE(v) == CTYPE_UNSIGNED_LONG)
+#define SVAR_IS_LLONG(v)          (SVAR_TYPE(v) == CTYPE_LONG_LONG)
+#define SVAR_IS_ULLONG(v)         (SVAR_TYPE(v) == CTYPE_UNSIGNED_LONG_LONG)
+#define SVAR_IS_FLOAT(v)          (SVAR_TYPE(v) == CTYPE_FLOAT)
+#define SVAR_IS_DOUBLE(v)         (SVAR_TYPE(v) == CTYPE_DOUBLE)
+#define SVAR_IS_LDOUBLE(v)        (SVAR_TYPE(v) == CTYPE_LONG_DOUBLE)
+#define SVAR_IS_VOID(v)           (SVAR_TYPE(v) == CTYPE_VOID)
+#define SVAR_IS_LUAREF(v)         (SVAR_TYPE(v) == CTYPE_LUAREF)
+#define SVAR_IS_LUATABLE(v)       (SVAR_TYPE(v) == CTYPE_LUATABLE)
+
+/* Fixed-width aliases check */
+#define SVAR_IS_INT8(v)           SVAR_IS_CHAR(v)
+#define SVAR_IS_UINT8(v)          SVAR_IS_UCHAR(v)
+#define SVAR_IS_INT16(v)          SVAR_IS_SHORT(v)
+#define SVAR_IS_UINT16(v)         SVAR_IS_USHORT(v)
+#define SVAR_IS_INT32(v)          SVAR_IS_INT(v)
+#define SVAR_IS_UINT32(v)         SVAR_IS_UINT(v)
+#define SVAR_IS_INT64(v)          SVAR_IS_LLONG(v)
+#define SVAR_IS_UINT64(v)         SVAR_IS_ULLONG(v)
+
 /* SVar Key */
 #define SVAR_KEYBUNDLE_MAX          8
 
