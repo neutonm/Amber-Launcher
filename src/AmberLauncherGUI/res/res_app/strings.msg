@@ -5,6 +5,7 @@ TXT_TITLE_MESSAGE       Message
 TXT_TITLE_QUESTION      Question
 TXT_TITLE_TWEAKER       Tweaker
 TXT_TITLE_LOCALISATION  Localisation
+TXT_TITLE_OPTIONS       Options
 
 /* Buttons */
 TXT_BTN_YES             Yes

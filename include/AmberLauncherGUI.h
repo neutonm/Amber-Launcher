@@ -16,12 +16,65 @@ struct SObserver;
  * MACROS
  ******************************************************************************/
 
-#define APP_MAX_ELEMENTS 8
-#define APP_MAX_LOCALES 8
+#define APP_MAX_ELEMENTS    8
+#define APP_MAX_LOCALES     8
+#define MAX_OPT_ELEMS       32
+
+/******************************************************************************
+ * ENUMS
+ ******************************************************************************/
+typedef enum
+{
+    UI_WIDGET_NULL,
+    UI_WIDGET_RADIO,
+    UI_WIDGET_POPUP,
+    UI_WIDGET_EDIT,
+    UI_WIDGET_LISTBOX,
+    UI_WIDGET_MAX
+} EUIWidgetType;
+
+typedef enum
+{
+    CPANEL_NULL,
+    CPANEL_AUTOCONFIG,
+    CPANEL_MAIN,
+    CPANEL_IMAGEDEMO,
+    CPANEL_MODAL,
+    CPANEL_MAX
+} EPanelType;
+
+typedef enum
+{
+    UIEVENT_NULL = 0,
+    UIEVENT_PRINT,
+    UIEVENT_MODAL_MESSAGE,
+    UIEVENT_MODAL_QUESTION,
+    UIEVENT_MODAL_GAMENOTFOUND,
+    UIEVENT_MODAL_TWEAKER,
+    UIEVENT_MODAL_LOCALISATION,
+    UIEVENT_MODAL_OPTIONS,
+    UIEVENT_MAX
+} EUIEventType;
+
+typedef enum { LOC_CORE, LOC_MOD } LocTier;
+
+extern const char* EUserEventTypeStrings[];
 
 /******************************************************************************
  * STRUCTS
  ******************************************************************************/
+
+typedef struct GUIOptElement
+{
+    void            *pElement;
+    String          *pKeyID;
+    String          *pOutputString;
+    String          *pTitle;
+    String          *pOptTitle[APP_MAX_ELEMENTS];
+    EUIWidgetType   eType;
+    unsigned int    dNumOfOptions;
+    unsigned int    dChoice;
+} GUIOptElement;
 
 typedef struct
 {
@@ -63,6 +116,8 @@ typedef struct
     unsigned int    dPage;
     unsigned int    dPageMax;
 
+    GUIOptElement   *pOptElementArray;
+
     LangInfo        tLocale[APP_MAX_LOCALES];
     unsigned int    dLocaleCount;
     unsigned int    dLocaleSelected[2];
@@ -72,36 +127,6 @@ typedef struct
 
     struct SObserver *pOnUserEvent;
 } AppGUI;
-
-/******************************************************************************
- * ENUMS
- ******************************************************************************/
-
-typedef enum
-{
-    CPANEL_NULL,
-    CPANEL_AUTOCONFIG,
-    CPANEL_MAIN,
-    CPANEL_IMAGEDEMO,
-    CPANEL_MODAL,
-    CPANEL_MAX
-} EPanelType;
-
-typedef enum
-{
-    UIEVENT_NULL = 0,
-    UIEVENT_PRINT,
-    UIEVENT_MODAL_MESSAGE,
-    UIEVENT_MODAL_QUESTION,
-    UIEVENT_MODAL_GAMENOTFOUND,
-    UIEVENT_MODAL_TWEAKER,
-    UIEVENT_MODAL_LOCALISATION,
-    UIEVENT_MAX
-} EUIEventType;
-
-typedef enum { LOC_CORE, LOC_MOD } LocTier;
-
-extern const char* EUserEventTypeStrings[];
 
 /******************************************************************************
  * HEADER DECLARATIONS
@@ -212,6 +237,16 @@ Panel_GetModalTweaker(AppGUI *pApp);
 extern Panel*
 Panel_GetModalLocalisation(AppGUI *pApp);
 
+/**
+ * @relatedalso Panel
+ * @brief       Shows options window (configure general, mods and tweaks in one place)
+ *
+ * @param       pApp
+ * @return      Panel*
+ */
+extern Panel*
+Panel_GetModalOptions(AppGUI* pApp);
+
 /******************************************************************************
  * HEADER CALLBACK DECLARATIONS
  ******************************************************************************/
@@ -295,6 +330,16 @@ Callback_OnButtonModalLocalisation(AppGUI* pApp, Event *e);
  */
 extern void
 Callback_OnDrawLocalisation(AppGUI* pApp, Event *e);
+
+/**
+ * @relatedalso Callback
+ * @brief       Generic callback for processing button signals from options window
+ *
+ * @param       pApp
+ * @param       e
+ */
+extern void
+Callback_OnButtonModalOptions(AppGUI* pApp, Event *e);
 
 __END_C
 

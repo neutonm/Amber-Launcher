@@ -1,4 +1,7 @@
+#include "core/stdint.h"
 #include "draw2d/draw2d.hxx"
+#include "draw2d/guictx.hxx"
+#include "ext/miniz.h"
 #include "gui/gui.hxx"
 #include "sewer/types.hxx"
 #include <AmberLauncherGUI.h>
@@ -29,6 +32,7 @@ const char* EUIEventTypeStrings[] = {
     "MODAL_GAMENOTFOUND",
     "MODAL_TWEAKER",
     "MODAL_LOCALISATION",
+    "MODAL_OPTIONS",
     NULL
 };
 
@@ -827,6 +831,179 @@ Panel_GetModalLocalisation(AppGUI *pApp)
     return pPanelMain;
 }
 
+static Panel*
+_Panel_GetModalOptionSubpanel(AppGUI *pApp)
+{
+    Panel       *pPanelMain         = panel_scroll(FALSE,TRUE);
+    Layout      *pLayoutMain        = layout_create(8,16);
+
+    unsigned int i      = 0;
+    unsigned int j      = 0;
+    unsigned int dRow   = 0;
+
+    GUIOptElement *pElem;
+
+    cassert_no_null(pApp->pOptElementArray);
+
+    /* Layout: Main */
+    layout_hsize(pLayoutMain, 0, 640);
+
+    for(i = 0; i < MAX_OPT_ELEMS; i ++)
+    {
+        pElem = &pApp->pOptElementArray[i];
+        assert(IS_VALID(pElem));
+
+        switch(pElem->eType)
+        {
+            case UI_WIDGET_RADIO:
+                {
+                    Label *pLabel           = label_create();
+                    Layout *pLayoutButton   = layout_create(pElem->dNumOfOptions*2, 1);
+
+                    /* Store layout instead of button because there are multiple buttons present there */
+                    pElem->pElement = pLayoutButton;
+
+                    label_text(pLabel, tc(pElem->pTitle));
+
+                    for(j = 0; j < pElem->dNumOfOptions; j++)
+                    {
+                        Label *pLabelOpt    = label_create();
+                        Button *pButton     = button_radio();
+                        unsigned int pos    = j * 2;
+
+                        label_text(pLabelOpt, tc(pElem->pOptTitle[j]));
+                        label_align(pLabelOpt, ekLEFT);
+
+                        button_tag(pButton, (MODAL_OPT_A + i) );
+                        if (pElem->dChoice == j)
+                        {
+                            button_state(pButton, ekGUI_ON);
+                        }
+
+                        layout_label(pLayoutButton, pLabelOpt, pos, 0);
+                        layout_button(pLayoutButton, pButton, pos + 1, 0);
+                        layout_halign(pLayoutButton, pos, 0, ekJUSTIFY);
+                        layout_hsize(pLayoutButton, pos, 128);
+                        layout_hsize(pLayoutButton, pos+1, 64);
+                    }
+
+                    layout_label(pLayoutMain, pLabel, 0, dRow);
+                    layout_layout(pLayoutMain, pLayoutButton, 0, dRow+1);
+
+                    dRow += 2;
+                }
+                break;
+            case UI_WIDGET_POPUP:
+                {
+                    Label *pLabel = label_create();
+                    PopUp *pPopup = popup_create();
+
+                    pElem->pElement = pPopup;
+
+                    label_text(pLabel, tc(pElem->pTitle));
+
+                    for(j = 0; j < pElem->dNumOfOptions; j++)
+                    {
+                        popup_add_elem(pPopup, tc(pElem->pOptTitle[j]), NULL);
+                    }
+
+                    popup_selected(pPopup, pElem->dChoice);
+                    layout_label(pLayoutMain, pLabel, 0, dRow);
+                    layout_popup(pLayoutMain, pPopup, 7, dRow);
+                    layout_hsize(pLayoutMain, 0, 256);
+
+                    dRow++;
+                }
+                break;
+            case UI_WIDGET_EDIT:
+                {
+                    Label *pLabel   = label_create();
+                    Edit  *pEdit    = edit_create();
+
+                    pElem->pElement = pEdit;
+
+                    label_text(pLabel, tc(pElem->pTitle));
+                    edit_text(pEdit, tc(pElem->pOptTitle[0]));
+
+                    layout_label(pLayoutMain, pLabel, 0, dRow);
+                    layout_edit(pLayoutMain, pEdit, 7, dRow);
+                    layout_hsize(pLayoutMain, 0, 256);
+
+                    dRow++;
+                }
+                break;
+            case UI_WIDGET_LISTBOX:
+                {
+                    Label       *pLabel   = label_create();
+                    ListBox     *pListbox = listbox_create();
+
+                    pElem->pElement = pListbox;
+
+                    label_text(pLabel, tc(pElem->pTitle));
+
+                    listbox_checkbox(pListbox, TRUE);
+                    for(j = 0; j < pElem->dNumOfOptions; j++)
+                    {
+                        const bool_t bCheckbox = (pElem->dChoice & (1U << j)) != 0;
+
+                        listbox_add_elem(pListbox, tc(pElem->pOptTitle[j]), NULL);
+                        listbox_check(pListbox, j, bCheckbox);
+                    }
+
+                    layout_label(pLayoutMain, pLabel, 0, dRow);
+                    layout_listbox(pLayoutMain, pListbox, 0, dRow+1);
+                    layout_hsize(pLayoutMain, 0, 256);
+
+                    dRow += 2;
+                }
+                break;
+            default:
+                break;
+        }
+    }
+
+    /* Panel: Main */
+    panel_layout(pPanelMain, pLayoutMain);
+
+    return pPanelMain;
+
+    unref(pApp);
+}
+
+Panel*
+Panel_GetModalOptions(AppGUI *pApp)
+{
+    Panel       *pPanelMain         = panel_create();
+    Panel       *pPanelSubpanel     = _Panel_GetModalOptionSubpanel(pApp);
+    Layout      *pLayoutMain        = layout_create(1,2);
+    Layout      *pLayoutButtons     = layout_create(4,1);
+    Button      *pButtonAccept      = button_push();
+    Button      *pButtonCancel      = button_push();
+
+    /* Button: Accept */
+    button_text(pButtonAccept, TXT_BTN_ACCEPT);
+    button_tag(pButtonAccept, MODAL_ACCEPT);
+    button_OnClick(pButtonAccept, listener(pApp, Callback_OnButtonModalOptions, AppGUI));
+
+    /* Button: Cancel */
+    button_text(pButtonCancel, TXT_BTN_CANCEL);
+    button_tag(pButtonCancel, MODAL_CANCEL);
+    button_OnClick(pButtonCancel, listener(pApp, Callback_OnButtonModalOptions, AppGUI));
+
+    /* Layout: Buttons */
+    layout_button(pLayoutButtons, pButtonCancel, 0, 0);
+    layout_button(pLayoutButtons, pButtonAccept, 3, 0);
+
+    /* Layout: Main */
+    layout_panel(pLayoutMain, pPanelSubpanel, 0,0);
+    layout_layout(pLayoutMain, pLayoutButtons, 0, 1);
+
+    /* Panel: Main */
+    panel_layout(pPanelMain, pLayoutMain);
+
+    return pPanelMain;
+}
+
 void 
 Callback_OnButtonConfigure(AppGUI *pApp, Event *e)
 {
@@ -964,6 +1141,94 @@ Callback_OnButtonModalLocalisation(AppGUI *pApp, Event *e)
     unref(e);
 }
 
+void
+Callback_OnButtonModalOptions(AppGUI *pApp, Event *e)
+{
+    Button *pButton             = event_sender(e, Button);
+    const uint32_t dButtonTag   = button_get_tag(pButton);
+
+    if (dButtonTag > MODAL_OPT_MAX)
+    {
+        /* Gather all data from ui widgets */
+        if (dButtonTag == MODAL_ACCEPT)
+        {
+            unsigned int i;
+            for(i = 0; i < MAX_OPT_ELEMS; i++)
+            {
+                GUIOptElement *pElem = &pApp->pOptElementArray[i];
+
+                if (pElem->eType == UI_WIDGET_NULL)
+                {
+                    continue;
+                }
+
+                switch(pElem->eType)
+                {
+                    case UI_WIDGET_RADIO:
+                        {
+                            unsigned int j;
+                            Layout *pLayout = (Layout*)pElem->pElement;
+
+                            /* Layout because it contains multiple buttons */
+                            for(j = 0; j < pElem->dNumOfOptions; j++)
+                            {
+                                unsigned int pos           = j * 2;
+                                const Button *pRadioButton = layout_get_button(pLayout, pos + 1, 0);
+                                const gui_state_t eState   = button_get_state(pRadioButton);
+
+                                if (eState == ekGUI_ON)
+                                {
+                                    pElem->dChoice = j;
+                                    break;
+                                }
+                            }
+                        }
+                        break;
+                    case UI_WIDGET_POPUP:
+                        {
+                            const PopUp *pPopup = (const PopUp*)pElem->pElement;
+                            unsigned int dIndex = popup_get_selected(pPopup);
+                            pElem->dChoice      = dIndex;
+                        }
+                        break;
+                    case UI_WIDGET_EDIT:
+                        {
+                            const Edit *pEdit    = (const Edit*)pElem->pElement;
+                            const char_t *pValue = edit_get_text(pEdit);
+                            str_upd(&pElem->pOutputString, pValue);
+                        }
+                        break;
+                    case UI_WIDGET_LISTBOX:
+                        {
+                            const ListBox *pListbox = (const ListBox*)pElem->pElement;
+                            unsigned int j;
+
+                            for(j = 0; j < listbox_count(pListbox); j++)
+                            {
+                                const bool_t bIsChecked = listbox_checked(pListbox, j);
+                                if (bIsChecked)
+                                {
+                                    pElem->dChoice |=  (1U << j);
+                                }
+                                else
+                                {
+                                    pElem->dChoice &= ~(1U << j);
+                                }
+                                /* str_upd(&pElem->pOutputString, listbox_get_text(pListbox, j)); */
+                            }
+                        }
+                        break;
+                    default:
+                        break;
+                }
+            }
+        }
+
+        window_stop_modal(pApp->pWindowModal, dButtonTag);
+        return;
+    }
+}
+
 void 
 Callback_OnButtonPlay(AppGUI *pApp, Event *e)
 {
@@ -1065,18 +1330,18 @@ _Nappgui_Start(void)
     gui_respack(res_app_respack);
     gui_language("");
 
-    /* GUI Specific Application variables */
-    pApp             = heap_new0(AppGUI);
-    pApp->pAppCore   = AppCore_create();
-    pApp->pWindow    = NULL;
-    pApp->pTextView  = NULL;
-    pApp->pLayoutMain= NULL;
-    pApp->pString    = NULL;
+    /* Core initialization */
+    pApp = heap_new0(AppGUI);
+    cassert_no_null(pApp);
 
-    /* Core Library Application variables */
+    pApp->pAppCore            = AppCore_create();
     AppCore_init(pApp->pAppCore);
-    pApp->pAppCore->pOwner      = (void*)pApp;
-    pApp->pAppCore->cbUIEvent   = _Callback_UIEvent;
+    pApp->pAppCore->pOwner    = (void*)pApp;
+    pApp->pAppCore->cbUIEvent = _Callback_UIEvent;
+
+    /* AppGUI  */
+    pApp->pOptElementArray    = heap_new_n0(MAX_OPT_ELEMS, GUIOptElement);
+    cassert_no_null(pApp->pOptElementArray);
 
     pPanel           = _Panel_GetRoot(pApp);
     pApp->pWindow    = window_create(ekWINDOW_STDRES | ekWINDOW_ESC | ekWINDOW_RETURN);
@@ -1111,6 +1376,25 @@ _Nappgui_End(AppGUI **pApp)
             str_destopt(&pTweaker->pStringImagePath[j]);
         }
     }
+
+    /* Options */
+    {
+        unsigned int i, j;
+
+        for (i = 0; i < MAX_OPT_ELEMS; ++i)
+        {
+            GUIOptElement *pElem = &(*pApp)->pOptElementArray[i];
+
+            str_destopt(&pElem->pOutputString);
+            str_destopt(&pElem->pTitle);
+
+            for (j = 0; j < APP_MAX_ELEMENTS; ++j)
+                str_destopt(&pElem->pOptTitle[j]);
+        }
+    }
+
+    heap_delete_n(&(*pApp)->pOptElementArray, MAX_OPT_ELEMS, GUIOptElement);
+    (*pApp)->pOptElementArray = NULL;
 
     str_destopt(&(*pApp)->pString);
 
@@ -1448,7 +1732,7 @@ _Callback_UIEvent(
                     default:
                         {
                             unsigned int i;
-                            const char *sOptName[8] =
+                            const char *sOptName[APP_MAX_ELEMENTS] =
                             {
                                 "opt1",
                                 "opt2",
@@ -1458,7 +1742,7 @@ _Callback_UIEvent(
                                 "opt6",
                                 "opt7",
                                 "opt8",
-                            }; /* default names */
+                            };
 
                             SVARKEYB_BOOL(tRetVal, sStatusKey, CTRUE);
                             for(i = 0; i < pApp->dPageMax; i++)
@@ -1556,6 +1840,225 @@ _Callback_UIEvent(
                         SVARKEYB_CONSTCHAR(tRetVal,"mod",   pApp->tLocale[dMod].sCode);
                     }
                         break;
+                }
+            }
+            break;
+
+        case UIEVENT_MODAL_OPTIONS:
+            {
+                static const char *sKeyTitle      = "title";
+                static const char *sKeyID         = "id";
+                static const char *sKeyType       = "type";
+                static const char *sKeyOptTitle   = "optTitle";
+                static const char *sKeyDefaultVal = "default";
+
+                SVarTable     *pRootTable;
+                size_t         dElemCount;
+                size_t         dSection;
+                int            dModalRetVal;
+
+                /* pre-checks + init */
+                cassert_no_null(pUserData);
+                assert(dNumArgs == 1);
+                assert(pUserData[0].eType == CTYPE_LUATABLE);
+
+                pRootTable  = (SVarTable *)SVAR_GET_LUATABLE(pUserData[0]);
+                dElemCount  = 0U;
+                memset(pApp->pOptElementArray, 0, sizeof(GUIOptElement) * MAX_OPT_ELEMS);
+
+                /* root table */
+                for (dSection = 0;
+                    dSection < pRootTable->dCount && dElemCount < MAX_OPT_ELEMS;
+                    ++dSection)
+                {
+                    SVarTable *pSection;
+                    size_t     dEntry;
+
+                    if (pRootTable->pEntries[dSection].tValue.eType != CTYPE_LUATABLE)
+                    {
+                        continue;
+                    }
+
+                    pSection = (SVarTable *)SVAR_GET_LUATABLE(
+                                            pRootTable->pEntries[dSection].tValue);
+
+                    /* per-table sub entries processing */
+                    for (dEntry = 0;
+                        dEntry < pSection->dCount && dElemCount < MAX_OPT_ELEMS;
+                        ++dEntry)
+                    {
+                        SVarTable     *pElem;
+                        GUIOptElement *pDst;
+                        size_t         iField;
+                        size_t         dOptIndex;
+                        bool_t         bTypeWasSet;
+
+                        if (pSection->pEntries[dEntry].tValue.eType != CTYPE_LUATABLE)
+                        {
+                            continue;
+                        }
+
+                        pElem               = (SVarTable *)SVAR_GET_LUATABLE(
+                                                pSection->pEntries[dEntry].tValue);
+                        pDst                = &pApp->pOptElementArray[dElemCount];
+
+                        memset(pDst, 0, sizeof(GUIOptElement));
+                        dOptIndex   = 0U;
+                        bTypeWasSet = FALSE;
+
+                        /* walk through every key/value in the element table */
+                        for (iField = 0; iField < pElem->dCount; ++iField)
+                        {
+                            const char *sValKey;
+
+                            sValKey = SVAR_GET_CONSTCHAR(pElem->pEntries[iField].tKey);
+
+                            if (strcmp(sValKey, sKeyTitle) == 0)
+                            {
+                                pDst->pTitle =
+                                    str_c(SVAR_GET_CONSTCHAR(pElem->pEntries[iField].tValue));
+                            }
+                            else if (strcmp(sValKey, sKeyID) == 0)
+                            {
+                                pDst->pKeyID =
+                                    str_c(SVAR_GET_CONSTCHAR(pElem->pEntries[iField].tValue));
+                            }
+                            else if (strcmp(sValKey, sKeyType) == 0)
+                            {
+                                /* enum comes from Lua as a double */
+                                pDst->eType  = (EUIWidgetType)
+                                            SVAR_GET_DOUBLE(pElem->pEntries[iField].tValue);
+                                bTypeWasSet  = TRUE;
+                            }
+                            else if (strncmp(sValKey, sKeyOptTitle, 8) == 0)
+                            {
+                                switch (pElem->pEntries[iField].tValue.eType)
+                                {
+                                    case CTYPE_CONST_CHAR:
+                                        pDst->pOptTitle[dOptIndex++] =
+                                            str_c(SVAR_GET_CONSTCHAR(
+                                                    pElem->pEntries[iField].tValue));
+                                        break;
+
+                                    case CTYPE_DOUBLE:
+                                        pDst->pOptTitle[dOptIndex++] =
+                                            str_printf("%.4g",
+                                                    SVAR_GET_DOUBLE(
+                                                        pElem->pEntries[iField].tValue));
+                                        break;
+
+                                    case CTYPE_LUATABLE:
+                                    {
+                                        /* Handle optTitle = { "A", "B", ... } */
+                                        SVarTable *pOpts;
+                                        size_t     q;
+
+                                        pOpts = (SVarTable *)SVAR_GET_LUATABLE(
+                                                                pElem->pEntries[iField].tValue);
+
+                                        for (q = 0;
+                                            q < pOpts->dCount && dOptIndex < APP_MAX_ELEMENTS;
+                                            ++q)
+                                        {
+                                            if (pOpts->pEntries[q].tValue.eType == CTYPE_CONST_CHAR)
+                                            {
+                                                pDst->pOptTitle[dOptIndex++] =
+                                                    str_c(SVAR_GET_CONSTCHAR(
+                                                            pOpts->pEntries[q].tValue));
+                                            }
+                                        }
+                                    }
+                                    break;
+
+                                    default:
+                                        /* ignore unsupported types */
+                                        break;
+                                }
+                            }
+                            else if (strcmp(sValKey, sKeyDefaultVal) == 0)
+                            {
+                                const SVar *pVar = &pElem->pEntries[iField].tValue;
+
+                                if (SVAR_IS_DOUBLE(*pVar))
+                                {
+                                    pDst->dChoice =
+                                        (unsigned int)SVAR_GET_DOUBLE(*pVar);
+                                }
+                                else if (SVAR_IS_CONSTCHAR(*pVar))
+                                {
+                                    pDst->pOptTitle[0] =
+                                        str_c(SVAR_GET_CONSTCHAR(*pVar));
+                                    dOptIndex = 1U;
+                                }
+                            }
+                        }
+
+                        pDst->dNumOfOptions = (unsigned int)dOptIndex;
+                        if (!bTypeWasSet)
+                        {
+                            pDst->eType = UI_WIDGET_NULL;
+                        }
+
+                        textview_printf(pApp->pTextView,
+                                        "Elem %zu: title='%s' type=%d opts=%u\n",
+                                        dElemCount,
+                                        (pDst->pTitle ? tc(pDst->pTitle) : "(null)"),
+                                        (int)pDst->eType,
+                                        pDst->dNumOfOptions);
+
+                        ++dElemCount;
+                    }
+                }
+
+                /* Modal */
+                dModalRetVal = _Nappgui_ShowModal(
+                                pApp,
+                                Panel_GetModalOptions(pApp),
+                                TXT_TITLE_OPTIONS);
+
+                switch (dModalRetVal)
+                {
+                    case ekGUI_CLOSE_BUTTON:
+                    case ekGUI_CLOSE_ESC:
+                    case MODAL_CANCEL:
+                        SVARKEYB_BOOL(tRetVal, sStatusKey, CFALSE);
+                        break;
+
+                    default:
+                    {
+                        unsigned int u;
+
+                        SVARKEYB_BOOL(tRetVal, sStatusKey, CTRUE);
+
+                        for (u = 0; u < dElemCount; ++u)
+                        {
+                            const GUIOptElement *pElem   = &pApp->pOptElementArray[u];
+                            const char          *sOutKey =
+                                (pElem->pKeyID != NULL) ? tc(pElem->pKeyID) : tc(pElem->pTitle);
+
+                            switch (pElem->eType)
+                            {
+                                case UI_WIDGET_EDIT:
+                                {
+                                    const char *sVal =
+                                        (pElem->pOutputString != NULL) ? tc(pElem->pOutputString) :
+                                        (pElem->pOptTitle[0]  != NULL) ? tc(pElem->pOptTitle[0]) : "";
+                                    SVARKEYB_CONSTCHAR(tRetVal, sOutKey, sVal);
+                                }
+                                break;
+
+                                case UI_WIDGET_LISTBOX:
+                                case UI_WIDGET_POPUP:
+                                case UI_WIDGET_RADIO:
+                                    SVARKEYB_INT(tRetVal, sOutKey, (int)pElem->dChoice);
+                                    break;
+
+                                default:
+                                    break;
+                            }
+                        }
+                    }
+                    break;
                 }
             }
             break;

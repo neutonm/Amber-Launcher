@@ -24,6 +24,16 @@ UIEVENT = {
     MODAL_GAMENOTFOUND  = 4,
     MODAL_TWEAKER       = 5,
     MODAL_LOCALISATION  = 6,
+    MODAL_OPTIONS       = 7,
+    MAX
+}
+
+UIWIDGET = {
+    NULL                = 0,
+    RADIO               = 1,
+    POPUP               = 2,
+    EDIT                = 3,
+    LISTBOX             = 4,
     MAX
 }
 

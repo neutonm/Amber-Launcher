@@ -76,10 +76,12 @@ function AppConfigure()
     -- end
 
     --temp
-    configSuccessful = AL.CommandCall("Localisation")
+    --configSuccessful = AL.CommandCall("Localisation")
     --configSuccessful = AL.CommandCall("ConfigTweaks")
     --AL.CommandCall("MergeAndRename")
     --AL.CommandCall("DetectAndInstallMod")
+
+    ModalShowOptions()
     
     print("Configuration "..(configSuccessful and "succesful!" or "failed."))
 end

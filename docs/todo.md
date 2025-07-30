@@ -13,7 +13,6 @@ Table Of Contents:
 - [GUI Library](#gui-library)
 - [Lua Scripts](#lua-scripts)
 
-> Next:     Options menu (tweak separate options, change language and all that shit from config wizard)
 > Next:     Core  Launcher GUI
 > Next:     Auto-Updater / Downloader
 > The END
@@ -58,6 +57,7 @@ Table Of Contents:
 ## GUI Library 
 *NAPPGUI user interface library that wraps Core Library calls.* 
 
+- [ ] String operations that re-create themselves should rely on "str_upd()"
 - [x] Autoconfigure should handle failed state
 - [x] Figure out how to show file browser (required for non-found game)
 - [ ] Re-design Modal: GameNotFound
@@ -67,6 +67,8 @@ Table Of Contents:
 ## Lua Scripts
 *Provide alternative and/or extended functionality for the launcher.*
 
+- [ ] ModalOptions.lua
+- - UI_WIDGET_LISTBOX binary "choice" representation of return value for ui call result is a bit overkill
 - [ ] DetectAndCopyGame.lua
 - - check and warn if user suddenly points to mm6 or mm8 (optional)
 - - Browse button: if file browser window is canceled without specifiying, you get appcrash (nappgui error)
