@@ -1,7 +1,7 @@
 -- COMMAND:     Localisation
 -- DESCRIPTION: Provides localisation api + defines behavior for localisation modal window during autoconfig
 
-local sep = OS_FILE_SEPARATOR
+local sep               =   OS_FILE_SEPARATOR
 local archiveFolder     =   "Data" ..
                             sep ..
                             "Launcher" ..
@@ -47,7 +47,7 @@ local function _LocaliseMod(t)
     return true
 end
 
-local function _LocaliseCoreFreeAll()
+function AL_LocaliseCoreFreeAll()
 
     local files = {
         "Data"..sep.."loc.ICONS.LOD",
@@ -80,12 +80,15 @@ local function _LocaliseCore(t)
     return true
 end
 
-local _Locales = {
+AL_TLocales = {
     {
+        name        = "English",
         code        = "en_en",
         core        = "Data"..sep.."Launcher"..sep.."local-en-core.png",
         mod         = "Data"..sep.."Launcher"..sep.."local-en-mod.png",
-        coreCb      = _LocaliseCore,
+        coreCb      = function(t)
+                        return true
+                    end,
         coreFreeCb  = function(t)
 
                         local files = {
@@ -107,6 +110,7 @@ local _Locales = {
         modCb       = _LocaliseMod,
     },
     {
+        name        = "Polish",
         code        = "pl_pl",
         core        = "Data"..sep.."Launcher"..sep.."local-pl-core.png",
         mod         = "Data"..sep.."Launcher"..sep.."local-pl-mod.png",
@@ -114,6 +118,7 @@ local _Locales = {
         modCb       = _LocaliseMod,
     },
     {
+        name        = "Russian",
         code        = "ru_ru",
         core        = "Data"..sep.."Launcher"..sep.."local-ru-core.png",
         mod         = "Data"..sep.."Launcher"..sep.."local-ru-mod.png",
@@ -140,23 +145,43 @@ local _Locales = {
     }
 }
 
+function AL_WriteConfigLocalisationNames(langCore, langMod)
+
+    if langCore == nil and langMod == nil then
+        return
+    end
+
+    local ini     = AL.INILoad(INI_PATH_MOD)
+    if (langCore ~= nil) then
+        AL.INISet(ini, "Localisation", "Core", langCore)
+    end
+    if (langMod ~= nil) then
+        AL.INISet(ini, "Localisation", "Mod", langMod)
+    end
+    AL.INISave(ini, INI_PATH_MOD)
+    AL.INIClose(ini)
+end
+
 local function _Localisation()
+
+    local langCore = nil
+    local langMod  = nil
 
     print("Setting up localisation for the game...")
 
-    local uiResponse = AL.UICall(UIEVENT.MODAL_LOCALISATION, _Locales)
+    local uiResponse = AL.UICall(UIEVENT.MODAL_LOCALISATION, AL_TLocales)
     if uiResponse and uiResponse.status == true then
 
         print(dump(uiResponse))
 
         -- cleanup core first
-        _LocaliseCoreFreeAll()
-        for _, locale in ipairs(_Locales) do
+        AL_LocaliseCoreFreeAll()
+        for _, locale in ipairs(AL_TLocales) do
             if locale.coreFreeCb then locale.coreFreeCb(locale) end
         end
 
         -- install localisations
-        for _, locale in ipairs(_Locales) do
+        for _, locale in ipairs(AL_TLocales) do
             if uiResponse.core == locale.code then
                 if locale.coreCb then
                     local coreSuccess = locale.coreCb(locale)
@@ -164,6 +189,7 @@ local function _Localisation()
                         print("Failed to initialize core localisation.")
                         return false
                     end
+                    langCore = locale.name
                 end
             end
             if uiResponse.mod == locale.code then
@@ -172,10 +198,12 @@ local function _Localisation()
                     print("Failed to initialize mod localisation.")
                     return false
                 end
+                langMod = locale.name
             end
         end
     end
 
+    AL_WriteConfigLocalisationNames(langCore, langMod)
     print("Localisation adjusted!")
 
     return true
