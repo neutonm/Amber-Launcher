@@ -317,7 +317,7 @@ typedef struct SVarTable {
 #define SVAR_IS_UINT64(v)         SVAR_IS_ULLONG(v)
 
 /* SVar Key */
-#define SVAR_KEYBUNDLE_MAX          8
+#define SVAR_KEYBUNDLE_MAX        32
 
 typedef struct SVarKey
 {
