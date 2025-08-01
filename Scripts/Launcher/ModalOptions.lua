@@ -24,6 +24,9 @@ local function _GetLocaleNameFromConfig(which)
     assert(which == "core" or which == "mod", "Argument must be 'core' or 'mod'")
 
     local ini    = AL.INILoad(INI_PATH_MOD)
+    if ini == nil then
+        return ""
+    end
     local retStr = AL.INIGet(ini, "Localisation", which == "core" and "Core" or "Mod")
     AL.INIClose(ini)
 
@@ -58,6 +61,33 @@ local function _GetOptionsTable()
     return {
         {
             sectionName     = "General",
+            {
+                title       = "Launch arguments:",
+                id          = "cmdargs",
+                type        = UIWIDGET.EDIT,
+                default     = (function()
+                    local ini    = AL.INILoad(INI_PATH_MOD)
+                    local retStr = AL.INIGet(ini, "Settings", "LaunchCommand")
+                    AL.INIClose(ini)
+
+                    if retStr == nil or retStr == "" then
+                        retStr = AL.GetLaunchCommand()
+                    end
+
+                    return retStr
+                end)(),
+                callback    = function(t)
+
+                    AL.SetLaunchCommand(t.value)
+
+                    local ini = AL.INILoad(INI_PATH_MOD)
+                    if ini ~= nil then
+                        AL.INISet(ini, "Settings", "LaunchCommand", t.value)
+                        AL.INISave(ini, INI_PATH_MOD)
+                        AL.INIClose(ini)
+                    end
+                end
+            },
             {
                 title       = "Window Mode:",
                 id          = "windowmode",
@@ -173,6 +203,69 @@ local function _GetOptionsTable()
             },
         },
         {
+            sectionName     = "Gameplay",
+            {
+                title       = "Side movement behavior:",
+                id          = "strafe",
+                type        = UIWIDGET.RADIO,
+                optTitle    = {
+                    "Turn left/right",
+                    "Move left/right (strafe)"
+                },
+                default     = 1,
+                callback    = function(t)
+
+                    local ini = AL.INILoad(INI_PATH_MM7)
+                    if ini == nil then
+                        return
+                    end
+                    AL.INISet(ini, "Settings", "AlwaysStrafe", tostring(t.value))
+                    AL.INISave(ini, INI_PATH_MM7)
+                    AL.INIClose(ini)
+                end
+            },
+            {
+                title       = "User Interface:",
+                id          = "ui",
+                type        = UIWIDGET.RADIO,
+                optTitle    = {
+                    "Modern (HD)",
+                    "Original"
+                },
+                default     = 1,
+                callback    = function(t)
+
+                    local ini = AL.INILoad(INI_PATH_MM7)
+                    if ini == nil then
+                        return
+                    end
+                    AL.INISet(ini, "Settings", "UILayout", t.value == 0 and "UI" or "0")
+                    AL.INISave(ini, INI_PATH_MM7)
+                    AL.INIClose(ini)
+                end
+            },
+            {
+                title       = "Mouse Look Mode:",
+                id          = "mouselook",
+                type        = UIWIDGET.RADIO,
+                optTitle    = {
+                    "Disabled",
+                    "Enabled"
+                },
+                default     = 1,
+                callback    = function(t)
+
+                    local ini = AL.INILoad(INI_PATH_MM7)
+                    if ini == nil then
+                        return
+                    end
+                    AL.INISet(ini, "Settings", "MouseLook", tostring(t.value))
+                    AL.INISave(ini, INI_PATH_MM7)
+                    AL.INIClose(ini)
+                end
+            },
+        },
+        {
             sectionName     = "Mods",
             {
                 title       = "Mods:",
@@ -197,11 +290,12 @@ local function _GetOptionsTable()
                 default     = "16000",
                 callback    = function(t)
 
-                    iniPath = GAME_DESTINATION_FOLDER..OS_FILE_SEPARATOR.."mm7.ini"
-
-                    local ini = AL.INILoad(iniPath)
+                    local ini = AL.INILoad(INI_PATH_MM7)
+                    if ini == nil then
+                        return
+                    end
                     AL.INISet(ini, "Settings", "ViewDistanceD3D", tostring(t.value))
-                    AL.INISave(ini, iniPath)
+                    AL.INISave(ini, INI_PATH_MM7)
                     AL.INIClose(ini)
                 end
             },
@@ -231,5 +325,6 @@ function ModalShowOptions()
             end
         end
     end
+
     print(dump(uiResponse))
 end

@@ -13,6 +13,8 @@ Table Of Contents:
 - [GUI Library](#gui-library)
 - [Lua Scripts](#lua-scripts)
 
+> Next:     Options menu (tweak separate options, change language and all that shit from config wizard)
+> - fill modal with all the options and mods (David's stuff) and make them work
 > Next:     Core  Launcher GUI
 > Next:     Auto-Updater / Downloader
 > The END
@@ -67,8 +69,15 @@ Table Of Contents:
 ## Lua Scripts
 *Provide alternative and/or extended functionality for the launcher.*
 
+- [ ] INI:
+- - INI keys should be predefined in _const.lua as they repeat themselves at couple of places
+- - Checks must be made for INILoad, recreate default mod.ini and mm7.ini if file doesn't exist (extract from archive) 
 - [ ] ModalOptions.lua
 - - UI_WIDGET_LISTBOX binary "choice" representation of return value for ui call result is a bit overkill
+- - "Default" button
+- - - "default" value of global table should be responsible for reset value.
+- - - "value" should be responsible for current value, remove opt.value from choice processing part
+- - INI file gets opened too many times, very stupid move.
 - [ ] DetectAndCopyGame.lua
 - - check and warn if user suddenly points to mm6 or mm8 (optional)
 - - Browse button: if file browser window is canceled without specifiying, you get appcrash (nappgui error)
@@ -91,14 +100,5 @@ Table Of Contents:
 - [ ] ConfigTweak.lua
 - - import precached default mm7.ini
 > Tweaker: 
-> - mouse look start
-> - old/grayface gui
-> - W and D strafe or turn
 > - David's HD sprite pack
-> - 
-- [ ] Localization.lua
-- - localization types: vanilla game, sound, mod
-- - - each one should have its own recipe
-- - - should be done via renaming inside Scripts/Localization
-- - GUI widget (after tweaker)
-- - public functionality for later tweaking
+- [X] Localization.lua
