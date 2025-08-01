@@ -1385,6 +1385,7 @@ _Nappgui_End(AppGUI **pApp)
         {
             GUIOptElement *pElem = &(*pApp)->pOptElementArray[i];
 
+            str_destopt(&pElem->pKeyID);
             str_destopt(&pElem->pOutputString);
             str_destopt(&pElem->pTitle);
 
