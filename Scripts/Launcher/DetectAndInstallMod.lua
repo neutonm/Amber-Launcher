@@ -64,7 +64,7 @@ end
 
 local function InstallMod(destinationFolder)
 
-    local dataFolder = "Data"..OS_FILE_SEPARATOR.."Launcher"..OS_FILE_SEPARATOR
+    local dataFolder = "Data"..OS_FILE_SEPARATOR.."Launcher"..OS_FILE_SEPARATOR.."Archives"..OS_FILE_SEPARATOR
     
     if not AL.ArchiveExtract(dataFolder.."_grayfacePatch257.zip", destinationFolder) then
         print("Failed to extract _grayfacePatch257")
