@@ -460,6 +460,38 @@ _LUA_CommandCall(struct lua_State* L)
     return 1;
 }
 
+static int
+_LUA_SetLaunchCommand(lua_State* L)
+{
+    const char     *sNewLaunchCmd;
+    AppCore        *pAppCore = NULL;
+
+    /* AppCore struct */
+    lua_getfield(L, LUA_REGISTRYINDEX, STR_AL_APPCORE);
+    pAppCore = lua_touserdata(L, -1);
+    lua_pop(L, 1);
+
+    sNewLaunchCmd = luaL_checkstring(L, 1);
+    AppCore_SetLaunchCommand(pAppCore, sNewLaunchCmd);
+
+    return 0;
+}
+
+static int
+_LUA_GetLaunchCommand(lua_State* L)
+{
+    AppCore        *pAppCore = NULL;
+
+    /* AppCore struct */
+    lua_getfield(L, LUA_REGISTRYINDEX, STR_AL_APPCORE);
+    pAppCore = lua_touserdata(L, -1);
+    lua_pop(L, 1);
+
+    lua_pushstring(L, pAppCore->sLaunchCmd);
+
+    return 1;
+}
+
 static const 
 luaL_Reg AL[] = 
 {
@@ -468,6 +500,8 @@ luaL_Reg AL[] =
     {"GetTableOfCommands",          _LUA_GetTableOfCommands     },
     {"EventCall",                   _LUA_EventCall              },
     {"UICall",                      _LUA_UICall                 },
+    {"SetLaunchCommand",            _LUA_SetLaunchCommand       },
+    {"GetLaunchCommand",            _LUA_GetLaunchCommand       },
     {"SetRegistryKey",              LUA_SetRegistryKey          },
     {"GetRegistryKey",              LUA_GetRegistryKey          },
     {"ConvertMP3ToWAV",             LUA_ConvertMP3ToWAV         },
@@ -578,7 +612,7 @@ AmberLauncher_Play(AppCore* pAppCore)
         pAppCore->pLuaState, 
         ELuaFunctionEventTypeStrings[SLUA_EVENT_PLAY]
     );
-    AmberLauncher_ProcessLaunch("mm7.exe", 0, NULL, CTRUE);
+    AmberLauncher_ProcessLaunch(pAppCore->sLaunchCmd, 0, NULL, CTRUE);
     UNUSED(pAppCore);
 }
 

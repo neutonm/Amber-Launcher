@@ -29,6 +29,7 @@ struct AppCore
     struct SLuaState* pLuaState;
     struct SSubject* pOnUserEventNotifier;
     UICallback cbUIEvent;
+    char *sLaunchCmd;
 };
 
 /******************************************************************************
@@ -43,5 +44,11 @@ AppCore_init(AppCore* pAppCore);
 
 extern CAPI CBOOL
 AppCore_free(AppCore** pAppCore);
+
+extern CAPI CBOOL
+AppCore_SetLaunchCommand(AppCore* pAppCore, const char *sNewLaunchCmd);
+
+extern CAPI const char*
+AppCore_GetDefaultLaunchCommand(void);
 
 #endif
