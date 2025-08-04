@@ -1,4 +1,5 @@
 /* Titles */
+TXT_TITLE_DEBUG         Debug Console
 TXT_TITLE_LAUNCHER      Amber Island Launcher
 TXT_TITLE_GAMENOTFOUND  Game not found!
 TXT_TITLE_MESSAGE       Message

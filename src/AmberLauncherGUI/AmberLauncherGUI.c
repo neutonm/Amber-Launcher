@@ -1,3 +1,4 @@
+#include "core/core.hxx"
 #include "core/stdint.h"
 #include "draw2d/draw2d.hxx"
 #include "draw2d/guictx.hxx"
@@ -118,20 +119,30 @@ _LocalisationFillPopup(AppGUI *pApp, PopUp *pPop, LocTier eTier);
  * @param       e
  */
 static void
-_Callback_OnClose(AppGUI* pApp, Event* e);
+_Callback_OnCloseMainWindow(AppGUI* pApp, Event* e);
+
+/**
+ * @relatedalso GUI
+ * @brief       Invokes cleanup on manual closing of the main window
+ *
+ * @param       pApp
+ * @param       e
+ */
+static void
+_Callback_OnCloseModalWindow(AppGUI* pApp, Event* e);
 
 /**
  * @relatedalso GUI
  * @brief       Related to various UI events called from (mostly) Lua
  *
  * @param       pApp
- * @param       dID         EUserEventType
+ * @param       eEventType         EUserEventType
  * @param       pUserData
  */
 static SVarKeyBundle
 _Callback_UIEvent(
     AppCore *pAppCore,
-    uint32 dID,
+    EUIEventType eEventType,
     const SVar *pUserData,
     const unsigned int dNumArgs);
 
@@ -148,7 +159,9 @@ Panel_Set(AppGUI *pApp, const EPanelType eType)
 {
     Panel *pPanel = NULL;
     Button *defbutton = NULL;
-    switch ((uint32_t)eType)
+
+    pApp->eCurrentPanel = eType;
+    switch (eType)
     {
     case CPANEL_NULL:
         pPanel = Panel_GetNull(pApp);
@@ -319,6 +332,46 @@ Panel_GetImageDemo(AppGUI *pApp)
     image_destroy(&pImage);
 
     unref(pApp);
+    return pPanelMain;
+}
+
+Panel*
+Panel_GetModalDebug(AppGUI* pApp)
+{
+    Panel       *pPanelMain     = panel_create();
+    Layout      *pLayoutMain    = layout_create(1,2);
+    Layout      *pLayoutConsole = layout_create(2,1);
+    TextView    *pTextView      = textview_create();
+    Edit        *pEditInput     = edit_create();
+    Button      *pButtonSubmit  = button_push();
+
+    pApp->pDebugData->pConsoleTextView  = pTextView;
+    pApp->pDebugData->pConsoleInput     = pEditInput;
+
+    /* Text View: Console */
+    textview_wrap(pTextView, TRUE);
+
+    /* Button: Submit */
+    button_text(pButtonSubmit, TXT_BTN_SUBMIT);
+    button_tag(pButtonSubmit, MODAL_ACCEPT);
+    button_OnClick(pButtonSubmit, listener(pApp, Callback_OnButtonModalDebug, AppGUI));
+
+    /* Layout: Console */
+    layout_hsize(pLayoutConsole, 0, 384);
+    layout_hsize(pLayoutConsole, 1, 128);
+    layout_edit(pLayoutConsole, pEditInput, 0, 0);
+    layout_button(pLayoutConsole, pButtonSubmit, 1, 0);
+
+    /* Layout: Main */
+    layout_hsize(pLayoutMain, 0, 512);
+    layout_textview(pLayoutMain, pTextView, 0, 0);
+    layout_layout(pLayoutMain, pLayoutConsole, 0,1);
+
+    /* Panel: Main */
+    panel_layout(pPanelMain, pLayoutMain);
+
+    unref(pApp);
+
     return pPanelMain;
 }
 
@@ -1004,12 +1057,37 @@ Panel_GetModalOptions(AppGUI *pApp)
     return pPanelMain;
 }
 
+void
+Callback_OnWindowHotkeyF6(AppGUI* pApp, Event *e)
+{
+    _Callback_UIEvent(pApp->pAppCore, UIEVENT_DEBUG, NULL, 0);
+    unref(e);
+}
+
 void 
 Callback_OnButtonConfigure(AppGUI *pApp, Event *e)
 {
     Button *pButton = event_sender(e, Button);
     AmberLauncher_ConfigureStart(pApp->pAppCore);
     unref(pButton);
+    unref(e);
+}
+
+void
+Callback_OnButtonModalDebug(AppGUI *pApp, Event *e)
+{
+    const char *sEditText;
+
+    cassert_no_null(pApp->pDebugData->pConsoleTextView);
+
+    sEditText = edit_get_text(pApp->pDebugData->pConsoleInput);
+
+    textview_printf(pApp->pDebugData->pConsoleTextView,
+        "> %s\n",sEditText);
+
+    AmberLauncher_ExecuteLua(pApp->pAppCore, sEditText);
+
+    edit_text(pApp->pDebugData->pConsoleInput,"");
     unref(e);
 }
 
@@ -1340,16 +1418,19 @@ _Nappgui_Start(void)
     pApp->pAppCore->cbUIEvent = _Callback_UIEvent;
 
     /* AppGUI  */
+    pApp->pDebugData          = heap_new(GUIDebugData);
+    cassert_no_null(pApp->pDebugData);
     pApp->pOptElementArray    = heap_new_n0(MAX_OPT_ELEMS, GUIOptElement);
     cassert_no_null(pApp->pOptElementArray);
 
     pPanel           = _Panel_GetRoot(pApp);
-    pApp->pWindow    = window_create(ekWINDOW_STDRES | ekWINDOW_ESC | ekWINDOW_RETURN);
+    pApp->pWindow    = window_create(ekWINDOW_STDRES | ekWINDOW_CLOSE | ekWINDOW_ESC | ekWINDOW_RETURN);
 
+    window_hotkey(pApp->pWindow, ekKEY_F6, 0, listener(pApp, Callback_OnWindowHotkeyF6, AppGUI));
     window_panel(pApp->pWindow, pPanel);
     window_title(pApp->pWindow, TXT_TITLE_LAUNCHER);
     /* window_origin(pApp->pWindow, v2df(800, 400)); */
-    window_OnClose(pApp->pWindow, listener(pApp, _Callback_OnClose, AppGUI));
+    window_OnClose(pApp->pWindow, listener(pApp, _Callback_OnCloseMainWindow, AppGUI));
     window_show(pApp->pWindow);
 
     AmberLauncher_Start(pApp->pAppCore);
@@ -1362,6 +1443,11 @@ _Nappgui_End(AppGUI **pApp)
 {
     size_t i;
     size_t j;
+
+    /* Debug Data */
+    str_destopt(&(*pApp)->pDebugData->pInputString);
+    heap_delete(&(*pApp)->pDebugData, GUIDebugData);
+    (*pApp)->pDebugData = NULL;
 
     /* APPGUI */
     for(i = 0; i < APP_MAX_ELEMENTS; i++)
@@ -1414,10 +1500,11 @@ _Nappgui_ShowModal( AppGUI *pApp, Panel *pPanel, const char* sTitle)
 {
     uint32_t dRet;
 
-    pApp->pWindowModal  = window_create(ekWINDOW_STD | ekWINDOW_ESC);
+    pApp->pWindowModal  = window_create(ekWINDOW_STD | ekWINDOW_CLOSE | ekWINDOW_ESC | ekWINDOW_RETURN);
     pApp->pPanelModal   = pPanel;
     window_panel (pApp->pWindowModal, pPanel);
     window_title (pApp->pWindowModal, sTitle);
+    window_OnClose(pApp->pWindowModal, listener(pApp, _Callback_OnCloseModalWindow, AppGUI));
     dRet = window_modal(pApp->pWindowModal, pApp->pWindow);
     window_destroy(&pApp->pWindowModal);
 
@@ -1429,17 +1516,53 @@ _Nappgui_ShowModal( AppGUI *pApp, Panel *pPanel, const char* sTitle)
  ******************************************************************************/
 
 static void 
-_Callback_OnClose(AppGUI *pApp, Event *e)
+_Callback_OnCloseMainWindow(AppGUI *pApp, Event *e)
 {
-    osapp_finish();
-    unref(pApp);
-    unref(e);
+    const EvWinClose *p = event_params(e, EvWinClose);
+    cassert_no_null(pApp);
+
+    switch (p->origin)
+    {
+        default:
+            osapp_finish();
+            break;
+    }
+}
+
+static void 
+_Callback_OnCloseModalWindow(AppGUI *pApp, Event *e)
+{
+    const EvWinClose *p = event_params(e, EvWinClose);
+    bool_t *pResult     = event_result(e, bool_t);
+    cassert_no_null(pApp);
+
+    switch (p->origin)
+    {
+        case ekGUI_CLOSE_INTRO:
+
+            if (pApp->eCurrentUIEvent == UIEVENT_DEBUG)
+            {
+                *pResult = FALSE; /* prevents from closing window */
+
+                Callback_OnButtonModalDebug(pApp, e);
+                return;
+            }
+            break;
+
+        case ekGUI_CLOSE_ESC:
+        case ekGUI_CLOSE_BUTTON:
+            break;
+
+        default:
+            *pResult = FALSE; /* prevents from closing window */
+            break;
+    }
 }
 
 static SVarKeyBundle
 _Callback_UIEvent(
     AppCore *pAppCore,
-    uint32 dID,
+    EUIEventType eEventType,
     const SVar *pUserData,
     const unsigned int dNumArgs)
 {
@@ -1453,10 +1576,12 @@ _Callback_UIEvent(
     assert(IS_VALID(pAppCore));
     pApp = (AppGUI*)pAppCore->pOwner;
 
+    assert(eEventType >= 0);
+
     #ifdef __DEBUG__
-    if (pApp->pTextView && dID < UIEVENT_MAX)
+    if (pApp->pTextView && eEventType < UIEVENT_MAX)
     {
-        textview_printf(pApp->pTextView,"UI EVENT: %s\n", EUIEventTypeStrings[dID]);
+        textview_printf(pApp->pTextView,"UI EVENT: %s\n", EUIEventTypeStrings[eEventType]);
     }
     #endif
 
@@ -1465,8 +1590,26 @@ _Callback_UIEvent(
         str_destroy(&pApp->pString);
     }
 
-    switch(dID)
+    pApp->eCurrentUIEvent = eEventType;
+
+    switch(eEventType)
     {
+        case UIEVENT_DEBUG:
+            {
+                dModalRetVal = _Nappgui_ShowModal
+                (
+                    pApp,
+                    Panel_GetModalDebug(pApp),
+                    TXT_TITLE_DEBUG
+                );
+                switch (dModalRetVal)
+                {
+                    default:
+                        SVARKEYB_BOOL(tRetVal, sStatusKey, CTRUE);
+                        break;
+                }
+            }
+            break;
         case UIEVENT_PRINT:
             {
                 const char* sMessage;
@@ -2072,10 +2215,12 @@ _Callback_UIEvent(
                 textview_printf(
                     pApp->pTextView,
                     "Behavior for %s (%d) is not defined!\n",
-                    dID < UIEVENT_MAX ? EUIEventTypeStrings[dID] : "?", dID);
+                    eEventType < UIEVENT_MAX ? EUIEventTypeStrings[eEventType] : "?", eEventType);
             }
             break;
     }
+
+    pApp->eCurrentUIEvent = UIEVENT_NULL;
 
     UNUSED(pUserData);
 

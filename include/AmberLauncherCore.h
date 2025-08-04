@@ -30,6 +30,9 @@ AmberLauncher_ConfigureStart(struct AppCore* pApp);
 extern CAPI void
 AmberLauncher_Play(struct AppCore* pApp);
 
+extern CAPI void
+AmberLauncher_ExecuteLua(struct AppCore *pApp, const char *sCommand);
+
 __END_C
 
 #endif

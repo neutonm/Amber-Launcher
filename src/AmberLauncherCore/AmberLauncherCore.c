@@ -616,3 +616,9 @@ AmberLauncher_Play(AppCore* pAppCore)
     UNUSED(pAppCore);
 }
 
+CAPI void
+AmberLauncher_ExecuteLua(AppCore *pApp, const char *sCommand)
+{
+    SLuaState_ExecuteCode(pApp->pLuaState, sCommand);
+}
+

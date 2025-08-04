@@ -13,9 +13,11 @@ Table Of Contents:
 - [GUI Library](#gui-library)
 - [Lua Scripts](#lua-scripts)
 
-> Next:     Options menu (tweak separate options, change language and all that shit from config wizard)
-> - fill modal with all the options and mods (David's stuff) and make them work
 > Next:     Core  Launcher GUI
+> Next: David's Sprites
+> - cut into variants: none, swamp trees only, everything
+> - check SFT and adjust variables from original one to new one (there are collision marks in amberisland)
+> - david's stuff must be applied through: config wizard (tweaker) and options modal window (mod list)
 > Next:     Auto-Updater / Downloader
 > The END
 
@@ -42,9 +44,6 @@ Table Of Contents:
 *Responsible for providing main functionality for the launcher app. Must be independent module.* 
 
 - [ ] Code Review for header/sources
-- [X] add theoraplay library
-- - [ ] test video playback via theoraplay (required for illustrating option tweaking)
-- - Maybe ditch it and just stick to GIF? Nappgui already provides support for gif playback.
 - [ ] save argc/argv into AppCore struct
 - [ ] rename header guards: conform to one convention
 - [ ] extern_c for every header!

@@ -46,6 +46,7 @@ typedef enum
 typedef enum
 {
     UIEVENT_NULL = 0,
+    UIEVENT_DEBUG,
     UIEVENT_PRINT,
     UIEVENT_MODAL_MESSAGE,
     UIEVENT_MODAL_QUESTION,
@@ -63,6 +64,13 @@ extern const char* EUserEventTypeStrings[];
 /******************************************************************************
  * STRUCTS
  ******************************************************************************/
+
+typedef struct GUIDebugData
+{
+    String          *pInputString;
+    TextView        *pConsoleTextView;
+    Edit            *pConsoleInput;
+} GUIDebugData;
 
 typedef struct GUIOptElement
 {
@@ -101,6 +109,7 @@ typedef struct
 typedef struct
 {
     struct AppCore  *pAppCore;
+    GUIDebugData    *pDebugData;
     Window          *pWindow;
     Window          *pWindowModal;
     Panel           *pPanelModal;
@@ -124,6 +133,9 @@ typedef struct
     PopUp           *pPopupCore;
     PopUp           *pPopupMod;
     View            *pLocaleView;
+
+    EPanelType      eCurrentPanel;
+    EUIEventType    eCurrentUIEvent;
 
     struct SObserver *pOnUserEvent;
 } AppGUI;
@@ -186,6 +198,16 @@ Panel_GetMain(AppGUI* pApp);
  */
 extern Panel*
 Panel_GetImageDemo(AppGUI* pApp);
+
+/**
+ * @relatedalso Panel
+ * @brief       Returns predefined panel for Modal Window related to Debug Console (Lua)
+ *
+ * @param       pApp
+ * @return      Panel*
+ */
+extern Panel*
+Panel_GetModalDebug(AppGUI* pApp);
 
 /**
  * @relatedalso Panel
@@ -254,6 +276,16 @@ Panel_GetModalOptions(AppGUI* pApp);
 /**
  * @relatedalso Callback
  * @brief       Invokes full reconfiguration for the game
+ *
+ * @param       pApp
+ * @param       e
+ */
+extern void
+Callback_OnWindowHotkeyF6(AppGUI* pApp, Event *e);
+
+/**
+ * @relatedalso Callback
+ * @brief       Invokes full reconfiguration for the game
  * 
  * @param       pApp
  * @param       e
@@ -270,6 +302,16 @@ Callback_OnButtonConfigure(AppGUI* pApp, Event *e);
  */
 extern void
 Callback_OnButtonPlay(AppGUI* pApp, Event *e);
+
+/**
+ * @relatedalso Callback
+ * @brief       Callback for button for processing debug input strings
+ *
+ * @param       pApp
+ * @param       e
+ */
+extern void
+Callback_OnButtonModalDebug(AppGUI* pApp, Event *e);
 
 /**
  * @relatedalso Callback
