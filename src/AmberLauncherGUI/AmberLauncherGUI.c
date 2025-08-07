@@ -28,6 +28,8 @@
 const char* EUIEventTypeStrings[] = {
     "NULL",
     "PRINT",
+    "MAIN",
+    "AUTOCONFIG",
     "MODAL_MESSAGE",
     "MODAL_QUESTION",
     "MODAL_GAMENOTFOUND",
@@ -191,7 +193,7 @@ Panel_Set(AppGUI *pApp, const EPanelType eType)
         window_defbutton(pApp->pWindow, defbutton);
     }
 
-    return NULL;
+    return pPanel;
 }
 
 Panel* 
@@ -1362,7 +1364,7 @@ _Panel_GetRoot(AppGUI *pApp)
     ImageView   *pImageView = imageview_create();
 
     Label *label1 = label_create();
-    label_text(label1, "Hey");
+    label_text(label1, TXT_GREETINGS);
     label_multiline(label1, TRUE);
 
     pApp->pLayoutMain = pLayoutMain;
@@ -1394,7 +1396,7 @@ _Panel_GetRoot(AppGUI *pApp)
     panel_layout(pPanelMain, pLayoutMain);
 
     /* Starting panel */
-    Panel_Set(pApp, CPANEL_AUTOCONFIG);
+    Panel_Set(pApp, CPANEL_MAIN);
 
     return pPanelMain;
 }
@@ -1596,18 +1598,12 @@ _Callback_UIEvent(
     {
         case UIEVENT_DEBUG:
             {
-                dModalRetVal = _Nappgui_ShowModal
+                _Nappgui_ShowModal
                 (
                     pApp,
                     Panel_GetModalDebug(pApp),
                     TXT_TITLE_DEBUG
                 );
-                switch (dModalRetVal)
-                {
-                    default:
-                        SVARKEYB_BOOL(tRetVal, sStatusKey, CTRUE);
-                        break;
-                }
             }
             break;
         case UIEVENT_PRINT:
@@ -1627,6 +1623,20 @@ _Callback_UIEvent(
                 }
 
                 SVARKEYB_BOOL(tRetVal, sStatusKey, CFALSE);
+            }
+            break;
+
+        case UIEVENT_MAIN:
+            {
+                Panel_Set(pApp, CPANEL_MAIN);
+                SVARKEYB_BOOL(tRetVal, sStatusKey, CTRUE);
+            }
+            break;
+
+        case UIEVENT_AUTOCONFIG:
+            {
+                Panel_Set(pApp, CPANEL_AUTOCONFIG);
+                SVARKEYB_BOOL(tRetVal, sStatusKey, CTRUE);
             }
             break;
 
