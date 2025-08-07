@@ -523,6 +523,14 @@ AmberLauncher_Start(AppCore* pAppCore)
     luaL_newlib(pAppCore->pLuaState->pState, AL);
     lua_setglobal(pAppCore->pLuaState->pState, STR_AL_GLOBAL);
 
+    /* Debug const */
+#if defined(NDEBUG)
+    lua_pushboolean(pAppCore->pLuaState->pState, 0);
+#else
+    lua_pushboolean(pAppCore->pLuaState->pState, 1);
+#endif
+    lua_setglobal(pAppCore->pLuaState->pState, "_DEBUG");
+
     /* Register pAppCore */
     lua_pushlightuserdata(pAppCore->pLuaState->pState, (void*)pAppCore);
     lua_setfield(pAppCore->pLuaState->pState, LUA_REGISTRYINDEX, STR_AL_APPCORE);
