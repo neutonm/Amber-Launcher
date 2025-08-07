@@ -42,10 +42,23 @@ function dump(o)
     end
 end
 
+-- Includes
+FS = require("Scripts.Launcher._filesystem")
+
 -- Main launcher calls
 function AppInit()
 
     print("App Init")
+end
+
+function PostAppInit()
+
+    print("Post App Init")
+
+    local src, how = AL_DetectGame()
+    if not src then
+        AL.UICall(UIEVENT.AUTOCONFIG)
+    end
 end
 
 function AppDestroy()
@@ -53,9 +66,15 @@ function AppDestroy()
     print("App Destroy")
 end
 
+function PostAppDestroy()
+
+    print("Post App Destroy")
+end
+
 function AppConfigure()
 
     local configSuccessful = true
+
     -- Execute all available commands
     local commandTable = AL.GetTableOfCommands()
     table.sort(commandTable, function(a, b)
@@ -68,21 +87,14 @@ function AppConfigure()
 
     -- Execute all commands
     print("Configuration start...")
-    -- for _, cmd in ipairs(commandTable) do
-    --     if not AL.CommandCall(cmd.name) then
-    --         configSuccessful = false
-    --         break
-    --     end
-    -- end
+    for _, cmd in ipairs(commandTable) do
+        if not AL.CommandCall(cmd.name) then
+            configSuccessful = false
+            break
+        end
+    end
+    --AL.CommandCall("DetectAndCopyGame")
 
-    --temp
-    --configSuccessful = AL.CommandCall("Localisation")
-    --configSuccessful = AL.CommandCall("ConfigTweaks")
-    --AL.CommandCall("MergeAndRename")
-    --AL.CommandCall("DetectAndInstallMod")
-
-    ModalShowOptions()
-    
     print("Configuration "..(configSuccessful and "succesful!" or "failed."))
 end
 

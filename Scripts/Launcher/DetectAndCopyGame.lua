@@ -1,4 +1,5 @@
--- Detect and Copy Game contents into launcher folder
+-- FILE:        DetectAndCopyGame.lua
+-- DESCRIPTION: Detect and Copy Game contents into launcher folder
 
 -- List of files to check and copy
 local GRAYFACE_FILES = {
@@ -21,7 +22,7 @@ local GRAYFACE_FILES = {
     "MM7-Rel.exe",
 }
 
-local MM7_FILES = {
+local MM7_COPY_FILES = {
     "Anims/Magic7.vid",
     "Anims/Might7.vid",
     "Data/BITMAPS.LOD",
@@ -72,348 +73,102 @@ local MM7_FILES = {
     "VIC32.DLL",
 }
 
--- Utility Functions
-
--- Function to list directory contents
-local function list_directory(dir)
-    local listing = {}
-    local command
-    if OS_NAME == "Windows" then
-        -- Windows: Use 'dir' command
-        command = 'dir /b /a-d "' .. dir .. '" 2> nul'
-    else
-        -- Unix-like systems: Use 'ls' command
-        command = 'ls -1 "' .. dir .. '" 2> /dev/null'
-    end
-    local p = io.popen(command)
-    if p then
-        for file in p:lines() do
-            table.insert(listing, file)
-        end
-        p:close()
-    end
-    return listing
-end
-
--- Function to join multiple path components
-local function join_paths(...)
-    local args = {...}
-    return table.concat(args, OS_FILE_SEPARATOR)
-end
-
--- Function to find a matching name case-insensitively
-local function find_case_insensitive(dir, name)
-    local files = list_directory(dir)
-    for _, file in ipairs(files) do
-        if file:lower() == name:lower() then
-            return file
+-- We need to check for wav files during detection, not mp3
+local function _BuildDetectList(copyList)
+    local detectList = {}
+    for _, path in ipairs(copyList) do
+        if path:match("^Music/.*%.mp3$") then
+            table.insert(detectList, path:gsub("%.mp3$", ".wav"))
+        else
+            table.insert(detectList, path)
         end
     end
-    return nil
+    return detectList
 end
 
--- Function to check if a file exists with case-insensitive path
-local function case_insensitive_file_exists(base_dir, relative_path)
-    -- Split the relative path into components
-    local components = {}
-    for part in relative_path:gmatch("[^/\\]+") do
-        table.insert(components, part)
-    end
+local MM7_DETECT_FILES = _BuildDetectList(MM7_COPY_FILES)
 
-    local current_dir = base_dir
-    for i = 1, #components - 1 do
-        local component = components[i]
-        local actual_dir = find_case_insensitive(current_dir, component)
-        if not actual_dir then
-            return false
-        end
-        current_dir = join_paths(current_dir, actual_dir)
-    end
+-- Public functions:
+function AL_DetectGame(searchFolder)
 
-    -- Now check the file
-    local file_component = components[#components]
-    local actual_file = find_case_insensitive(current_dir, file_component)
-    if actual_file then
-        return join_paths(current_dir, actual_file)
-    else
-        return false
-    end
-end
+    print("Detecting game…")
+    local searchFolders = searchFolder and {searchFolder} or GAME_EXECUTABLE_FOLDERS
 
--- Function to ensure a directory exists; creates it if it doesn't
-local function ensure_directory(path)
-    -- Use system-specific mkdir command
-    local command
-    if OS_NAME == "Windows" then
-        command = 'mkdir "' .. path .. '" >nul 2>nul'
-    else
-        command = 'mkdir -p "' .. path .. '"'
-    end
-    os.execute(command)
-end
-
--- Function to split a file path into directory and filename
-local function split_path(filepath)
-    -- Find the last occurrence of '/' or '\'
-    local pattern = "^(.*)" .. OS_FILE_SEPARATOR
-    local dir = filepath:match(pattern)
-    local file = filepath:match("[^" .. OS_FILE_SEPARATOR .. "]+$")
-
-    if dir then
-        return dir, file
-    else
-        return "", filepath
-    end
-end
-
--- Function to check if a file is present (case-insensitive)
-local function CheckFiles(dst, fileList)
-    local missingFiles = {}
-
-    for _, relativePath in ipairs(fileList) do
-        -- Check if the file exists case-insensitively
-        local foundPath = case_insensitive_file_exists(dst, relativePath)
-
-        if not foundPath then
-            print("Missing: " .. join_paths(dst, relativePath))
-            table.insert(missingFiles, relativePath)
+    -- 1) Already in launcher folder?
+    local localExePath  = FS.join_paths(GAME_DESTINATION_FOLDER, GAME_EXECUTABLE_NAME)
+    local localExe      = FS.IsFilePresent(localExePath)
+    if localExe then
+        print("Game executable present in destination folder.")
+        if FS.CheckFiles(GAME_DESTINATION_FOLDER, MM7_DETECT_FILES) then
+            return GAME_DESTINATION_FOLDER, "local"
+        else
+            print("Game in destination is incomplete -> will continue searching…")
         end
     end
 
-    if #missingFiles == 0 then
-        print("✅ Success: All files are present in the destination folder.")
-        return true
-    else
-        print("❌ Failure: The following files are missing in the destination folder:")
-        for _, file in ipairs(missingFiles) do
-            print(" - " .. file)
-        end
-        return false
-    end
-end
+    -- 2) Search predefined folders
+    for _, candidate in ipairs(searchFolders) do
 
--- Function to copy a single file from source to destination
--- Function to copy a single file from source to destination with case-insensitive handling
-local function CopyFile(source_folder, destination_folder, relative_path)
-    -- Find the actual source path with correct case
-    local actual_source_path = case_insensitive_file_exists(source_folder, relative_path)
-    if not actual_source_path then
-        print("❌ Error: Source file not found (case-insensitive search failed): " .. join_paths(source_folder, relative_path))
-        return false
-    end
-
-    -- Determine the corresponding destination path
-    local relative_dir = split_path(relative_path)
-    local actual_relative_path = actual_source_path:sub(#source_folder + 2) -- +2 to account for the path separator
-
-    local dest_path = join_paths(destination_folder, actual_relative_path)
-
-    -- Ensure the destination directory exists
-    local dest_dir = GetDirectory(dest_path)
-    if dest_dir ~= "" then
-        ensure_directory(dest_dir)
-    end
-
-    -- Open source file
-    local src_file = io.open(actual_source_path, "rb")
-    if not src_file then
-        print("❌ Error: Unable to open source file: " .. actual_source_path)
-        return false
-    end
-
-    -- Read the entire content
-    local content = src_file:read("*all")
-    src_file:close()
-
-    -- Open destination file
-    local dest_file = io.open(dest_path, "wb")
-    if not dest_file then
-        print("❌ Error: Unable to create destination file: " .. dest_path)
-        return false
-    end
-
-    -- Write the content
-    dest_file:write(content)
-    dest_file:close()
-
-    print("✅ Copied: " .. actual_relative_path)
-    return true
-end
-
-
--- Function to copy all files from source to destination
-local function CopyFiles(source_folder, destination_folder, file_list)
-    for _, relative_path in ipairs(file_list) do
-        CopyFile(source_folder, destination_folder, relative_path)
-    end
-    print("📁 File copying completed.")
-end
-
--- Additional functions (e.g., IsAmberIslandMod, _DetectAndCopyGame, etc.)
--- Ensure these functions use the updated CheckFiles and CopyFiles accordingly
--- For brevity, they're omitted here but should be integrated as per your existing script
-
--- Example usage:
--- CheckFiles("C:/Games/MM7/Destination", MM7_FILES)
--- CopyFiles("C:/Games/MM7/Source", "C:/Games/MM7/Destination", MM7_FILES)
-
-local function IsFileExecutable(path)
-    -- Cross-platform method
-    if OS_NAME == "Windows" then
-        local command = "where \"" .. path .. "\" >nul 2>&1"
-        return os.execute(command) == 0
-    else
-        local command = "test -x \"" .. path.."\""
-        return os.execute(command) == true
-    end
-end
-
-local function IsFilePresent(path)
-    local dirname, filename = path:match("(.*/)(.*)")
-    dirname     = dirname or "."
-    filename    = filename:lower()
-
-    -- Determine the OS-specific directory listing command
-    local command
-    if OS_FILE_SEPARATOR == '\\' then
-        -- Windows
-        command = 'dir /b /a "' .. dirname .. '" 2> nul'
-    else
-        -- Unix-like systems
-        command = 'ls -a "' .. dirname .. '" 2> /dev/null'
-    end
-
-    -- Execute the directory listing command
-    local p = io.popen(command)
-    if p == nil then
-        return nil
-    end
-
-    -- Iterate over each file in the directory
-    for file in p:lines() do
-        if file:lower() == filename then
-            p:close()
-            return dirname .. file
-        end
-    end
-    p:close()
-    return nil
-end
-
-function GetDirectory(full_path)
-    -- Use Lua's pattern matching to capture everything before the last '/' or '\'
-    local dir = full_path:match("^(.*)[/\\][^/\\]+$")
-    if dir then
-        return dir
-    else
-        -- If no separator is found, return an empty string or handle as needed
-        return ""
-    end
-end
-
-local function _DetectAndCopyGame(dst)
-
-    --[[ 
-    General idea:
-        * Scan for a game in same folder
-        * * if found and all files are OK - success
-        * * If found, but some files are missing - consider it as failed (remember this choice)
-        * If failed, then proceed to scan game in predefined folder list
-        * * if found and all files are OK - success
-        * if failed, report for GameNotFound and state extra info (e.g: )
-        * * if found and all files are OK - success
-
-        * Copy game files
-    
-    Would be nice to:
-        * report exact missing files
-    ]]
-    print("Detecting game...")
-
-    local gameFolders = GAME_EXECUTABLE_FOLDERS
-    if dst then
-        gameFolders = {
-            dst
-        }
-    end
-    -- check if game is already installed in the same folder
-    local foundGamePath = nil
-    if IsFilePresent(GAME_DESTINATION_FOLDER..OS_FILE_SEPARATOR..GAME_EXECUTABLE_NAME) then
-        
-        print("Game is located in same folder as launcher is.")
-
-        -- Check if all files are installed
-        if CheckFiles(GAME_DESTINATION_FOLDER, MM7_FILES) then
-            print("No need for copying game files.")
-            return true
-        end
-
-        -- If not, ask if user wants to copy missing files
-        print("Some game files are missing.")
-    end
-
-    -- [[FIND]]
-    -- Find missing game
-    for _, file in ipairs(gameFolders) do
-        local foundFile = IsFilePresent(file)
-        if foundFile then
-            if IsFileExecutable(foundFile) then
-                foundGamePath = foundFile
-                break
+        local exe = FS.IsFilePresent(candidate)
+        if exe and FS.IsFileExecutable(exe) then
+            local root = FS.GetDirectory(exe)
+            if FS.CheckFiles(root, MM7_DETECT_FILES) then
+                print("Found valid installation at "..root)
+                return root, "external"
+            else
+                print("Found executable at "..root.." but data files are incomplete.")
             end
         end
     end
 
-    if not foundGamePath then
+    return nil, "notfound"
+end
+
+-- Static functions
+local function _CopyGameFiles(src, dst)
+
+    print("Copying game from '"..src.."' -> '"..dst.."' …")
+
+    FS.ensure_directory(dst)
+    FS.CopyFiles(src, dst, MM7_COPY_FILES)
+
+    if not FS.CheckFiles(dst, MM7_COPY_FILES) then
+        print("Verification failed after copy.")
+        return false
+    end
+
+    print("Copy succeeded.")
+    return true
+end
+
+local function _DetectAndCopyGame(searchFolder)
+
+    local src, how = AL_DetectGame(searchFolder)
+    if not src then
 
         print("Failed to find the game!")
-        local newRetVal
-        local uiRetTable = AL.UICall(UIEVENT.MODAL_GAMENOTFOUND)
+        local uiRes = AL.UICall(UIEVENT.MODAL_GAMENOTFOUND)
 
-        if uiRetTable and uiRetTable.status == false then
-            print("Canceled")
-            return false -- cancel
+        if uiRes and uiRes.status == false then
+            return false
         end
-        
-        if uiRetTable.path and uiRetTable.path ~= "" then
-            local f = io.open(uiRetTable.path, "rb") 
-            if f then
-                f:close()
-                newRetVal = _DetectAndCopyGame(uiRetTable.path)
-            else
-                print("Invalid or nonexistent file path: " .. uiRetTable.path)
-            end
+
+        if uiRes and uiRes.path and uiRes.path ~= "" then
+            return _DetectAndCopyGame(uiRes.path) -- recursive
         end
-        
-        return newRetVal
-    end
 
-    print("Found game at: "..foundGamePath)
-
-    local foundDirPath = GetDirectory(foundGamePath)
-    if not CheckFiles(foundDirPath, MM7_FILES) then
-
-        print("It looks like found folder has a broken MM7 installation (missing content files)")
         return false
     end
 
-    print("Game successfuly detected and verified.")
-    print("Copying the game...")
-    -- [[ COPYING SRC FILES ]]
-
-    ensure_directory(GAME_DESTINATION_FOLDER)
-    CopyFiles(foundDirPath, GAME_DESTINATION_FOLDER, MM7_FILES)
-
-    if not CheckFiles(GAME_DESTINATION_FOLDER, MM7_FILES) then
-
-        print("Couldn't verify files after copying from source folder.")
-        return false
+    if how == "local" then
+        print("No copy needed - game verified in destination folder.")
+        return true
     end
 
-    print("Copying operation is succesful!")
-    return true
+    return _CopyGameFiles(src, GAME_DESTINATION_FOLDER)
 end
 
+-- Global callbacks
 function events.InitLauncher()
 
     print("Initialize DetectAndCopyGame.lua")
