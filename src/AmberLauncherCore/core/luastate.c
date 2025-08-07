@@ -168,6 +168,8 @@ SLuaState_Init(SLuaState* pLuaState)
 
     _LoadAllLuaScripts(pLuaState->pState, pLuaState->sScriptNameFolder);
 
+    SLuaState_CallReferencedFunction(pLuaState, SLUA_FUNC_POST_APPINIT);
+
     return CTRUE;
 }
 

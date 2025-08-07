@@ -4,7 +4,9 @@
 
 const char* ELuaFunctionRefTypeStrings[] = {
     "AppInit",
+    "PostAppInit",
     "AppDestroy",
+    "PostAppDestroy",
     "AppConfigure",
     NULL
 };

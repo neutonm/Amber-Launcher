@@ -549,7 +549,7 @@ AmberLauncher_Start(AppCore* pAppCore)
             0,
             (int)i);
     }
-    
+
     /* Lua State */
     SLuaState_Init(pAppCore->pLuaState);
     SLuaState_CallEvent(pAppCore->pLuaState, ELuaFunctionEventTypeStrings[SLUA_EVENT_INIT]);
@@ -569,10 +569,10 @@ AmberLauncher_End(AppCore* pAppCore)
             luaL_unref(pAppCore->pLuaState->pState, LUA_REGISTRYINDEX, SVECTOR_ITERATOR->dLuaRef);
         }
     }
-    
 
     /* Other shit */
     SVector_Cleanup(&tConfigureCommandList);
+    SLuaState_CallReferencedFunction(pAppCore->pLuaState, SLUA_FUNC_POST_APPDESTROY);
 }
 
 CAPI void
