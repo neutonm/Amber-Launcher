@@ -78,7 +78,8 @@ local function _BuildDetectList(copyList)
     local detectList = {}
     for _, path in ipairs(copyList) do
         if path:match("^Music/.*%.mp3$") then
-            table.insert(detectList, path:gsub("%.mp3$", ".wav"))
+            local wav = path:gsub("%.mp3$", ".wav")
+            table.insert(detectList, wav)
         else
             table.insert(detectList, path)
         end

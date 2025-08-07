@@ -1,3 +1,4 @@
+#include "core/luacommon.h"
 #include <AmberLauncherCore.h>
 
 #include <stdio.h>
@@ -560,7 +561,7 @@ AmberLauncher_End(AppCore* pAppCore)
 {
     /* Lua stuff */
     SLuaState_CallEvent(pAppCore->pLuaState, ELuaFunctionEventTypeStrings[SLUA_EVENT_DESTROY]);
-    SLuaState_CallReferencedFunction(pAppCore->pLuaState, SLUA_FUNC_APPDESTROY);
+    SLuaState_CallReferencedFunction(pAppCore->pLuaState, SLUA_FUNC_APPDESTROY,NULL);
     SVector_ForEach(&tConfigureCommandList)
     {
         SVector_InitIterator(SCommand, &tConfigureCommandList);
@@ -572,7 +573,7 @@ AmberLauncher_End(AppCore* pAppCore)
 
     /* Other shit */
     SVector_Cleanup(&tConfigureCommandList);
-    SLuaState_CallReferencedFunction(pAppCore->pLuaState, SLUA_FUNC_POST_APPDESTROY);
+    SLuaState_CallReferencedFunction(pAppCore->pLuaState, SLUA_FUNC_POST_APPDESTROY,NULL);
 }
 
 CAPI void
@@ -590,25 +591,43 @@ AmberLauncher_Test(AppCore* pAppCore)
 CAPI void
 AmberLauncher_ConfigureStart(AppCore* pAppCore)
 {
-    UNUSED(pAppCore);
-    /* if (pAppCore->pText)
-    {
-        textview_printf(pAppCore->pText, "Configuration start...\n");
-    } */
+    SVar tRetVal;
 
     SLuaState_CallEvent(
         pAppCore->pLuaState, 
         ELuaFunctionEventTypeStrings[SLUA_EVENT_CONFIGURE_BEFORE]
     );
 
-    /* AmberLauncher_Test(pAppCore); */
+    SLuaState_CallReferencedFunction(pAppCore->pLuaState, SLUA_FUNC_APPCONFIGURE,&tRetVal);
 
-    SLuaState_CallReferencedFunction(pAppCore->pLuaState, SLUA_FUNC_APPCONFIGURE);
-
-    SLuaState_CallEvent(
-        pAppCore->pLuaState, 
-        ELuaFunctionEventTypeStrings[SLUA_EVENT_CONFIGURE_AFTER]
-    );
+    if (SVAR_IS_NULL(tRetVal))
+    {
+        SLuaState_CallEvent(
+            pAppCore->pLuaState,
+            ELuaFunctionEventTypeStrings[SLUA_EVENT_CONFIGURE_AFTER]
+        );
+        SLuaState_CallReferencedFunction(
+            pAppCore->pLuaState,
+            SLUA_FUNC_POST_APPCONFIGURE,
+            NULL
+        );
+    }
+    else
+    {
+        SLuaState_CallEventArgs(
+            pAppCore->pLuaState,
+            ELuaFunctionEventTypeStrings[SLUA_EVENT_CONFIGURE_AFTER],
+            &tRetVal,
+            1
+        );
+        SLuaState_CallReferencedFunctionArgs(
+            pAppCore->pLuaState,
+            SLUA_FUNC_POST_APPCONFIGURE,
+            NULL,
+            &tRetVal,
+            1
+        );
+    }
 
     fflush(stderr);
 }

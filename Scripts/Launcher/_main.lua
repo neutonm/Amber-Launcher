@@ -87,14 +87,17 @@ function AppConfigure()
 
     -- Execute all commands
     print("Configuration start...")
-    for _, cmd in ipairs(commandTable) do
-        if not AL.CommandCall(cmd.name) then
-            configSuccessful = false
-            break
-        end
-    end
+    -- for _, cmd in ipairs(commandTable) do
+    --     if not AL.CommandCall(cmd.name) then
+    --         configSuccessful = false
+    --         break
+    --     end
+    -- end
     --AL.CommandCall("DetectAndCopyGame")
 
-    print("Configuration "..(configSuccessful and "succesful!" or "failed."))
+    return configSuccessful
 end
 
+function PostAppConfigure(configSuccessful)
+    print("Configuration "..(configSuccessful and "succesful!" or "failed."))
+end

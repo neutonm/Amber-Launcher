@@ -164,11 +164,11 @@ SLuaState_Init(SLuaState* pLuaState)
     }
     
     /* SLuaState_PushGlobalVariable(pLuaState, sLuaBackendName, "true", SLUA_TYPE_BOOL); */
-    SLuaState_CallReferencedFunction(pLuaState, SLUA_FUNC_APPINIT);
+    SLuaState_CallReferencedFunction(pLuaState, SLUA_FUNC_APPINIT,NULL);
 
     _LoadAllLuaScripts(pLuaState->pState, pLuaState->sScriptNameFolder);
 
-    SLuaState_CallReferencedFunction(pLuaState, SLUA_FUNC_POST_APPINIT);
+    SLuaState_CallReferencedFunction(pLuaState, SLUA_FUNC_POST_APPINIT,NULL);
 
     return CTRUE;
 }
@@ -390,11 +390,41 @@ SLuaState_LoadScript(SLuaState* pLuaState, const char* sScriptPath)
 
 CAPI CBOOL 
 SLuaState_CallReferencedFunction(
-    SLuaState* pLuaState, 
-    ELuaFunctionRefType eRefType)
+    SLuaState *pLuaState, 
+    ELuaFunctionRefType eRefType,
+    SVar *pRetOut)
 {
-    /** @todo Luastate: Proper error handle */
+    return SLuaState_CallReferencedFunctionArgs(pLuaState, eRefType, pRetOut, NULL, 0);
+}
+
+CAPI CBOOL
+SLuaState_CallReferencedFunctionArgs(
+    SLuaState*          pLuaState,
+    ELuaFunctionRefType eRefType,
+    SVar*               pRetOut,
+    const SVar*         pArgs,
+    size_t              dNumArgs)
+{
+    unsigned int i;
     const SLuaFunctionRef* pLuaFuncRef;
+
+    if (!IS_VALID(pLuaState) || !IS_VALID(pLuaState->pState))
+    {
+        fprintf(stderr,
+                "SLuaState_CallReferencedFunctionArgs() -> invalid pLuaState\n");
+
+        return CFALSE;
+    }
+
+    if (dNumArgs && !IS_VALID(pArgs))
+    {
+        fprintf(stderr,
+                "SLuaState_CallReferencedFunctionArgs() -> pArgs is NULL while "
+                "dNumArgs=%lu\n",
+                (unsigned long)dNumArgs);
+
+        return CFALSE;
+    }
 
     pLuaFuncRef = (SLuaFunctionRef*)SVector_Get(&pLuaState->tRefFunctions, eRefType);
     lua_rawgeti(
@@ -402,7 +432,12 @@ SLuaState_CallReferencedFunction(
         LUA_REGISTRYINDEX, 
         pLuaFuncRef->dRef);
 
-    if (lua_pcall(pLuaState->pState, 0, 0, 0) != LUA_OK) 
+    for (i = 0; i < dNumArgs; ++i)
+    {
+        SLuaState_PushVariable(pLuaState, &pArgs[i]);
+    }
+
+    if (lua_pcall(pLuaState->pState, (int)dNumArgs, IS_VALID(pRetOut) ? 1 : 0, 0) != LUA_OK) 
     {
         const char *sErrorMessage = lua_tostring(pLuaState->pState, -1);
 
@@ -419,6 +454,18 @@ SLuaState_CallReferencedFunction(
         return CFALSE;
     }
 
+    if (!IS_VALID(pRetOut))
+    {
+        return CTRUE;
+    }
+
+    if (!_LuaObjectToSVar(pLuaState->pState,pRetOut,-1,0))
+    {
+        lua_pop(pLuaState->pState, 1);
+        return CFALSE;
+    }
+
+    lua_pop(pLuaState->pState, 1);
     return CTRUE;
 }
 
@@ -582,6 +629,12 @@ SLuaState_LuaObjectToSVar(
             "SLuaState_LuaObjectToSVar(SLuaState* pLuaState, SVar* pOut, int dIdx, int dDepth)-> \
             received \"LuaState\" as NULL or LuaState->pState is NULL."
         );
+
+        if (IS_VALID(pOut))
+        {
+            SVAR_NULL(*pOut);
+        }
+
         return CFALSE;
     }
 
@@ -730,6 +783,11 @@ _LuaObjectToSVar(
     int dDepth)
 {
     int dType = lua_type(L, dIdx);
+    if (dType < 0)
+    {
+        return CFALSE;
+    }
+
     switch (dType)
     {
         case LUA_TNIL:
@@ -746,8 +804,6 @@ _LuaObjectToSVar(
             break;
         case LUA_TTABLE:
             return _LuaTableToSVar(L, dIdx, pOut, dDepth);
-        case LUA_TFUNCTION:
-        case LUA_TUSERDATA:
         default:
             SVAR_LUAREF(*pOut, L, dIdx);
             pOut->dFlags = dType;

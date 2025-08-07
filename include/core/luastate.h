@@ -135,14 +135,35 @@ SLuaState_LoadScript(SLuaState* pLuaState, const char* sScriptPath);
  * @brief           Calls registered referenced lua function state from SLuaState's 
  *                  RefFunctions array
  *
- * @param           pLuaState 
- * @param           eRefType 
- * @return          CBOOL 
+ * @param           pLuaState
+ * @param           eRefType
+ * @param           pRetOut
+ * @return          CBOOL
  */
-extern CAPI CBOOL 
+extern CAPI CBOOL
 SLuaState_CallReferencedFunction(
-    SLuaState* pLuaState, 
-    ELuaFunctionRefType eRefType
+    SLuaState *pLuaState,
+    ELuaFunctionRefType eRefType,
+    SVar *pRetOut
+);
+
+/**
+ * @relatedalso     SLuaState
+ * @brief           Calls registered referenced lua function state from
+ *                  SLuaState's RefFunctions array with variadic arguments
+ *
+ * @param           pLuaState
+ * @param           eRefType
+ * @param           pRetOut
+ * @return          CBOOL
+ */
+extern CAPI CBOOL
+SLuaState_CallReferencedFunctionArgs(
+    SLuaState *pLuaState,
+    ELuaFunctionRefType eRefType,
+    SVar *pRetOut,
+    const SVar* pArgs,
+    size_t dNumArgs
 );
 
 /**
@@ -161,6 +182,8 @@ SLuaState_CallEvent(SLuaState* pLuaState, const char* sEventName);
  *
  * @param           pLuaState
  * @param           sEventName
+ * @param           pArgs
+ * @param           dNumArgs
  */
 extern CAPI void
 SLuaState_CallEventArgs(SLuaState* pLuaState, const char* sEventName, const SVar* pArgs, size_t dNumArgs);
