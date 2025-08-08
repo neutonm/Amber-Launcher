@@ -382,6 +382,19 @@ typedef struct SVarKeyBundle
 /* General check for pointers */
 #define IS_VALID(ptr) ((ptr) != NULL)
 
+/* Bitmask flag operators */
+#define FLAG_HAS(f,m)       (((f) &  (m)) != 0)
+#define FLAG_HAS_ALL(f,m)   (((f) &  (m)) == (m))
+#define FLAG_HAS_NONE(f,m)  (((f) &  (m)) == 0)
+
+#define FLAG_SET(f,m)       ((f) |=  (m))
+#define FLAG_CLEAR(f,m)     ((f) &= ~(m))
+#define FLAG_TOGGLE(f,m)    ((f) ^=  (m))
+
+#define FLAG_REPLACE(f,mask,value) \
+    do { (f) = ((f) & ~(mask)) | ((value) & (mask)); } while (0)
+
+/* Helpers for byte printing */
 #define BYTE_TO_BINARY_PATTERN "%c%c%c%c%c%c%c%c"
 #define BYTE_TO_BINARY(byte)  \
   ((byte) & 0x80 ? '1' : '0'), \
