@@ -47,8 +47,7 @@ typedef uint32_t FPanelFlags;
 enum
 {
     FLAG_PANEL_NONE         = 0U,
-    FLAG_PANEL_STATE_START  = 1U << 0,
-    FLAG_PANEL_STATE_END    = 1U << 1
+    FLAG_PANEL_STATE_END    = 1U << 0
 };
 
 typedef enum
