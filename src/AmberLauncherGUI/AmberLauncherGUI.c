@@ -109,6 +109,12 @@ _Panel_TweakerButtons(AppGUI *pApp);
 static void
 _LocalisationFillPopup(AppGUI *pApp, PopUp *pPop, LocTier eTier);
 
+static uint32_t
+_GUIThread_Main_Null(GUIAsyncTaskData *pThreadData);
+
+static void
+_GUIThread_End_PanelSetMain(GUIAsyncTaskData *pThreadData, const uint32_t dRValue);
+
 /******************************************************************************
  * STATIC CALLBACK DECLARATIONS
  ******************************************************************************/
@@ -157,10 +163,9 @@ _Callback_LocalisationPopupSelector(AppGUI *pApp, Event *e);
  ******************************************************************************/
 
 Panel *
-Panel_Set(AppGUI *pApp, const EPanelType eType)
+Panel_Set(AppGUI *pApp, const EPanelType eType, FPanelFlags dFlags)
 {
-    Panel *pPanel = NULL;
-    Button *defbutton = NULL;
+    Panel *pPanel       = NULL;
 
     pApp->eCurrentPanel = eType;
     switch (eType)
@@ -170,7 +175,7 @@ Panel_Set(AppGUI *pApp, const EPanelType eType)
         break;
 
     case CPANEL_AUTOCONFIG:
-        pPanel = Panel_GetAutoConfigure(pApp);
+        pPanel = Panel_GetAutoConfigure(pApp,dFlags);
         break;
 
     case CPANEL_MAIN:
@@ -186,12 +191,8 @@ Panel_Set(AppGUI *pApp, const EPanelType eType)
         break;
     }
 
+    pApp->pPanelMain = pPanel;
     layout_panel_replace(pApp->pLayoutMain, pPanel, 0, 1);
-
-    if (pApp->pWindow != NULL)
-    {
-        window_defbutton(pApp->pWindow, defbutton);
-    }
 
     return pPanel;
 }
@@ -222,7 +223,7 @@ Panel_GetNull(AppGUI* pApp)
 }
 
 Panel* 
-Panel_GetAutoConfigure(AppGUI* pApp)
+Panel_GetAutoConfigure(AppGUI* pApp, FPanelFlags dFlags)
 {
     Panel       *pPanelMain  = panel_create();
     Layout      *pLayoutMain = layout_create(1,3);
@@ -240,9 +241,10 @@ Panel_GetAutoConfigure(AppGUI* pApp)
     label_font(pLabelGreet, pFontGreet);
 
     /* Button: Configure */
-    button_text(pButtonCfg, TXT_BTN_CONFIGURE);
+    button_text(pButtonCfg, FLAG_HAS(dFlags, FLAG_PANEL_STATE_END) ? TXT_BTN_NEXT : TXT_BTN_CONFIGURE);
     button_font(pButtonCfg, pFontCfg);
     button_vpadding (pButtonCfg, 16);
+    button_tag(pButtonCfg, dFlags);
     button_OnClick(pButtonCfg, listener(pApp, Callback_OnButtonConfigure, AppGUI));
     
     /* Layout: Text */
@@ -1066,13 +1068,19 @@ Callback_OnWindowHotkeyF6(AppGUI* pApp, Event *e)
     unref(e);
 }
 
-void 
+void
 Callback_OnButtonConfigure(AppGUI *pApp, Event *e)
 {
-    Button *pButton = event_sender(e, Button);
+    Button *pButton     = event_sender(e, Button);
+    FPanelFlags dFlags  = button_get_tag(pButton);
+
+    if (FLAG_HAS(dFlags, FLAG_PANEL_STATE_END))
+    {
+        GUIThread_SchedulePanelSet(pApp, CPANEL_MAIN, FLAG_PANEL_NONE);
+        return;
+    }
+
     AmberLauncher_ConfigureStart(pApp->pAppCore);
-    unref(pButton);
-    unref(e);
 }
 
 void
@@ -1350,6 +1358,56 @@ Callback_OnDrawLocalisation(AppGUI *pApp, Event *e)
     unref(pApp);
 }
 
+
+static uint32_t
+_GUIThread_Main_Null(GUIAsyncTaskData *pThreadData)
+{
+    unref(pThreadData);
+    bthread_sleep(64);
+    return 1;
+}
+
+/* GUI thread (safe to touch UI) */
+static void
+_GUIThread_End_PanelSetMain(GUIAsyncTaskData *pThreadData, const uint32_t dRValue)
+{
+    Panel_Set(
+        pThreadData->pApp,
+        pThreadData->ePanelType,
+        pThreadData->dPanelFlags
+    );
+    heap_delete(&pThreadData, GUIAsyncTaskData);
+
+    unref(dRValue);
+}
+
+bool_t
+GUIThread_SchedulePanelSet(AppGUI *pApp, EPanelType eType, FPanelFlags dFlags)
+{
+    GUIAsyncTaskData *pData;
+
+    pData = heap_new(GUIAsyncTaskData);
+    if (!IS_VALID(pData))
+    {
+        return FALSE;
+    }
+
+    pData->pApp        = pApp;
+    pData->ePanelType  = eType;
+    pData->dPanelFlags = dFlags;
+
+    osapp_task(
+        pData,
+        0.0,
+        _GUIThread_Main_Null,
+        NULL,
+        _GUIThread_End_PanelSetMain,
+        GUIAsyncTaskData
+    );
+
+    return TRUE;
+}
+
 /******************************************************************************
  * STATIC DEFINITIONS
  ******************************************************************************/
@@ -1396,7 +1454,7 @@ _Panel_GetRoot(AppGUI *pApp)
     panel_layout(pPanelMain, pLayoutMain);
 
     /* Starting panel */
-    Panel_Set(pApp, CPANEL_MAIN);
+    Panel_Set(pApp, CPANEL_MAIN, FLAG_PANEL_NONE);
 
     return pPanelMain;
 }
@@ -1628,14 +1686,26 @@ _Callback_UIEvent(
 
         case UIEVENT_MAIN:
             {
-                Panel_Set(pApp, CPANEL_MAIN);
+                GUIThread_SchedulePanelSet(pApp, CPANEL_MAIN, FLAG_PANEL_NONE);
                 SVARKEYB_BOOL(tRetVal, sStatusKey, CTRUE);
             }
             break;
 
         case UIEVENT_AUTOCONFIG:
             {
-                Panel_Set(pApp, CPANEL_AUTOCONFIG);
+                FPanelFlags dFlags = FLAG_PANEL_NONE;
+
+                /* Button state - "Configure" or "Next"? */
+                if (IS_VALID(pUserData) && dNumArgs >= 1)
+                {
+                    bool_t bButtonNext = SVAR_GET_BOOL(pUserData[0]);
+                    if (bButtonNext)
+                    {
+                        FLAG_SET(dFlags, FLAG_PANEL_STATE_END);
+                    }
+                }
+
+                GUIThread_SchedulePanelSet(pApp, CPANEL_AUTOCONFIG, dFlags);
                 SVARKEYB_BOOL(tRetVal, sStatusKey, CTRUE);
             }
             break;

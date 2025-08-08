@@ -43,6 +43,14 @@ typedef enum
     CPANEL_MAX
 } EPanelType;
 
+typedef uint32_t FPanelFlags;
+enum
+{
+    FLAG_PANEL_NONE         = 0U,
+    FLAG_PANEL_STATE_START  = 1U << 0,
+    FLAG_PANEL_STATE_END    = 1U << 1
+};
+
 typedef enum
 {
     UIEVENT_NULL = 0,
@@ -114,6 +122,7 @@ typedef struct
     GUIDebugData    *pDebugData;
     Window          *pWindow;
     Window          *pWindowModal;
+    Panel           *pPanelMain;
     Panel           *pPanelModal;
     Edit            *pEdit;
     TextView        *pTextView;
@@ -138,9 +147,15 @@ typedef struct
 
     EPanelType      eCurrentPanel;
     EUIEventType    eCurrentUIEvent;
-
-    struct SObserver *pOnUserEvent;
 } AppGUI;
+
+typedef struct GUIAsyncTaskData
+{
+    AppGUI      *pApp;
+    EPanelType  ePanelType;
+    FPanelFlags dPanelFlags;
+} GUIAsyncTaskData;
+
 
 /******************************************************************************
  * HEADER DECLARATIONS
@@ -157,7 +172,7 @@ __EXTERN_C
  * @return      Panel* 
  */
 extern Panel*
-Panel_Set(AppGUI* pApp, const EPanelType eType);
+Panel_Set(AppGUI* pApp, const EPanelType eType, FPanelFlags dFlags);
 
 /*---------------------------------------------------------------------------*/
 
@@ -175,11 +190,12 @@ Panel_GetNull(AppGUI* pApp);
  * @relatedalso Panel
  * @brief       Returns predefined panel responsible for game auto configuration
  * 
- * @param       pApp 
- * @return      Panel* 
+ * @param       pApp
+ * @param       dFlags (FPanelFlags)
+ * @return      Panel*
  */
 extern Panel* 
-Panel_GetAutoConfigure(AppGUI* pApp);
+Panel_GetAutoConfigure(AppGUI* pApp, FPanelFlags dFlags);
 
 /**
  * @relatedalso Panel
@@ -384,6 +400,17 @@ Callback_OnDrawLocalisation(AppGUI* pApp, Event *e);
  */
 extern void
 Callback_OnButtonModalOptions(AppGUI* pApp, Event *e);
+
+/**
+ * @relatedalso Async
+ * @brief       Schedules task thread to replace main panel
+ *
+ * @param       pApp
+ * @param       eType (EPanelType)
+ * @param       dFlags (FPanelFlags)
+ */
+extern bool_t
+GUIThread_SchedulePanelSet(AppGUI *pApp, EPanelType eType, FPanelFlags dFlags);
 
 __END_C
 

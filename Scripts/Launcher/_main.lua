@@ -100,4 +100,7 @@ end
 
 function PostAppConfigure(configSuccessful)
     print("Configuration "..(configSuccessful and "succesful!" or "failed."))
+    if configSuccessful then
+        AL.UICall(UIEVENT.AUTOCONFIG,true)
+    end
 end

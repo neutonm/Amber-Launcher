@@ -17,17 +17,17 @@ end
 
 -- enums
 UIEVENT = {
-    NULL                = 0,    -- Empty Window
-    DEBUG               = 1,    -- Debug console
-    PRINT               = 2,    -- Print text into currernt text-view widget
-    MAIN                = 3,    -- Revert back to main window (game launcher)
-    AUTOCONFIG          = 4,    -- Autoconfig wizard
-    MODAL_MESSAGE       = 5,    -- Modal: Show Message
-    MODAL_QUESTION      = 6,    -- Modal: Ask question
-    MODAL_GAMENOTFOUND  = 7,    -- Modal: game-not-found error + specify path
-    MODAL_TWEAKER       = 8,    -- Modal: Wizard for game tweaks
-    MODAL_LOCALISATION  = 9,    -- Modal: Select language for game and mod
-    MODAL_OPTIONS       = 10,   -- Modal: All in one options tweaker
+    NULL                = 0,  -- Empty Window
+    DEBUG               = 1,  -- Debug console
+    PRINT               = 2,  -- Print text into currernt text-view widget
+    MAIN                = 3,  -- Revert back to main window (ASYNC)
+    AUTOCONFIG          = 4,  -- Autoconfig wizard (ASYNC)
+    MODAL_MESSAGE       = 5,  -- Modal: Show Message
+    MODAL_QUESTION      = 6,  -- Modal: Ask question
+    MODAL_GAMENOTFOUND  = 7,  -- Modal: game-not-found error + specify path
+    MODAL_TWEAKER       = 8,  -- Modal: Wizard for game tweaks
+    MODAL_LOCALISATION  = 9,  -- Modal: Select language for game and mod
+    MODAL_OPTIONS       = 10, -- Modal: All in one options tweaker
     MAX
 }
 
