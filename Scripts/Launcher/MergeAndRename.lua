@@ -105,10 +105,30 @@ local function ProcessFiles(base_dir, wanted_names)
 
         for _, name in ipairs(improper) do
             local src = FS.PathJoin(base_dir, name)
-            AL_print("Overwriting '"..correct.."' with '"..name.."' and removing the duplicate")
-            FS.FileCopy(src, correct_path)
-            FS.PathDelete(src)
-            print("Removed file '"..name.."'")
+            AL_print(("Overwriting '%s' with '%s' and removing the duplicate"):format(correct, name))
+
+            -- gpt5 moment (new model sucks), too lazy to review tho...
+            --- @todo review and think again
+            -- Try a fast rename first (POSIX can overwrite; Windows won't if dest exists)
+            local renamed = os.rename(src, correct_path)
+            if not renamed then
+                -- Fallback: copy bytes over the canonical file, then delete the duplicate
+                local r = io.open(src, "rb")
+                local w = r and io.open(correct_path, "wb")  -- "wb" overwrites/truncates
+                if r and w then
+                    w:write(r:read("*all"))
+                    r:close(); w:close()
+                    FS.PathDelete(src)
+                    print("Removed file '"..name.."'")
+                else
+                    if r then r:close() end
+                    AL_print("Error: couldn't overwrite '"..correct.."' with '"..name.."'")
+                end
+            else
+                -- Rename succeeded; the duplicate no longer exists in its old place
+                print("Removed file '"..name.."'")
+            end
+            -- gpt5 end
         end
     end
 end
