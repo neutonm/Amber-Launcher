@@ -73,15 +73,14 @@ local MM7_COPY_FILES = {
     "VIC32.DLL",
 }
 
--- We need to check for wav files during detection, not mp3
+-- Build detection list that expects WAV instead of MP3
 local function _BuildDetectList(copyList)
     local detectList = {}
     for _, path in ipairs(copyList) do
         if path:match("^Music/.*%.mp3$") then
-            local wav = path:gsub("%.mp3$", ".wav")
-            table.insert(detectList, wav)
+            detectList[#detectList+1] = path:gsub("%.mp3$", ".wav")
         else
-            table.insert(detectList, path)
+            detectList[#detectList+1] = path
         end
     end
     return detectList
@@ -90,30 +89,33 @@ end
 local MM7_DETECT_FILES = _BuildDetectList(MM7_COPY_FILES)
 
 -- Public functions:
-function AL_DetectGame(searchFolder)
+function AL_DetectGame(searchFolder, bIgnoreWav)
 
     print("Detecting game…")
-    local searchFolders = searchFolder and {searchFolder} or GAME_EXECUTABLE_FOLDERS
+
+    bIgnoreWav               = bIgnoreWav   and bIgnoreWav or false
+    local searchFolders      = searchFolder and {searchFolder} or GAME_EXECUTABLE_FOLDERS
+    local listOfFilesToCheck = bIgnoreWav   and MM7_COPY_FILES or MM7_DETECT_FILES
+    print("Search path: "..dump(searchFolders))
 
     -- 1) Already in launcher folder?
-    local localExePath  = FS.join_paths(GAME_DESTINATION_FOLDER, GAME_EXECUTABLE_NAME)
-    local localExe      = FS.IsFilePresent(localExePath)
+    local localExe = FS.PathResolveCaseInsensitive(GAME_DESTINATION_FOLDER, GAME_EXECUTABLE_NAME)
     if localExe then
         print("Game executable present in destination folder.")
-        if FS.CheckFiles(GAME_DESTINATION_FOLDER, MM7_DETECT_FILES) then
+        if FS.FilesCheck(GAME_DESTINATION_FOLDER, listOfFilesToCheck) then
             return GAME_DESTINATION_FOLDER, "local"
         else
             print("Game in destination is incomplete -> will continue searching…")
         end
     end
 
-    -- 2) Search predefined folders
+    -- 2) Search predefined folders (these are directories)
     for _, candidate in ipairs(searchFolders) do
 
         local exe = FS.IsFilePresent(candidate)
-        if exe and FS.IsFileExecutable(exe) then
-            local root = FS.GetDirectory(exe)
-            if FS.CheckFiles(root, MM7_DETECT_FILES) then
+        if exe and FS.IsFileExecutable(candidate) then
+            local root = FS.PathGetDirectory(candidate)
+            if FS.FilesCheck(root, listOfFilesToCheck) then
                 print("Found valid installation at "..root)
                 return root, "external"
             else
@@ -127,13 +129,11 @@ end
 
 -- Static functions
 local function _CopyGameFiles(src, dst)
-
     print("Copying game from '"..src.."' -> '"..dst.."' …")
+    FS.DirectoryEnsure(dst)
+    FS.FilesCopy(src, dst, MM7_COPY_FILES)
 
-    FS.ensure_directory(dst)
-    FS.CopyFiles(src, dst, MM7_COPY_FILES)
-
-    if not FS.CheckFiles(dst, MM7_COPY_FILES) then
+    if not FS.FilesCheck(dst, MM7_COPY_FILES) then
         print("Verification failed after copy.")
         return false
     end
@@ -143,21 +143,18 @@ local function _CopyGameFiles(src, dst)
 end
 
 local function _DetectAndCopyGame(searchFolder)
-
-    local src, how = AL_DetectGame(searchFolder)
+    local src, how = AL_DetectGame(searchFolder, true)
     if not src then
-
         print("Failed to find the game!")
-        local uiRes = AL.UICall(UIEVENT.MODAL_GAMENOTFOUND)
 
+        local uiRes = AL.UICall(UIEVENT.MODAL_GAMENOTFOUND)
+        print(dump(uiRes))
         if uiRes and uiRes.status == false then
             return false
         end
-
         if uiRes and uiRes.path and uiRes.path ~= "" then
             return _DetectAndCopyGame(uiRes.path) -- recursive
         end
-
         return false
     end
 
@@ -166,13 +163,13 @@ local function _DetectAndCopyGame(searchFolder)
         return true
     end
 
+    sleep(1) -- give that ui time to close
+
     return _CopyGameFiles(src, GAME_DESTINATION_FOLDER)
 end
 
 -- Global callbacks
 function events.InitLauncher()
-
     print("Initialize DetectAndCopyGame.lua")
-    AL.CommandAdd("DetectAndCopyGame", _DetectAndCopyGame, -100) 
-
+    AL.CommandAdd("DetectAndCopyGame", _DetectAndCopyGame, -100)
 end

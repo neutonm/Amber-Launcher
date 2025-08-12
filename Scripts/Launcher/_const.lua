@@ -57,7 +57,9 @@ if OS_NAME == "Windows" then
 else
     OS_FILE_SEPARATOR = '/'
 end
-GAME_DESTINATION_FOLDER = GAME_DESTINATION_FOLDER or "."..OS_FILE_SEPARATOR.."DST"
+
+local extGameFolder     = _DEBUG and "DST" or ""
+GAME_DESTINATION_FOLDER = GAME_DESTINATION_FOLDER or "."..OS_FILE_SEPARATOR..extGameFolder
 
 -- Common system-specific folders for the game
 if OS_NAME == "Windows" then
@@ -89,8 +91,8 @@ else
 end
 
 -- Common files
-INI_PATH_MM7 = GAME_DESTINATION_FOLDER..OS_FILE_SEPARATOR.."mm7.ini"
-INI_PATH_MOD = GAME_DESTINATION_FOLDER..OS_FILE_SEPARATOR.."mod.ini"
+INI_PATH_MM7            = GAME_DESTINATION_FOLDER..OS_FILE_SEPARATOR.."mm7.ini"
+INI_PATH_MOD            = GAME_DESTINATION_FOLDER..OS_FILE_SEPARATOR.."mod.ini"
 
 -- Generate the combinations of base paths and game folder names
 for _, basePath in ipairs(GAME_BASE_PATHS) do

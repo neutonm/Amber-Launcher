@@ -2,24 +2,9 @@
 local function IsAmberIslandMod(destinationFolder)
 
     local approxCustomDungeonScriptSize = 4
-    local checkTable = {
-
-        registry = true,
-    }
-    -- @todo @temp
-    -- Couple of things to consider:
-    -- - Check for mod's existence
-    -- - check for mod's up to date state, if not the latest - reconfigure
-
-    -- shit to check
-    -- Mod scripts
-    --- Custom mod [outdated]
-    --- Pre "difficulty" version [outdated]
-    --- Todays
-    -- Registry 
 
     -- Latest iteration
-    local ini = AL.INILoad(destinationFolder..OS_FILE_SEPARATOR.."mod.ini")
+    local ini = AL.INILoad(INI_PATH_MOD)
     if ini then
         local myStr = AL.INIGet(ini, "Info", "Version")
         if myStr then
@@ -30,7 +15,8 @@ local function IsAmberIslandMod(destinationFolder)
     end
 
     -- Original Public release
-    local file, err = io.open(destinationFolder..OS_FILE_SEPARATOR.."Scripts"..OS_FILE_SEPARATOR.."General"..OS_FILE_SEPARATOR.."Mod.lua", "rb")
+    local modLuaName = FS.PathJoin("Scripts", "General", "Mod.lua")
+    local file, err  = io.open(modLuaName, "rb")
     if not file then
         --print("Couldn't open file, assuming there's no mod installed: "..err)
         return false, 0.0
@@ -46,31 +32,30 @@ local function IsAmberIslandMod(destinationFolder)
 
     print("Detected Custom Dungeon Mod.")
     return true, 0.0
-
-    -- Check if registry is tweaked
-    -- for _, entry in ipairs(_GameRegistryValues) do
-    --     local value = AL.GetRegistryKey(entry.key)
-    --     if entry.value ~= value then 
-    --         print("Registry key \""..entry.key.."\" doesn't match to configuration setting. Adding RegistryTweak requirement for configuration")
-    --         checkTable.registry = false
-    --         break 
-    --     end
-    -- end
-
-    -- if checkTable.registry == true then print("Registry shit is OK") end
-
-    -- return true
 end
 
 local function InstallMod(destinationFolder)
 
-    local dataFolder = "Data"..OS_FILE_SEPARATOR.."Launcher"..OS_FILE_SEPARATOR.."Archives"..OS_FILE_SEPARATOR
-    
-    if not AL.ArchiveExtract(dataFolder.."_grayfacePatch257.zip", destinationFolder) then
+    local archivesDir   = FS.PathJoin("Data", "Launcher", "Archives")
+    local patchZipName  = "_grayfacePatch257.zip"
+    local modZipName    = "_mod.zip"
+    local patchZip      = FS.PathResolveCaseInsensitive(archivesDir, patchZipName)
+    local modZip        = FS.PathResolveCaseInsensitive(archivesDir, modZipName)
+
+    if not patchZip then
+        print('Failed to find archive: ' .. FS.PathJoin(archivesDir, patchZipName))
+        return false
+    end
+    if not modZip then
+        print('Failed to find archive: ' .. FS.PathJoin(archivesDir, modZipName))
+        return false
+    end
+
+    if not AL.ArchiveExtract(patchZip, destinationFolder) then
         print("Failed to extract _grayfacePatch257")
         return false
     end
-    if not AL.ArchiveExtract(dataFolder.."_mod.zip", destinationFolder) then
+    if not AL.ArchiveExtract(modZip, destinationFolder) then
         print("Failed to extract _mod.zip")
         return false
     end

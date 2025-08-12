@@ -25,15 +25,9 @@ local _TweakerWizardEntries = {
 local function _ConfigTweaks()
 
     print("Tweaking mm7 config...")
-    iniPath = GAME_DESTINATION_FOLDER..OS_FILE_SEPARATOR.."mm7.ini"
 
-    local ini = AL.INILoad(iniPath)
-    if ini then
-        local myStr = AL.INIGet(ini, "Settings", "ViewDistanceD3D")
-        if myStr then
-            print(myStr)
-        end
-    else
+    local ini = AL.INILoad(INI_PATH_MM7)
+    if not ini then
         print("Failed to load INI file: "..iniPath)
         return false
     end
@@ -41,33 +35,30 @@ local function _ConfigTweaks()
     local uiResponse = AL.UICall(UIEVENT.MODAL_TWEAKER, _TweakerWizardEntries)
     if uiResponse and uiResponse.status == true then
 
-        print(dump(uiResponse))
 
         if uiResponse.strafe then
             local myStr = AL.INIGet(ini, "Settings", "AlwaysStrafe")
-            print("uiResponse.strafe before: "..myStr)
             AL.INISet(ini, "Settings", "AlwaysStrafe", tostring(1 - uiResponse.strafe))
             myStr = AL.INIGet(ini, "Settings", "AlwaysStrafe")
-            print("uiResponse.strafe after: "..myStr)
         end
 
         if uiResponse.gui then
             local myStr = AL.INIGet(ini, "Settings", "UILayout")
-            print("uiResponse.gui before: "..myStr)
             AL.INISet(ini, "Settings", "UILayout", uiResponse.gui == 0 and "UI" or "0")
             myStr = AL.INIGet(ini, "Settings", "UILayout")
-            print("uiResponse.gui after: "..myStr)
         end
 
         if uiResponse.david then
             -- special non-ini case...
         end
 
-        AL.INISave(ini, iniPath)
+        AL.INISave(ini, INI_PATH_MM7)
     end
 
     print("Tweaking done!")
     AL.INIClose(ini)
+
+    sleep(1) -- give that ui time to close
 
     return true
 end

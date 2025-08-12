@@ -28,7 +28,8 @@ setmetatable(events, {
     end
 })
 
--- Dump helper function
+--- Dump helper function
+--- @param o any
 function dump(o)
     if type(o) == 'table' then
        local s = '{ '
@@ -42,6 +43,20 @@ function dump(o)
     end
 end
 
+--- os.sleep for short delays only
+--- @param sec
+function sleep(sec)
+    local t0 = os.clock()
+    while os.clock() - t0 < sec do end
+end
+
+---Prints to current textview and duplicates to stdout
+---@param msg string
+function AL_print(msg)
+    AL.UICall(UIEVENT.PRINT, msg)
+    print(msg)
+end
+
 -- Includes
 FS = require("Scripts.Launcher._filesystem")
 
@@ -49,13 +64,16 @@ FS = require("Scripts.Launcher._filesystem")
 function AppInit()
 
     print("App Init")
+    if _DEBUG then
+        AL_print("Running in debug mode")
+    end
 end
 
 function PostAppInit()
 
     print("Post App Init")
 
-    local src, how = AL_DetectGame()
+    local src, how = AL_DetectGame(nil, false)
     if not src then
         AL.UICall(UIEVENT.AUTOCONFIG)
     end
@@ -75,6 +93,8 @@ function AppConfigure()
 
     local configSuccessful = true
 
+    FS.DirectoryEnsure(GAME_DESTINATION_FOLDER)
+
     -- Execute all available commands
     local commandTable = AL.GetTableOfCommands()
     table.sort(commandTable, function(a, b)
@@ -86,20 +106,20 @@ function AppConfigure()
     end
 
     -- Execute all commands
-    print("Configuration start...")
-    -- for _, cmd in ipairs(commandTable) do
-    --     if not AL.CommandCall(cmd.name) then
-    --         configSuccessful = false
-    --         break
-    --     end
-    -- end
+    AL_print("Configuration start...")
+    for _, cmd in ipairs(commandTable) do
+        if not AL.CommandCall(cmd.name) then
+            configSuccessful = false
+            break
+        end
+    end
     --AL.CommandCall("DetectAndCopyGame")
 
     return configSuccessful
 end
 
 function PostAppConfigure(configSuccessful)
-    print("Configuration "..(configSuccessful and "succesful!" or "failed."))
+    AL_print("Configuration "..(configSuccessful and "is succesful!" or "failed."))
     if configSuccessful then
         AL.UICall(UIEVENT.AUTOCONFIG,true)
     end

@@ -176,7 +176,7 @@ AmberLauncher_ProcessLaunch(const char* sAppPath, int argc, char **argv, CBOOL b
         return (int)tProcessInfo.dwProcessId;
     } 
 
-    fprintf(stderr, "CreateProcess failed (%d).", GetLastError());
+    fprintf(stderr, "CreateProcess failed: %s -> %d.", sAppPath, GetLastError());
     return 0;
 }
 

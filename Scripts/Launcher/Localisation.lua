@@ -1,23 +1,42 @@
 -- COMMAND:     Localisation
--- DESCRIPTION: Provides localisation api + defines behavior for localisation modal window during autoconfig
+-- DESCRIPTION: Provides localisation api + defines behavior for localisation 
+--              modal window during autoconfig
 
-local sep               =   OS_FILE_SEPARATOR
-local archiveFolder     =   "Data" ..
-                            sep ..
-                            "Launcher" ..
-                            sep ..
-                            "Archives" ..
-                            sep
+local archivesDir      = FS.PathJoin("Data", "Launcher", "Archives")
+local localizationDir  = FS.PathJoin(GAME_DESTINATION_FOLDER, "Scripts", "Localization")
 
-local destinationFolder =   GAME_DESTINATION_FOLDER ..
-                            sep ..
-                            "Scripts" ..
-                            sep ..
-                            "Localization"
+-------------------------------------------------------------------------------
+---
+local function _DeleteResolved(base, rel)
+    local actual = FS.PathResolveCaseInsensitive(base, rel)
+    if not actual then return false end
+    local ok = os.remove(actual)
+    if ok then print("Deleted: " .. actual) end
+    return ok
+end
+
+local function _DeleteList(base, files)
+
+    local ok = true
+
+    for _, f in ipairs(files) do
+        local deleteSuccess
+        deleteSuccess = _DeleteResolved(base, f)
+        if deleteSuccess == false then
+            ok = false
+        end
+    end
+
+    return ok
+end
+
+local function _FindArchive(prefix, code)
+    local name = prefix .. "-" .. code .. ".zip"
+    return FS.PathResolveCaseInsensitive(archivesDir, name) or FS.PathJoin(archivesDir, name)
+end
 
 local function _LocaliseMod(t)
 
-    local archivePath       = archiveFolder.."mod-"..(t.code)..".zip"
     local files             = {
         "Quests.lua",
         "Common.lua",
@@ -28,18 +47,14 @@ local function _LocaliseMod(t)
 
     -- Reset localisation if it's english
     if t.code == "en_en" then
-        for _, filename in ipairs(files) do
-            local path = destinationFolder..filename
-            local success, err = os.remove(path)
-            if success then
-                print("Deleted: "..path)
-            end
-        end
-
+        _DeleteList(localizationDir, files)
         return true
     end
 
-    if not AL.ArchiveExtract(archivePath, destinationFolder) then
+    local archivePath = _FindArchive("mod", t.code)
+    FS.DirectoryEnsure(localizationDir)
+
+    if not AL.ArchiveExtract(archivePath, localizationDir) then
         print("Failed to extract mod-"..(t.code)..".zip")
         return false
     end
@@ -47,31 +62,26 @@ local function _LocaliseMod(t)
     return true
 end
 
+--- Clear all previously installed **core** localisation assets.
+-- Removes icon/event/audio localisation files from the game destination folder.
+-- Missing files are ignored; successful deletions are logged.
+-- @return bool success
 function AL_LocaliseCoreFreeAll()
 
     local files = {
-        "Data"..sep.."loc.ICONS.LOD",
-        "Data"..sep.."loc.Events.lod",
-        "SOUNDS"..sep.."loc.Audio.snd",
+        FS.PathJoin("Data",   "loc.ICONS.LOD"),
+        FS.PathJoin("Data",   "loc.Events.lod"),
+        FS.PathJoin("SOUNDS", "loc.Audio.snd"),
     }
 
-    for _, filename in ipairs(files) do
-        local path = GAME_DESTINATION_FOLDER..OS_FILE_SEPARATOR..filename
-        local success, err = os.remove(path)
-        if success then
-            print("Deleted: "..path)
-        end
-    end
-
-    return true
+    return _DeleteList(GAME_DESTINATION_FOLDER, files)
 end
 
 local function _LocaliseCore(t)
 
-    local archivePath = archiveFolder.."core-"..(t.code)..".zip"
-
     print("Core game localisation: "..(t.code).."\n")
 
+    local archivePath = _FindArchive("core", t.code)
     if not AL.ArchiveExtract(archivePath, GAME_DESTINATION_FOLDER) then
         print("Failed to extract core-"..(t.code)..".zip")
         return false
@@ -80,12 +90,13 @@ local function _LocaliseCore(t)
     return true
 end
 
+-------------------------------------------------------------------------------
 AL_TLocales = {
     {
         name        = "English",
         code        = "en_en",
-        core        = "Data"..sep.."Launcher"..sep.."local-en-core.png",
-        mod         = "Data"..sep.."Launcher"..sep.."local-en-mod.png",
+        core        = FS.PathJoin("Data", "Launcher", "local-en-core.png"),
+        mod         = FS.PathJoin("Data", "Launcher", "local-en-mod.png"),
         coreCb      = function(t)
                         return true
                     end,
@@ -97,14 +108,8 @@ AL_TLocales = {
                             "mm7text.dll"
                         }
 
-                        for _, filename in ipairs(files) do
-                            local path = GAME_DESTINATION_FOLDER..OS_FILE_SEPARATOR..filename
-                            local success, err = os.remove(path)
-                            if success then
-                                print("Deleted: "..path)
-                            end
-                        end
-
+                        _DeleteList(GAME_DESTINATION_FOLDER, files)
+                        
                         return true
                     end,
         modCb       = _LocaliseMod,
@@ -112,16 +117,16 @@ AL_TLocales = {
     {
         name        = "Polish",
         code        = "pl_pl",
-        core        = "Data"..sep.."Launcher"..sep.."local-pl-core.png",
-        mod         = "Data"..sep.."Launcher"..sep.."local-pl-mod.png",
+        core        = FS.PathJoin("Data", "Launcher", "local-pl-core.png"),
+        mod         = FS.PathJoin("Data", "Launcher", "local-pl-mod.png"),
         coreCb      = _LocaliseCore,
         modCb       = _LocaliseMod,
     },
     {
         name        = "Russian",
         code        = "ru_ru",
-        core        = "Data"..sep.."Launcher"..sep.."local-ru-core.png",
-        mod         = "Data"..sep.."Launcher"..sep.."local-ru-mod.png",
+        core        = FS.PathJoin("Data", "Launcher", "local-ru-core.png"),
+        mod         = FS.PathJoin("Data", "Launcher", "local-ru-mod.png"),
         coreCb      = _LocaliseCore,
         coreFreeCb  = function(t)
 
@@ -131,13 +136,7 @@ AL_TLocales = {
                             "mm7text.dll"
                         }
 
-                        for _, filename in ipairs(files) do
-                            local path = GAME_DESTINATION_FOLDER..OS_FILE_SEPARATOR..filename
-                            local success, err = os.remove(path)
-                            if success then
-                                print("Deleted: "..path)
-                            end
-                        end
+                        _DeleteList(GAME_DESTINATION_FOLDER, files)
 
                         return true
                     end,
@@ -169,10 +168,10 @@ local function _Localisation()
 
     print("Setting up localisation for the game...")
 
+    FS.DirectoryEnsure(localizationDir)
+
     local uiResponse = AL.UICall(UIEVENT.MODAL_LOCALISATION, AL_TLocales)
     if uiResponse and uiResponse.status == true then
-
-        print(dump(uiResponse))
 
         -- cleanup core first
         AL_LocaliseCoreFreeAll()

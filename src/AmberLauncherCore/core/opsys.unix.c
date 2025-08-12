@@ -164,7 +164,7 @@ AmberLauncher_ProcessLaunch(const char* sAppPath, int argc, char **argv, CBOOL b
         dStatus = posix_spawn(&dPID, sAppPath, NULL, NULL, argv == NULL ? pAltArgv : argv, environ);
         if(dStatus != 0) 
         {
-            fprintf(stderr, "Failed to launch process: %s", strerror(dStatus));
+            fprintf(stderr, "Failed to launch process: %s - > %s", sAppPath, strerror(dStatus));
             return 0;
         }
 
