@@ -40,5 +40,6 @@ TXT_LOC_RUSSIAN         Russian
 /* Texts */
 TXT_NULL                Null
 TXT_GREETINGS           Greetings adventurer, before you can play Amber Island, you have to configure the game.\nMake sure you have Might and Magic 7 installed on your PC.
+TXT_CONFIGSUCCESS       Setup complete! You can now play the Amber Island mod. Press Next to close autoconfig and jump in.
 TXT_GAMENOTFOUND        Launcher couldn't locate the Might and Magic 7 installation. Please locate the game executable (mm7.exe)
 TXT_LOCALISATION        Select languages for core game texts, voiceovers, and mod texts. Customize each option individually to personalize your gameplay experience.

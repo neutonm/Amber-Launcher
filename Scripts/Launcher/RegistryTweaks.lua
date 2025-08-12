@@ -14,14 +14,14 @@ _GameRegistryValues = {
 
 local function _RegistryTweaks()
 
-    print("Tweaking windows registry...")
+    AL_print("Tweaking windows registry...")
 
     for i = 1, #_GameRegistryValues do
         local entry = _GameRegistryValues[i]
         AL.SetRegistryKey(entry.key, entry.value)
     end
 
-    print("Tweaking done!")
+    AL_print("Done!")
     return true
 end
 

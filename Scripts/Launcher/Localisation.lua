@@ -43,7 +43,7 @@ local function _LocaliseMod(t)
         "Scripts.lua"
     }
 
-    print("Mod localisation: "..(t.code).."\n")
+    AL_print("Mod localisation: "..(t.code).."\n")
 
     -- Reset localisation if it's english
     if t.code == "en_en" then
@@ -55,7 +55,7 @@ local function _LocaliseMod(t)
     FS.DirectoryEnsure(localizationDir)
 
     if not AL.ArchiveExtract(archivePath, localizationDir) then
-        print("Failed to extract mod-"..(t.code)..".zip")
+        AL_print("Failed to extract mod-"..(t.code)..".zip")
         return false
     end
 
@@ -79,11 +79,11 @@ end
 
 local function _LocaliseCore(t)
 
-    print("Core game localisation: "..(t.code).."\n")
+    AL_print("Core game localisation: "..(t.code).."\n")
 
     local archivePath = _FindArchive("core", t.code)
     if not AL.ArchiveExtract(archivePath, GAME_DESTINATION_FOLDER) then
-        print("Failed to extract core-"..(t.code)..".zip")
+        AL_print("Failed to extract core-"..(t.code)..".zip")
         return false
     end
 
@@ -166,7 +166,7 @@ local function _Localisation()
     local langCore = nil
     local langMod  = nil
 
-    print("Setting up localisation for the game...")
+    AL_print("Setting up localisation for the game...")
 
     FS.DirectoryEnsure(localizationDir)
 
@@ -185,7 +185,7 @@ local function _Localisation()
                 if locale.coreCb then
                     local coreSuccess = locale.coreCb(locale)
                     if not coreSuccess then
-                        print("Failed to initialize core localisation.")
+                        AL_print("Failed to initialize core localisation.")
                         return false
                     end
                     langCore = locale.name
@@ -194,7 +194,7 @@ local function _Localisation()
             if uiResponse.mod == locale.code then
                 local modSuccess = locale.modCb(locale)
                 if not modSuccess then
-                    print("Failed to initialize mod localisation.")
+                    AL_print("Failed to initialize mod localisation.")
                     return false
                 end
                 langMod = locale.name
@@ -203,7 +203,7 @@ local function _Localisation()
     end
 
     AL_WriteConfigLocalisationNames(langCore, langMod)
-    print("Localisation adjusted!")
+    AL_print("Localisation adjusted!")
 
     return true
 end

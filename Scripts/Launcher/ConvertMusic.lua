@@ -4,11 +4,11 @@
 local function _ConvertMusic()
 
     musicDir = FS.PathJoin(GAME_DESTINATION_FOLDER, "Music")
-    print("Converting music files in directory: "..musicDir)
+    AL_print("Converting music files in directory: "..musicDir)
 
     local files = FS.DirectoryList(musicDir)
     if not files then
-        print("Converting failed!!!")
+        AL_print("Converting failed!!!")
         return false
     end
 
@@ -17,13 +17,13 @@ local function _ConvertMusic()
             local fullPath = FS.PathJoin(musicDir, fileName)
             print("Track: " .. fullPath)
             if not AL.ConvertMP3ToWAV(fullPath) then
-                print("Failed to convert " .. fileName)
+                AL_print("Failed to convert " .. fileName)
                 return false
             end
         end
     end
 
-    print("Converting done!")
+    AL_print("Converting done!")
     return true
 end
 

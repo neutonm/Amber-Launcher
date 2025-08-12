@@ -129,16 +129,16 @@ end
 
 -- Static functions
 local function _CopyGameFiles(src, dst)
-    print("Copying game from '"..src.."' -> '"..dst.."' …")
+    AL_print("Copying game from '"..src.."' -> '"..dst.."' …")
     FS.DirectoryEnsure(dst)
     FS.FilesCopy(src, dst, MM7_COPY_FILES)
 
     if not FS.FilesCheck(dst, MM7_COPY_FILES) then
-        print("Verification failed after copy.")
+        AL_print("Verification failed after copy.")
         return false
     end
 
-    print("Copy succeeded.")
+    AL_print("Copy succeeded.")
     return true
 end
 

@@ -43,7 +43,7 @@ local function ProcessFolders(base_dir, wanted_names)
                 local from = FS.PathJoin(base_dir, improper[1])
                 local ok, err = os.rename(from, correct_path)
                 if not ok then
-                    print("Error renaming folder '"..improper[1].."' -> '"..correct.."': "..tostring(err))
+                    AL_print("Error renaming folder '"..improper[1].."' -> '"..correct.."': "..tostring(err))
                 else
                     print("Renamed folder '"..improper[1].."' to '"..correct.."'")
                 end
@@ -57,7 +57,7 @@ local function ProcessFolders(base_dir, wanted_names)
         -- Merge remaining variants into the canonical folder
         for _, name in ipairs(improper) do
             local src = FS.PathJoin(base_dir, name)
-            print("Merging contents from '"..name.."' -> '"..correct.."'")
+            AL_print("Merging contents from '"..name.."' -> '"..correct.."'")
             FS.FilesMove(src, correct_path)
             FS.PathDelete(src)
             print("Removed folder '"..name.."'")
@@ -93,19 +93,19 @@ local function ProcessFiles(base_dir, wanted_names)
                 local from = FS.PathJoin(base_dir, improper[1])
                 local ok, err = os.rename(from, correct_path)
                 if not ok then
-                    print("Error renaming file '"..improper[1].."' -> '"..correct.."': "..tostring(err))
+                    AL_print("Error renaming file '"..improper[1].."' -> '"..correct.."': "..tostring(err))
                 else
                     print("Renamed file '"..improper[1].."' to '"..correct.."'")
                 end
                 table.remove(improper, 1)
             else
-                print("File '"..correct.."' is missing.")
+                AL_print("File '"..correct.."' is missing.")
             end
         end
 
         for _, name in ipairs(improper) do
             local src = FS.PathJoin(base_dir, name)
-            print("Overwriting '"..correct.."' with '"..name.."' and removing the duplicate")
+            AL_print("Overwriting '"..correct.."' with '"..name.."' and removing the duplicate")
             FS.FileCopy(src, correct_path)
             FS.PathDelete(src)
             print("Removed file '"..name.."'")
@@ -116,13 +116,13 @@ end
 -------------------------------------------------------------------------------
 local function _MergeAndRename()
 
-    print("Merging/Renaming files...")
+    AL_print("Merging/Renaming files...")
 
     -- Run the processing function
     ProcessFolders(GAME_DESTINATION_FOLDER, folderNames)
     ProcessFiles(GAME_DESTINATION_FOLDER, fileNames)
 
-    print("Done!")
+    AL_print("Done!")
 
     return true
 end

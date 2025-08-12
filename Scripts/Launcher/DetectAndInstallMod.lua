@@ -43,20 +43,20 @@ local function InstallMod(destinationFolder)
     local modZip        = FS.PathResolveCaseInsensitive(archivesDir, modZipName)
 
     if not patchZip then
-        print('Failed to find archive: ' .. FS.PathJoin(archivesDir, patchZipName))
+        AL_print('Failed to find archive: ' .. FS.PathJoin(archivesDir, patchZipName))
         return false
     end
     if not modZip then
-        print('Failed to find archive: ' .. FS.PathJoin(archivesDir, modZipName))
+        AL_print('Failed to find archive: ' .. FS.PathJoin(archivesDir, modZipName))
         return false
     end
 
     if not AL.ArchiveExtract(patchZip, destinationFolder) then
-        print("Failed to extract _grayfacePatch257")
+        AL_print("Failed to extract _grayfacePatch257")
         return false
     end
     if not AL.ArchiveExtract(modZip, destinationFolder) then
-        print("Failed to extract _mod.zip")
+        AL_print("Failed to extract _mod.zip")
         return false
     end
 
@@ -71,12 +71,12 @@ local function _DetectAndInstallMod()
         return true
     end
 
-    print("Amber Island mod is not detected. Installing it now...")
+    AL_print("Amber Island mod is not detected. Installing it now...")
     if not InstallMod(GAME_DESTINATION_FOLDER) then
         return false
     end
 
-    print("Done!")
+    AL_print("Done!")
 
     return true
 end

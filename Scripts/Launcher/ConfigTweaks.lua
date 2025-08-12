@@ -24,11 +24,11 @@ local _TweakerWizardEntries = {
 
 local function _ConfigTweaks()
 
-    print("Tweaking mm7 config...")
+    AL_print("Tweaking mm7 config...")
 
     local ini = AL.INILoad(INI_PATH_MM7)
     if not ini then
-        print("Failed to load INI file: "..iniPath)
+        AL_print("Failed to load INI file: "..iniPath)
         return false
     end
 
@@ -55,7 +55,7 @@ local function _ConfigTweaks()
         AL.INISave(ini, INI_PATH_MM7)
     end
 
-    print("Tweaking done!")
+    AL_print("Tweaking done!")
     AL.INIClose(ini)
 
     sleep(1) -- give that ui time to close

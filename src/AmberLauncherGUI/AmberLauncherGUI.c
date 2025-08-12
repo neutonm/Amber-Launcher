@@ -233,15 +233,25 @@ Panel_GetAutoConfigure(AppGUI* pApp, FPanelFlags dFlags)
     TextView    *pConsole    = textview_create();
     Font        *pFontGreet  = font_system(18, ekFNORMAL | ekFPIXELS);
     Font        *pFontCfg    = font_system(24, ekFNORMAL | ekFPIXELS);
+    bool_t      bIsStateEnd  = FLAG_HAS(dFlags, FLAG_PANEL_STATE_END);
 
+    if (bIsStateEnd)
+    {
+        if (IS_VALID(pApp->pTextView))
+        {
+            const char_t *sPreviousLog = textview_get_text(pApp->pTextView);
+            textview_printf(pConsole, "%s", sPreviousLog);
+        }
+    }
+    
     pApp->pTextView = pConsole;
 
     /* Label: Greetings Text */
-    label_text(pLabelGreet, TXT_GREETINGS);
+    label_text(pLabelGreet, bIsStateEnd ? TXT_CONFIGSUCCESS : TXT_GREETINGS);
     label_font(pLabelGreet, pFontGreet);
 
     /* Button: Configure */
-    button_text(pButtonCfg, FLAG_HAS(dFlags, FLAG_PANEL_STATE_END) ? TXT_BTN_NEXT : TXT_BTN_CONFIGURE);
+    button_text(pButtonCfg, bIsStateEnd ? TXT_BTN_NEXT : TXT_BTN_CONFIGURE);
     button_font(pButtonCfg, pFontCfg);
     button_vpadding (pButtonCfg, 16);
     button_tag(pButtonCfg, dFlags);
