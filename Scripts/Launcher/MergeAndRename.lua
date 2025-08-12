@@ -130,6 +130,6 @@ end
 function events.InitLauncher()
 
     print("Initialize MergeAndRename.lua")
-    AL.CommandAdd("MergeAndRename", _MergeAndRename, -99) 
+    AL.CommandAdd("MergeAndRename", _MergeAndRename, -80) 
 
 end

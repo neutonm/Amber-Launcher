@@ -211,6 +211,6 @@ end
 function events.InitLauncher()
 
     print("Initialize Localisation.lua")
-    AL.CommandAdd("Localisation", _Localisation) -- overwrites internal cmd
+    AL.CommandAdd("Localisation", _Localisation, -40) -- overwrites internal cmd
 
 end

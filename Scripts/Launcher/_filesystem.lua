@@ -24,6 +24,11 @@ function fs.PathSplit(fp)
 end
 
 function fs.PathResolveCaseInsensitive(base_dir, relative_path)
+
+    if not relative_path or relative_path == "" then
+        return false
+    end
+
     local comps, current = {}, base_dir
 
     for part in relative_path:gmatch("[^/\\]+") do

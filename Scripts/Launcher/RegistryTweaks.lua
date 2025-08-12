@@ -28,5 +28,5 @@ end
 function events.InitLauncher()
 
     print("Initialize RegistryTweaks.lua")
-    AL.CommandAdd("RegistryTweaks", _RegistryTweaks) -- overwrites internal cmd
+    AL.CommandAdd("RegistryTweaks", _RegistryTweaks, -60) -- overwrites internal cmd
 end

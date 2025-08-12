@@ -30,6 +30,6 @@ end
 function events.InitLauncher()
 
     print("Initialize ConvertMusic.lua")
-    AL.CommandAdd("ConvertMusic", _ConvertMusic)
+    AL.CommandAdd("ConvertMusic", _ConvertMusic, -70)
 
 end

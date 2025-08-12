@@ -66,6 +66,6 @@ end
 function events.InitLauncher()
 
     print("Initialize ConfigTweaks.lua")
-    AL.CommandAdd("ConfigTweaks", _ConfigTweaks) -- overwrites internal cmd
+    AL.CommandAdd("ConfigTweaks", _ConfigTweaks, -50) -- overwrites internal cmd
 
 end

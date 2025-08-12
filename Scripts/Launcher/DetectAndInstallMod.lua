@@ -84,6 +84,6 @@ end
 function events.InitLauncher()
 
     print("Initialize DetectAndInstallMod.lua")
-    AL.CommandAdd("DetectAndInstallMod", _DetectAndInstallMod, -98) 
+    AL.CommandAdd("DetectAndInstallMod", _DetectAndInstallMod, -90) 
 
 end
