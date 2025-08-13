@@ -29,6 +29,7 @@ const char* EUIEventTypeStrings[] = {
     "NULL",
     "PRINT",
     "MAIN",
+    "PLAY",
     "AUTOCONFIG",
     "MODAL_MESSAGE",
     "MODAL_QUESTION",
@@ -1330,11 +1331,7 @@ Callback_OnButtonModalOptions(AppGUI *pApp, Event *e)
 void 
 Callback_OnButtonPlay(AppGUI *pApp, Event *e)
 {
-    Button *pButton = event_sender(e, Button);
     AmberLauncher_Play(pApp->pAppCore);
-    /* AmberLauncher_ProcessLaunch("mm7.exe", _argc, _argv, TRUE); */
-    unref(pButton);
-    unref(e);
 }
 
 void
@@ -1697,6 +1694,13 @@ _Callback_UIEvent(
         case UIEVENT_MAIN:
             {
                 GUIThread_SchedulePanelSet(pApp, CPANEL_MAIN, FLAG_PANEL_NONE);
+                SVARKEYB_BOOL(tRetVal, sStatusKey, CTRUE);
+            }
+            break;
+
+        case UIEVENT_PLAY:
+            {
+                AmberLauncher_Play(pApp->pAppCore);
                 SVARKEYB_BOOL(tRetVal, sStatusKey, CTRUE);
             }
             break;

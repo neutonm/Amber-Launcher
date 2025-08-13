@@ -639,8 +639,13 @@ AmberLauncher_Play(AppCore* pAppCore)
         pAppCore->pLuaState, 
         ELuaFunctionEventTypeStrings[SLUA_EVENT_PLAY]
     );
-    AmberLauncher_ProcessLaunch(pAppCore->sLaunchCmd, 0, NULL, CTRUE);
-    UNUSED(pAppCore);
+    SLuaState_CallReferencedFunction(pAppCore->pLuaState, SLUA_FUNC_PLAY,NULL);
+    AmberLauncher_ProcessLaunch(
+        pAppCore->sLaunchCmd,
+        0,
+        NULL,
+        CTRUE
+    );
 }
 
 CAPI void

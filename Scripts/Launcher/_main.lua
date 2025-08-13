@@ -124,3 +124,42 @@ function PostAppConfigure(configSuccessful)
         AL.UICall(UIEVENT.AUTOCONFIG,true)
     end
 end
+
+function Play()
+
+    print("Starting game...")
+
+    local destDir = (GAME_DESTINATION_FOLDER or ".")
+    local sep     = FS.OS_FILE_SEPARATOR
+    destDir       = destDir:gsub(sep.."*$", "")
+
+    if destDir == "." then
+        -- extGameFolder was "", so nothing to do
+        return
+    end
+
+    local fullExePath  = FS.PathJoin(destDir, GAME_EXECUTABLE_NAME)
+    local cmd          = AL.GetLaunchCommand()
+    if cmd:find(fullExePath, 1, true) then
+        return
+    end
+
+    -- Replace mm7.exe, preserving quotes
+    local pattern = '(["\']?)%f[%w]' ..
+                    GAME_EXECUTABLE_NAME:gsub("%.", "%%.") ..
+                    '%f[^%w]%1'
+
+    local newCmd, n = cmd:gsub(pattern,
+        function(q)
+            return (q or "")..fullExePath..(q or "")
+        end, 1)
+
+    if n > 0 then
+        AL.SetLaunchCommand(newCmd)
+    end
+
+    -- Permission for exe on Linux
+    if OS_NAME ~= "Windows" and not FS.IsFileExecutable(fullExePath) then
+        os.execute(('chmod +x "%s" 2>/dev/null'):format(fullExePath))
+    end
+end
