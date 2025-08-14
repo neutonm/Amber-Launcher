@@ -14,6 +14,9 @@ Table Of Contents:
 - [Lua Scripts](#lua-scripts)
 
 > Next: Core  Launcher GUI
+> - Mod window
+> - Tools window
+> - - Manual PDF
 > Next: David's Sprites
 > - cut into variants: none, swamp trees only, everything
 > - check SFT and adjust variables from original one to new one (there are collision marks in amberisland)
