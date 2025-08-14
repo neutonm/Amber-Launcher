@@ -128,6 +128,7 @@ typedef struct
     TextView        *pTextView;
     ImageView       *pImageView;
     Layout          *pLayoutMain;
+    Layout          *pLayoutWindow;
     Layout          *pLayoutModalMain;
     Layout          *pLayoutExtra;
     String          *pString;

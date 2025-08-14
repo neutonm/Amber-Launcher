@@ -22,6 +22,15 @@ TXT_BTN_CONTINUE        Continue
 TXT_BTN_NEXT            Next
 TXT_BTN_PREVIOUS        Previous
 
+/* Tooltips */
+TXT_TOOLTIP_GAME        Game
+TXT_TOOLTIP_SETTINGS    Settings
+TXT_TOOLTIP_MODS        Mods
+TXT_TOOLTIP_TOOLS       External Tools
+TXT_TOOLTIP_HOMEPAGE    Mod's homepage
+TXT_TOOLTIP_DISCORD     Discord Server
+TXT_TOOLTIP_UPDATE      Check updates
+
 /* Localisation */
 TXT_LOC_CORE            Main Game
 TXT_LOC_MOD             Mod
@@ -39,7 +48,8 @@ TXT_LOC_RUSSIAN         Russian
 
 /* Texts */
 TXT_NULL                Null
-TXT_GREETINGS           Greetings adventurer, before you can play Amber Island, you have to configure the game.\nMake sure you have Might and Magic 7 installed on your PC.
+TXT_MAININTRO           Welcome to Amber Island, adventurer!\n\nMystery and excitement await - hit "Play" to step into a realm of secrets, challenges, and unforgettable discoveries.
+TXT_CONFIGINTRO         Greetings adventurer, before you can play Amber Island, you have to configure the game.\nMake sure you have Might and Magic 7 installed on your PC.
 TXT_CONFIGSUCCESS       Setup complete! You can now play the Amber Island mod. Press Next to close autoconfig and jump in.
 TXT_GAMENOTFOUND        Launcher couldn't locate the Might and Magic 7 installation. Please locate the game executable (mm7.exe)
 TXT_LOCALISATION        Select languages for core game texts, voiceovers, and mod texts. Customize each option individually to personalize your gameplay experience.

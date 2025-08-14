@@ -40,8 +40,10 @@ const char* EUIEventTypeStrings[] = {
     NULL
 };
 
-static const int32_t TITLE_PNG_W = 672;
-static const int32_t TITLE_PNG_H = 200;
+static const int32_t TITLE_PNG_W    = 672;
+static const int32_t TITLE_PNG_H    = 200;
+static const int32_t ICO_PNG_W      = 32;
+static const int32_t ICO_PNG_H      = 32;
 #define MODAL_OPT_NULL  1000
 #define MODAL_OPT_A     1001
 #define MODAL_OPT_B     1002
@@ -51,6 +53,14 @@ static const int32_t TITLE_PNG_H = 200;
 #define MODAL_BROWSE    1033
 #define MODAL_PREVIOUS  1034
 #define MODAL_NEXT      1035
+
+#define BUTTON_MAIN         1
+#define BUTTON_SETTINGS     2
+#define BUTTON_MODS         3
+#define BUTTON_TOOLS        4
+#define BUTTON_UPDATE       10
+#define BUTTON_WEB_HOMEPAGE 11
+#define BUTTON_WEB_DISCORD  12
 
 /******************************************************************************
  * STATIC DECLARATIONS
@@ -122,6 +132,16 @@ _GUIThread_End_PanelSetMain(GUIAsyncTaskData *pThreadData, const uint32_t dRValu
 
 /**
  * @relatedalso GUI
+ * @brief       Callback for sidebar buttons on main menu
+ *
+ * @param       pApp
+ * @param       e
+ */
+static void
+_Callback_OnButtonMainWindow(AppGUI* pApp, Event* e);
+
+/**
+ * @relatedalso GUI
  * @brief       Invokes cleanup on manual closing of the main window
  *
  * @param       pApp
@@ -169,6 +189,12 @@ Panel_Set(AppGUI *pApp, const EPanelType eType, FPanelFlags dFlags)
     Panel *pPanel       = NULL;
 
     pApp->eCurrentPanel = eType;
+
+    if (IS_VALID(pApp->pLayoutWindow))
+    {
+        layout_show_col(pApp->pLayoutWindow, 0, TRUE);
+    }
+
     switch (eType)
     {
     case CPANEL_NULL:
@@ -176,6 +202,10 @@ Panel_Set(AppGUI *pApp, const EPanelType eType, FPanelFlags dFlags)
         break;
 
     case CPANEL_AUTOCONFIG:
+        if (IS_VALID(pApp->pLayoutWindow))
+        {
+            layout_show_col(pApp->pLayoutWindow, 0, FALSE);
+        }
         pPanel = Panel_GetAutoConfigure(pApp,dFlags);
         break;
 
@@ -248,7 +278,8 @@ Panel_GetAutoConfigure(AppGUI* pApp, FPanelFlags dFlags)
     pApp->pTextView = pConsole;
 
     /* Label: Greetings Text */
-    label_text(pLabelGreet, bIsStateEnd ? TXT_CONFIGSUCCESS : TXT_GREETINGS);
+    label_text(pLabelGreet, bIsStateEnd ? TXT_CONFIGSUCCESS : TXT_CONFIGINTRO);
+    label_multiline(pLabelGreet, TRUE);
     label_font(pLabelGreet, pFontGreet);
 
     /* Button: Configure */
@@ -260,9 +291,14 @@ Panel_GetAutoConfigure(AppGUI* pApp, FPanelFlags dFlags)
     
     /* Layout: Text */
     layout_margin(pLayoutTxt, 4);
+    layout_valign(pLayoutTxt, 0, 0, ekTOP);
+    layout_hsize(pLayoutTxt, 0, TITLE_PNG_W);
     layout_label(pLayoutTxt, pLabelGreet, 0, 0);
 
     /* Layout: Main */
+    layout_valign(pLayoutMain, 0, 0, ekTOP);
+    layout_valign(pLayoutMain, 0, 1, ekTOP);
+    layout_valign(pLayoutMain, 0, 2, ekBOTTOM);
     layout_layout(pLayoutMain, pLayoutTxt, 0, 0);
     layout_textview(pLayoutMain, pConsole, 0, 1);
     layout_button(pLayoutMain,pButtonCfg,0, 2);
@@ -281,7 +317,7 @@ Panel*
 Panel_GetMain(AppGUI* pApp)
 {
     Panel   *pPanelMain  = panel_create();
-    Layout  *pLayoutMain = layout_create(1, 2);
+    Layout  *pLayoutMain = layout_create(1, 3);
     Layout  *pLayoutTxt  = layout_create(1,1);
     Label   *pLabelTemp  = label_create();
     Button  *pButtonPlay = button_push();
@@ -290,7 +326,7 @@ Panel_GetMain(AppGUI* pApp)
     pApp->pTextView = NULL;
 
     /* Label: Temp */
-    label_text(pLabelTemp, TXT_GREETINGS);
+    label_text(pLabelTemp, TXT_MAININTRO);
     label_multiline(pLabelTemp, TRUE);
 
     /* Button: Play */
@@ -301,14 +337,19 @@ Panel_GetMain(AppGUI* pApp)
     
     /* Layout: Text */
     layout_margin(pLayoutTxt, 4);
+    layout_valign(pLayoutTxt, 0, 0, ekTOP);
+    layout_hsize(pLayoutTxt, 0, TITLE_PNG_W);
     layout_label(pLayoutTxt, pLabelTemp, 0, 0);
 
     /* Layout: Main */
-    layout_hsize(pLayoutMain, 0, TITLE_PNG_W);
-    /* layout_halign(pLayout, 0, 0, ekCENTER); */
     layout_valign(pLayoutMain, 0, 0, ekTOP);
+    layout_valign(pLayoutMain, 0, 1, ekJUSTIFY);
+    layout_valign(pLayoutMain, 0, 2, ekBOTTOM);
+    layout_hsize(pLayoutMain, 0, TITLE_PNG_W);
+    layout_vsize(pLayoutMain, 1, 32);
+
     layout_layout(pLayoutMain, pLayoutTxt, 0, 0);
-    layout_button(pLayoutMain, pButtonPlay, 0, 1);
+    layout_button(pLayoutMain, pButtonPlay, 0, 2);
 
     panel_layout(pPanelMain, pLayoutMain);
 
@@ -1332,6 +1373,7 @@ void
 Callback_OnButtonPlay(AppGUI *pApp, Event *e)
 {
     AmberLauncher_Play(pApp->pAppCore);
+    unref(e);
 }
 
 void
@@ -1422,43 +1464,122 @@ GUIThread_SchedulePanelSet(AppGUI *pApp, EPanelType eType, FPanelFlags dFlags)
 static Panel*
 _Panel_GetRoot(AppGUI *pApp)
 {
-    Panel       *pPanelMain = panel_create();
-    Panel       *pPanelExt  = panel_create();
-    Layout      *pLayoutMain= layout_create(1,2);
-    Layout      *pLayoutExt = layout_create(1,1);
-    ImageView   *pImageView = imageview_create();
+    Panel       *pPanelMain         = panel_create();
+    Panel       *pPanelExt          = panel_create();
+    Layout      *pLayoutCore        = layout_create(2,1);
+    Layout      *pLayoutMain        = layout_create(1,2);
+    Layout      *pLayoutButtons     = layout_create(1,3);
+    Layout      *pLayoutButtonsTop  = layout_create(1,4);
+    Layout      *pLayoutButtonsBot  = layout_create(1,4);
+    Layout      *pLayoutImage       = layout_create(1,1);
+    Layout      *pLayoutExt         = layout_create(1,1);
+    ImageView   *pImageView         = imageview_create();
+    Button      *pButtonSettings    = button_flat();
+    Button      *pButtonMods        = button_flat();
+    Button      *pButtonTools       = button_flat();
+    Button      *pButtonWebHomepage = button_flat();
+    Button      *pButtonWebDiscord  = button_flat();
+    Button      *pButtonUpdate      = button_flat();
 
-    Label *label1 = label_create();
-    label_text(label1, TXT_GREETINGS);
-    label_multiline(label1, TRUE);
+    static const int32_t dButtonIconWidth   = ICO_PNG_W + (ICO_PNG_W / 2);
+    static const int32_t dButtonIconHeight  = ICO_PNG_H + (ICO_PNG_H / 2);
 
-    pApp->pLayoutMain = pLayoutMain;
+    pApp->pLayoutMain   = pLayoutMain;
+    pApp->pLayoutWindow = pLayoutCore;
 
-    /* Global Margin */
-    layout_margin(pLayoutMain, 4);
-    
-    /* Top Image */
-    /* layout_hsize(pLayoutMain, 0, TITLE_PNG_W);
-    layout_vsize(pLayoutMain, 0, TITLE_PNG_H);
-    layout_halign(pLayoutMain, 0, 0, ekJUSTIFY);
-    layout_valign(pLayoutMain, 0, 0, ekJUSTIFY);*/
-    layout_halign(pLayoutMain, 0, 1, ekJUSTIFY);
-    layout_valign(pLayoutMain, 0, 1, ekJUSTIFY); 
+    /* Buttons */
+    button_image(pButtonSettings, (const Image*)ICO_GEAR_PNG);
+    button_tag(pButtonSettings, BUTTON_SETTINGS);
+    button_tooltip(pButtonSettings, TXT_TOOLTIP_SETTINGS);
+    button_OnClick(pButtonSettings, listener(pApp, _Callback_OnButtonMainWindow, AppGUI) );
+
+    button_image(pButtonMods, (const Image*)ICO_PUZZLE_PNG);
+    button_tag(pButtonMods, BUTTON_MODS);
+    button_tooltip(pButtonMods, TXT_TOOLTIP_MODS);
+    button_OnClick(pButtonMods, listener(pApp, _Callback_OnButtonMainWindow, AppGUI) );
+
+    button_image(pButtonTools, (const Image*)ICO_WRENCH_PNG);
+    button_tag(pButtonTools, BUTTON_TOOLS);
+    button_tooltip(pButtonTools, TXT_TOOLTIP_TOOLS);
+    button_OnClick(pButtonTools, listener(pApp, _Callback_OnButtonMainWindow, AppGUI) );
+
+    button_image(pButtonWebHomepage, (const Image*)ICO_WEB_PNG);
+    button_tag(pButtonWebHomepage, BUTTON_WEB_HOMEPAGE);
+    button_tooltip(pButtonWebHomepage, TXT_TOOLTIP_HOMEPAGE);
+    button_OnClick(pButtonWebHomepage, listener(pApp, _Callback_OnButtonMainWindow, AppGUI) );
+
+    button_image(pButtonWebDiscord, (const Image*)ICO_DISCORD_PNG);
+    button_tag(pButtonWebDiscord, BUTTON_WEB_DISCORD);
+    button_tooltip(pButtonWebDiscord, TXT_TOOLTIP_DISCORD);
+    button_OnClick(pButtonWebDiscord, listener(pApp, _Callback_OnButtonMainWindow, AppGUI) );
+
+    button_image(pButtonUpdate, (const Image*)ICO_UPDATE_PNG);
+    button_tag(pButtonUpdate, BUTTON_UPDATE);
+    button_tooltip(pButtonUpdate, TXT_TOOLTIP_UPDATE);
+    button_OnClick(pButtonUpdate, listener(pApp, _Callback_OnButtonMainWindow, AppGUI) );
+
+    /* Image: Header */
     imageview_scale(pImageView, ekGUI_SCALE_AUTO);
     imageview_size(pImageView, s2df(TITLE_PNG_W,TITLE_PNG_H));
     imageview_image(pImageView, (const Image*)TITLE_JPG);
-    layout_imageview(pLayoutMain, pImageView, 0, 0);
+
+    /* Layout: Image */
+    layout_hsize(pLayoutImage, 0, TITLE_PNG_W);
+    layout_vsize(pLayoutImage, 0, TITLE_PNG_H);
+    layout_imageview(pLayoutImage, pImageView, 0, 0);
     
-    /* External Panel */
+    /* Layout: External */
     layout_hsize(pLayoutExt, 0, TITLE_PNG_W);
-    layout_halign(pLayoutExt, 0, 0, ekCENTER);
+    layout_halign(pLayoutExt, 0, 0, ekLEFT);
     layout_valign(pLayoutExt, 0, 0, ekTOP);
-    layout_label(pLayoutExt, label1, 0, 0);
     panel_layout(pPanelExt, pLayoutExt);
 
-    /* Global Panel */
+    /* Layout: Buttons Top */
+    layout_valign(pLayoutButtonsTop, 0, 0, ekTOP);
+    layout_hsize(pLayoutButtonsTop, 0, dButtonIconWidth);
+
+    layout_button(pLayoutButtonsTop, pButtonSettings, 0, 0);
+    layout_button(pLayoutButtonsTop, pButtonMods, 0, 1);
+    layout_button(pLayoutButtonsTop, pButtonTools, 0, 2);
+    unref(dButtonIconHeight);
+
+    /* Layout: Buttons Bottom */
+    layout_valign(pLayoutButtonsBot, 0, 0, ekBOTTOM);
+    layout_hsize(pLayoutButtonsBot, 0, dButtonIconWidth);
+    layout_button(pLayoutButtonsBot, pButtonWebDiscord, 0, 0);
+    layout_button(pLayoutButtonsBot, pButtonWebHomepage, 0, 1);
+    layout_button(pLayoutButtonsBot, pButtonUpdate, 0, 2);
+
+    /* Layout: Buttons (Main) */
+    layout_margin4(pLayoutButtons, 0, 4, 0, 0);
+    layout_valign(pLayoutButtons, 0, 0, ekTOP);
+    layout_valign(pLayoutButtons, 0, 1, ekJUSTIFY);
+    layout_valign(pLayoutButtons, 0, 2, ekBOTTOM);
+    layout_layout(pLayoutButtons, pLayoutButtonsTop,0, 0);
+    layout_cell(pLayoutButtons, 0, 1);
+    layout_vexpand(pLayoutButtons, 1);
+    layout_layout(pLayoutButtons, pLayoutButtonsBot,0, 2);
+
+    /* Layout: Main */
+    layout_margin(pLayoutMain, 4);
+    layout_hsize(pLayoutMain, 0, TITLE_PNG_W);
+    layout_vsize(pLayoutMain, 0, TITLE_PNG_H);
+    layout_valign(pLayoutMain, 0, 0, ekTOP);
+    layout_halign(pLayoutMain, 0, 0, ekJUSTIFY);
+
+    layout_layout(pLayoutMain, pLayoutImage, 0, 0);
     layout_panel(pLayoutMain, pPanelExt, 0, 1);
-    panel_layout(pPanelMain, pLayoutMain);
+
+    /* Layout: Core */
+    layout_valign(pLayoutCore, 0, 0, ekJUSTIFY);
+    layout_valign(pLayoutCore, 1, 0, ekTOP);
+    layout_hsize(pLayoutCore, 0, dButtonIconWidth);
+    layout_hsize(pLayoutCore, 1, TITLE_PNG_W);
+    layout_layout(pLayoutCore, pLayoutButtons, 0, 0);
+    layout_layout(pLayoutCore, pLayoutMain, 1, 0);
+
+    /* Panel: Main */
+    panel_layout(pPanelMain, pLayoutCore);
 
     /* Starting panel */
     Panel_Set(pApp, CPANEL_MAIN, FLAG_PANEL_NONE);
@@ -1491,7 +1612,13 @@ _Nappgui_Start(void)
     cassert_no_null(pApp->pOptElementArray);
 
     pPanel           = _Panel_GetRoot(pApp);
-    pApp->pWindow    = window_create(ekWINDOW_STDRES | ekWINDOW_CLOSE | ekWINDOW_ESC | ekWINDOW_RETURN);
+    pApp->pWindow    = window_create(
+        ekWINDOW_TITLE |
+        ekWINDOW_EDGE |
+        ekWINDOW_CLOSE |
+        ekWINDOW_ESC |
+        ekWINDOW_RETURN
+    );
 
     window_hotkey(pApp->pWindow, ekKEY_F6, 0, listener(pApp, Callback_OnWindowHotkeyF6, AppGUI));
     window_panel(pApp->pWindow, pPanel);
@@ -1581,6 +1708,40 @@ _Nappgui_ShowModal( AppGUI *pApp, Panel *pPanel, const char* sTitle)
 /******************************************************************************
  * STATIC CALLBACK DEFINITIONS
  ******************************************************************************/
+
+static void
+_Callback_OnButtonMainWindow(AppGUI* pApp, Event* e)
+{
+    Button *pButton     = event_sender(e, Button);
+    FPanelFlags dFlags  = button_get_tag(pButton);
+
+    switch(dFlags)
+    {
+        case BUTTON_MAIN:
+            Panel_Set(pApp, CPANEL_MAIN, FLAG_PANEL_NONE);
+            break;
+        case BUTTON_SETTINGS:
+            AmberLauncher_ExecuteLua(pApp->pAppCore, "ModalShowOptions()");
+            break;
+        case BUTTON_MODS:
+            /* not implemented */
+            break;
+        case BUTTON_TOOLS:
+            /* not implemented */
+            break;
+        case BUTTON_UPDATE:
+            /* not implemented */
+            break;
+        case BUTTON_WEB_HOMEPAGE:
+            osapp_open_url("https://mightandmagicmod.com");
+            break;
+        case BUTTON_WEB_DISCORD:
+            osapp_open_url("https://discord.gg/MhmZGrGxV4");
+            break;
+        default:
+            break;
+    }
+}
 
 static void 
 _Callback_OnCloseMainWindow(AppGUI *pApp, Event *e)
@@ -2237,12 +2398,17 @@ _Callback_UIEvent(
                             pDst->eType = UI_WIDGET_NULL;
                         }
 
-                        textview_printf(pApp->pTextView,
-                                        "Elem %zu: title='%s' type=%d opts=%u\n",
-                                        dElemCount,
-                                        (pDst->pTitle ? tc(pDst->pTitle) : "(null)"),
-                                        (int)pDst->eType,
-                                        pDst->dNumOfOptions);
+#ifdef __DEBUG__
+                        if (pApp->pTextView)
+                        {
+                            textview_printf(pApp->pTextView,
+                                            "Elem %zu: title='%s' type=%d opts=%u\n",
+                                            dElemCount,
+                                            (pDst->pTitle ? tc(pDst->pTitle) : "(null)"),
+                                            (int)pDst->eType,
+                                            pDst->dNumOfOptions);
+                        }
+#endif
 
                         ++dElemCount;
                     }
