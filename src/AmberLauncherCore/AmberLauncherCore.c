@@ -654,3 +654,26 @@ AmberLauncher_ExecuteLua(AppCore *pApp, const char *sCommand)
     SLuaState_ExecuteCode(pApp->pLuaState, sCommand);
 }
 
+CAPI CBOOL
+AmberLauncher_ProcessUISideButton(AppCore *pApp, unsigned int dButtonTag)
+{
+    SVar tVarButtonTag;
+    SVar tVarRet;
+
+    SVAR_UINT32(tVarButtonTag, dButtonTag);
+    SLuaState_CallReferencedFunctionArgs(
+        pApp->pLuaState,
+        SLUA_FUNC_SIDEBUTTON,
+        &tVarRet,
+        &tVarButtonTag,
+        1
+    );
+
+    if (SVAR_IS_NULL(tVarRet))
+    {
+        return CFALSE;
+    }
+
+    return SVAR_GET_BOOL(tVarRet);
+}
+

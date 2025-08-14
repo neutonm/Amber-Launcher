@@ -1,6 +1,6 @@
 #ifndef VERSION_H_
      #define VERSION_H_
 
-     #define BUILD_NUMBER "492"
+     #define BUILD_NUMBER "494"
 
 #endif

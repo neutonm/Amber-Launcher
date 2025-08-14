@@ -3,13 +3,14 @@
 #include <stdio.h>
 
 const char* ELuaFunctionRefTypeStrings[] = {
-    "AppInit",
-    "PostAppInit",
-    "AppDestroy",
-    "PostAppDestroy",
-    "AppConfigure",
-    "PostAppConfigure",
-    "Play",
+    "OnAppInit",
+    "OnPostAppInit",
+    "OnAppDestroy",
+    "OnPostAppDestroy",
+    "OnAppConfigure",
+    "OnPostAppConfigure",
+    "OnPlay",
+    "OnSidebuttonClick",
     NULL
 };
 

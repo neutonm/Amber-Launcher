@@ -54,14 +54,6 @@ static const int32_t ICO_PNG_H      = 32;
 #define MODAL_PREVIOUS  1034
 #define MODAL_NEXT      1035
 
-#define BUTTON_MAIN         1
-#define BUTTON_SETTINGS     2
-#define BUTTON_MODS         3
-#define BUTTON_TOOLS        4
-#define BUTTON_UPDATE       10
-#define BUTTON_WEB_HOMEPAGE 11
-#define BUTTON_WEB_DISCORD  12
-
 /******************************************************************************
  * STATIC DECLARATIONS
  ******************************************************************************/
@@ -1489,32 +1481,32 @@ _Panel_GetRoot(AppGUI *pApp)
 
     /* Buttons */
     button_image(pButtonSettings, (const Image*)ICO_GEAR_PNG);
-    button_tag(pButtonSettings, BUTTON_SETTINGS);
+    button_tag(pButtonSettings, CSIDEBUTTON_SETTINGS);
     button_tooltip(pButtonSettings, TXT_TOOLTIP_SETTINGS);
     button_OnClick(pButtonSettings, listener(pApp, _Callback_OnButtonMainWindow, AppGUI) );
 
     button_image(pButtonMods, (const Image*)ICO_PUZZLE_PNG);
-    button_tag(pButtonMods, BUTTON_MODS);
+    button_tag(pButtonMods, CSIDEBUTTON_MODS);
     button_tooltip(pButtonMods, TXT_TOOLTIP_MODS);
     button_OnClick(pButtonMods, listener(pApp, _Callback_OnButtonMainWindow, AppGUI) );
 
     button_image(pButtonTools, (const Image*)ICO_WRENCH_PNG);
-    button_tag(pButtonTools, BUTTON_TOOLS);
+    button_tag(pButtonTools, CSIDEBUTTON_TOOLS);
     button_tooltip(pButtonTools, TXT_TOOLTIP_TOOLS);
     button_OnClick(pButtonTools, listener(pApp, _Callback_OnButtonMainWindow, AppGUI) );
 
     button_image(pButtonWebHomepage, (const Image*)ICO_WEB_PNG);
-    button_tag(pButtonWebHomepage, BUTTON_WEB_HOMEPAGE);
+    button_tag(pButtonWebHomepage, CSIDEBUTTON_WEB_HOMEPAGE);
     button_tooltip(pButtonWebHomepage, TXT_TOOLTIP_HOMEPAGE);
     button_OnClick(pButtonWebHomepage, listener(pApp, _Callback_OnButtonMainWindow, AppGUI) );
 
     button_image(pButtonWebDiscord, (const Image*)ICO_DISCORD_PNG);
-    button_tag(pButtonWebDiscord, BUTTON_WEB_DISCORD);
+    button_tag(pButtonWebDiscord, CSIDEBUTTON_WEB_DISCORD);
     button_tooltip(pButtonWebDiscord, TXT_TOOLTIP_DISCORD);
     button_OnClick(pButtonWebDiscord, listener(pApp, _Callback_OnButtonMainWindow, AppGUI) );
 
     button_image(pButtonUpdate, (const Image*)ICO_UPDATE_PNG);
-    button_tag(pButtonUpdate, BUTTON_UPDATE);
+    button_tag(pButtonUpdate, CSIDEBUTTON_UPDATE);
     button_tooltip(pButtonUpdate, TXT_TOOLTIP_UPDATE);
     button_OnClick(pButtonUpdate, listener(pApp, _Callback_OnButtonMainWindow, AppGUI) );
 
@@ -1713,29 +1705,25 @@ static void
 _Callback_OnButtonMainWindow(AppGUI* pApp, Event* e)
 {
     Button *pButton     = event_sender(e, Button);
-    FPanelFlags dFlags  = button_get_tag(pButton);
+    ESidebarButton dTag = (ESidebarButton)button_get_tag(pButton);
+    bool_t bVarRet;
 
-    switch(dFlags)
+    bVarRet = AmberLauncher_ProcessUISideButton(pApp->pAppCore, dTag);
+    if (bVarRet == FALSE)
     {
-        case BUTTON_MAIN:
+        return;
+    }
+
+    switch(dTag)
+    {
+        case CSIDEBUTTON_MAIN:
             Panel_Set(pApp, CPANEL_MAIN, FLAG_PANEL_NONE);
             break;
-        case BUTTON_SETTINGS:
-            AmberLauncher_ExecuteLua(pApp->pAppCore, "ModalShowOptions()");
-            break;
-        case BUTTON_MODS:
-            /* not implemented */
-            break;
-        case BUTTON_TOOLS:
-            /* not implemented */
-            break;
-        case BUTTON_UPDATE:
-            /* not implemented */
-            break;
-        case BUTTON_WEB_HOMEPAGE:
+    
+        case CSIDEBUTTON_WEB_HOMEPAGE:
             osapp_open_url("https://mightandmagicmod.com");
             break;
-        case BUTTON_WEB_DISCORD:
+        case CSIDEBUTTON_WEB_DISCORD:
             osapp_open_url("https://discord.gg/MhmZGrGxV4");
             break;
         default:

@@ -41,6 +41,23 @@ UIWIDGET = {
     MAX
 }
 
+UISIDEBUTTON = {
+    NULL                = 0,
+    MAIN                = 1,
+    SETTINGS            = 2,
+    MODS                = 3,
+    TOOLS               = 4,
+    UPDATE              = 5,
+    WEB_HOMEPAGE        = 6,
+    WEB_DISCORD         = 7,
+    MAX
+}
+UISIDEBUTTON_NAMES = {}
+for k, v in pairs(UISIDEBUTTON) do
+    UISIDEBUTTON_NAMES[v] = k
+end
+
+
 -- Variables
 OS_NAME                 = OS_NAME or "Unknown"
 GAME_FOLDER_NAME        = GAME_FOLDER_NAME or {

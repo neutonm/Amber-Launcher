@@ -43,6 +43,18 @@ typedef enum
     CPANEL_MAX
 } EPanelType;
 
+typedef enum {
+    CSIDEBUTTON_NULL        = 0,
+    CSIDEBUTTON_MAIN,
+    CSIDEBUTTON_SETTINGS,
+    CSIDEBUTTON_MODS,
+    CSIDEBUTTON_TOOLS,
+    CSIDEBUTTON_UPDATE,
+    CSIDEBUTTON_WEB_HOMEPAGE,
+    CSIDEBUTTON_WEB_DISCORD,
+    CBUTTON_MAX
+} ESidebarButton;
+
 typedef uint32_t FPanelFlags;
 enum
 {

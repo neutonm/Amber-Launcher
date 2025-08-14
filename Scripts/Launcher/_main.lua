@@ -61,7 +61,7 @@ end
 FS = require("Scripts.Launcher._filesystem")
 
 -- Main launcher calls
-function AppInit()
+function OnAppInit()
 
     print("App Init")
     if _DEBUG then
@@ -69,7 +69,7 @@ function AppInit()
     end
 end
 
-function PostAppInit()
+function OnPostAppInit()
 
     print("Post App Init")
 
@@ -79,17 +79,17 @@ function PostAppInit()
     end
 end
 
-function AppDestroy()
+function OnAppDestroy()
 
     print("App Destroy")
 end
 
-function PostAppDestroy()
+function OnPostAppDestroy()
 
     print("Post App Destroy")
 end
 
-function AppConfigure()
+function OnAppConfigure()
 
     local configSuccessful = true
 
@@ -118,14 +118,14 @@ function AppConfigure()
     return configSuccessful
 end
 
-function PostAppConfigure(configSuccessful)
+function OnPostAppConfigure(configSuccessful)
     AL_print("Configuration "..(configSuccessful and "is succesful!" or "failed."))
     if configSuccessful then
         AL.UICall(UIEVENT.AUTOCONFIG,true)
     end
 end
 
-function Play()
+function OnPlay()
 
     print("Starting game...")
 
@@ -162,4 +162,18 @@ function Play()
     if OS_NAME ~= "Windows" and not FS.IsFileExecutable(fullExePath) then
         os.execute(('chmod +x "%s" 2>/dev/null'):format(fullExePath))
     end
+end
+
+--- Processed side buttons
+--- @param buttonID -Button ID (UISIDEBUTTON enum)
+--- @return bool    -Proceed with built in button processing on success
+function OnSidebuttonClick(buttonID)
+
+    if (buttonID == UISIDEBUTTON.SETTINGS) then
+        ModalShowOptions()
+        return false
+    end
+
+    print("Sidebutton clicked: "..UISIDEBUTTON_NAMES[buttonID])
+    return true
 end
