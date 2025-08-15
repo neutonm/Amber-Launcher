@@ -7,6 +7,8 @@ TXT_TITLE_QUESTION      Question
 TXT_TITLE_TWEAKER       Tweaker
 TXT_TITLE_LOCALISATION  Localisation
 TXT_TITLE_OPTIONS       Options
+TXT_TITLE_MODS          Mod Manager
+TXT_TITLE_TOOLS         Tools
 
 /* Buttons */
 TXT_BTN_YES             Yes

@@ -31,12 +31,15 @@ const char* EUIEventTypeStrings[] = {
     "MAIN",
     "PLAY",
     "AUTOCONFIG",
+    "MODAL_CLOSE",
     "MODAL_MESSAGE",
     "MODAL_QUESTION",
     "MODAL_GAMENOTFOUND",
     "MODAL_TWEAKER",
     "MODAL_LOCALISATION",
     "MODAL_OPTIONS",
+    "MODAL_MODS",
+    "MODAL_TOOLS",
     NULL
 };
 
@@ -1105,6 +1108,142 @@ Panel_GetModalOptions(AppGUI *pApp)
     return pPanelMain;
 }
 
+static void
+_Callback_OnButtonModalToolsLuaCall(GUIToolElement *pElem, Event *e)
+{
+    AmberLauncher_ExecuteSVarLuaFunction(
+        pElem->pAppCore,
+        &pElem->tLuaRef
+    );
+    unref(e);
+}
+
+static Panel*
+_Panel_GetModalToolsSubpanel(AppGUI *pApp)
+{
+    Panel       *pPanelMain  = panel_scroll(FALSE,TRUE);
+    Layout      *pLayoutMain = layout_create(1,16);
+    Font        *pFontBold   = font_system(18, ekFBOLD | ekFPIXELS);
+
+    unsigned int i = 0;
+
+    GUIToolElement *pElem;
+    cassert_no_null(pApp->pToolElementArray);
+
+    for(i = 0; i < MAX_TOOL_ELEMS; i ++)
+    {
+        Image       *pImageIco;
+        ImageView   *pImageViewIco;
+        Button      *pButtonLaunch;
+        Label       *pLabelTitle;
+        Label       *pLabelDescription;
+        Layout      *pLayoutImage;
+        Layout      *pLayoutCell;
+        Layout      *pLayoutLabels;
+        ferror_t    eError;
+
+        pElem = &pApp->pToolElementArray[i];
+        assert(IS_VALID(pElem));
+
+        if (pElem->dID <= 0)
+        {
+            /* Empty ID */
+            break;
+        }
+        pElem->pAppCore     = pApp->pAppCore;
+
+        pImageViewIco       = imageview_create();
+        pButtonLaunch       = button_flat();
+        pLabelTitle         = label_create();
+        pLabelDescription   = label_create();
+        pLayoutImage        = layout_create(1,1);
+        pLayoutCell         = layout_create(3, 1);
+        pLayoutLabels       = layout_create(1, 2);
+
+        /* Image */
+        pImageIco = image_from_file(tc(pElem->pIcon), &eError);
+        assert(eError == ekFOK);
+
+        /* Setup widgets */
+        imageview_image(pImageViewIco, pImageIco);
+        imageview_size(pImageViewIco, s2df(48.f, 48.f));
+
+        button_image(pButtonLaunch, (const Image*)ICO_RUN_PNG);
+        button_OnClick(
+            pButtonLaunch,
+            listener(
+                pElem,
+                _Callback_OnButtonModalToolsLuaCall,
+                GUIToolElement
+            )
+        );
+
+        label_text(pLabelTitle, tc(pElem->pTitle));
+        label_font(pLabelTitle, pFontBold);
+
+        label_text(pLabelDescription, tc(pElem->pDescription));
+        label_multiline(pLabelDescription, TRUE);
+
+        /* Layout: Image */
+        layout_margin4(pLayoutImage, 0, 8, 0, 0);
+        layout_valign(pLayoutImage, 0, 0, ekTOP);
+        layout_imageview(pLayoutImage, pImageViewIco, 0, 0);
+
+        /* Layout: Label */
+        layout_valign(pLayoutLabels, 0, 0, ekTOP);
+        layout_valign(pLayoutLabels, 0, 1, ekTOP);
+        layout_hsize(pLayoutLabels, 0, TITLE_PNG_W);
+        layout_label(pLayoutLabels, pLabelTitle, 0,0);
+        layout_label(pLayoutLabels, pLabelDescription, 0,1);
+
+        /* Layout: Cell */
+        layout_valign(pLayoutCell, 0, 0, ekJUSTIFY);
+        layout_margin(pLayoutCell, 8);
+        layout_skcolor(pLayoutCell, gui_line_color());
+        layout_layout(pLayoutCell, pLayoutImage, 0, 0);
+        layout_layout(pLayoutCell, pLayoutLabels, 1, 0);
+        layout_button(pLayoutCell, pButtonLaunch, 2, 0);
+
+        /* Layout: Main */
+        layout_layout(pLayoutMain, pLayoutCell, 0, i);
+    }
+
+    /* Panel: Main */
+    panel_layout(pPanelMain, pLayoutMain);
+
+    unref(pApp);
+    font_destroy(&pFontBold);
+
+    return pPanelMain;
+}
+
+Panel*
+Panel_GetModalTools(AppGUI *pApp)
+{
+    Panel       *pPanelMain         = panel_create();
+    Panel       *pPanelSubpanel     = _Panel_GetModalToolsSubpanel(pApp);
+    Layout      *pLayoutMain        = layout_create(1,2);
+    Layout      *pLayoutButtons     = layout_create(4,1);
+    Button      *pButtonCancel      = button_push();
+
+    /* Button: Cancel */
+    button_text(pButtonCancel, TXT_BTN_CANCEL);
+    button_tag(pButtonCancel, MODAL_CANCEL);
+    button_OnClick(pButtonCancel, listener(pApp, Callback_OnButtonModalTools, AppGUI));
+
+    /* Layout: Buttons */
+    layout_button(pLayoutButtons, pButtonCancel, 0, 0);
+
+    /* Layout: Main */
+    layout_panel(pLayoutMain, pPanelSubpanel, 0,0);
+    layout_layout(pLayoutMain, pLayoutButtons, 0, 1);
+
+    /* Panel: Main */
+    panel_layout(pPanelMain, pLayoutMain);
+
+    return pPanelMain;
+}
+
 void
 Callback_OnWindowHotkeyF6(AppGUI* pApp, Event *e)
 {
@@ -1361,6 +1500,19 @@ Callback_OnButtonModalOptions(AppGUI *pApp, Event *e)
     }
 }
 
+void
+Callback_OnButtonModalTools(AppGUI *pApp, Event *e)
+{
+    Button *pButton             = event_sender(e, Button);
+    const uint32_t dButtonTag   = button_get_tag(pButton);
+
+    if (dButtonTag > MODAL_OPT_MAX)
+    {
+        window_stop_modal(pApp->pWindowModal, dButtonTag);
+        return;
+    }
+}
+
 void 
 Callback_OnButtonPlay(AppGUI *pApp, Event *e)
 {
@@ -1602,6 +1754,8 @@ _Nappgui_Start(void)
     cassert_no_null(pApp->pDebugData);
     pApp->pOptElementArray    = heap_new_n0(MAX_OPT_ELEMS, GUIOptElement);
     cassert_no_null(pApp->pOptElementArray);
+    pApp->pToolElementArray   = heap_new_n0(MAX_TOOL_ELEMS, GUIToolElement);
+    cassert_no_null(pApp->pToolElementArray);
 
     pPanel           = _Panel_GetRoot(pApp);
     pApp->pWindow    = window_create(
@@ -1665,9 +1819,24 @@ _Nappgui_End(AppGUI **pApp)
                 str_destopt(&pElem->pOptTitle[j]);
         }
     }
-
     heap_delete_n(&(*pApp)->pOptElementArray, MAX_OPT_ELEMS, GUIOptElement);
     (*pApp)->pOptElementArray = NULL;
+
+    /* Tools */
+    {
+        unsigned int i;
+
+        for (i = 0; i < MAX_TOOL_ELEMS; ++i)
+        {
+            GUIToolElement *pElem = &(*pApp)->pToolElementArray[i];
+
+            str_destopt(&pElem->pIcon);
+            str_destopt(&pElem->pTitle);
+            str_destopt(&pElem->pDescription);
+        }
+    }
+    heap_delete_n(&(*pApp)->pToolElementArray, MAX_TOOL_ELEMS, GUIToolElement);
+    (*pApp)->pToolElementArray = NULL;
 
     str_destopt(&(*pApp)->pString);
 
@@ -1810,6 +1979,9 @@ _Callback_UIEvent(
 
     switch(eEventType)
     {
+        case UIEVENT_MODAL_CLOSE:
+            window_stop_modal(pApp->pWindowModal, ekGUI_CLOSE_ESC);
+            break;
         case UIEVENT_DEBUG:
             {
                 _Nappgui_ShowModal
@@ -2452,6 +2624,107 @@ _Callback_UIEvent(
                     }
                     break;
                 }
+            }
+            break;
+        case UIEVENT_MODAL_MODS:
+            {
+
+            }
+            break;
+
+        case UIEVENT_MODAL_TOOLS:
+            {
+                /* ---- Lua field keys ---- */
+                static const char *sKeyID       = "id";
+                static const char *sKeyIcon     = "iconPath";
+                static const char *sKeyTitle    = "title";
+                static const char *sKeyDesc     = "description";
+                static const char *sKeyOnClick  = "onClick";
+                unsigned int dToolCount         = 0U;
+
+                /* ---- sanity checks ---- */
+                cassert_no_null(pUserData);
+                assert(dNumArgs == 1);
+                assert(pUserData[0].eType == CTYPE_LUATABLE);
+
+                /* ---- clear old data ---- */
+                memset(pApp->pToolElementArray, 0, sizeof(GUIToolElement) * MAX_TOOL_ELEMS);
+
+                /* ---- parse Lua table ---- */
+                {
+                    SVarTable *pRoot;
+                    size_t     i;
+
+                    pRoot = (SVarTable *)SVAR_GET_LUATABLE(pUserData[0]);
+                    for (i = 0; i < pRoot->dCount && dToolCount < APP_MAX_ELEMENTS; ++i)
+                    {
+                        if (pRoot->pEntries[i].tValue.eType == CTYPE_LUATABLE)
+                        {
+                            SVarTable       *pEntry;
+                            GUIToolElement  *pDst;
+                            size_t           k;
+
+                            pEntry = (SVarTable *)SVAR_GET_LUATABLE(pRoot->pEntries[i].tValue);
+                            pDst   = &pApp->pToolElementArray[dToolCount];
+                            memset(pDst, 0, sizeof(GUIToolElement));
+
+                            for (k = 0; k < pEntry->dCount; ++k)
+                            {
+                                const char *sKey =
+                                    SVAR_GET_CONSTCHAR(pEntry->pEntries[k].tKey);
+
+                                if (strcmp(sKey, sKeyID) == 0)
+                                {
+                                    pDst->dID = (uint32_t)SVAR_GET_DOUBLE(pEntry->pEntries[k].tValue);
+                                }
+                                else if (strcmp(sKey, sKeyIcon) == 0)
+                                {
+                                    pDst->pIcon =
+                                        str_c(SVAR_GET_CONSTCHAR(pEntry->pEntries[k].tValue));
+                                }
+                                else if (strcmp(sKey, sKeyTitle) == 0)
+                                {
+                                    pDst->pTitle =
+                                        str_c(SVAR_GET_CONSTCHAR(pEntry->pEntries[k].tValue));
+                                }
+                                else if (strcmp(sKey, sKeyDesc) == 0)
+                                {
+                                    pDst->pDescription =
+                                        str_c(SVAR_GET_CONSTCHAR(pEntry->pEntries[k].tValue));
+                                }
+                                else if (strcmp(sKey, sKeyOnClick) == 0)
+                                {
+                                    if (SVAR_IS_LUAREF(pEntry->pEntries[k].tValue))
+                                    {
+                                        pDst->tLuaRef = pEntry->pEntries[k].tValue;
+                                    }
+                                }
+                            }
+
+#ifdef __DEBUG__
+                            if (pApp->pTextView)
+                            {
+                                textview_printf(pApp->pTextView,
+                                    "Tool %zu: id=%u title='%s' icon='%s' onClick='%d'\n",
+                                    dToolCount,
+                                    (unsigned)pDst->dID,
+                                    pDst->pTitle ? tc(pDst->pTitle) : "(null)",
+                                    pDst->pIcon  ? tc(pDst->pIcon)  : "(null)",
+                                    SVAR_GET_LUAREF(pDst->tLuaRef));
+                            }
+#endif
+                            ++dToolCount;
+                        }
+                    }
+                }
+
+                dModalRetVal = _Nappgui_ShowModal(
+                    pApp,
+                    Panel_GetModalTools(pApp),
+                    TXT_TITLE_TOOLS
+                );
+
+                SVARKEYB_BOOL(tRetVal, sStatusKey, CTRUE);
             }
             break;
 

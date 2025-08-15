@@ -23,12 +23,15 @@ UIEVENT = {
     MAIN                = 3,  -- Revert back to main window (ASYNC)
     PLAY                = 4,  -- Launch game
     AUTOCONFIG          = 5,  -- Autoconfig wizard (ASYNC)
-    MODAL_MESSAGE       = 6,  -- Modal: Show Message
-    MODAL_QUESTION      = 7,  -- Modal: Ask question
-    MODAL_GAMENOTFOUND  = 8,  -- Modal: game-not-found error + specify path
-    MODAL_TWEAKER       = 9,  -- Modal: Wizard for game tweaks
-    MODAL_LOCALISATION  = 10, -- Modal: Select language for game and mod
-    MODAL_OPTIONS       = 11, -- Modal: All in one options tweaker
+    MODAL_CLOSE         = 6,  -- Closes current modal window
+    MODAL_MESSAGE       = 7,  -- Modal: Show Message
+    MODAL_QUESTION      = 8,  -- Modal: Ask question
+    MODAL_GAMENOTFOUND  = 9,  -- Modal: game-not-found error + specify path
+    MODAL_TWEAKER       = 10, -- Modal: Wizard for game tweaks
+    MODAL_LOCALISATION  = 11, -- Modal: Select language for game and mod
+    MODAL_OPTIONS       = 12, -- Modal: All in one options tweaker
+    MODAL_MODS          = 13, -- Modal: Mod Manager
+    MODAL_TOOLS         = 14, -- Modal: External App/Command launcher
     MAX
 }
 

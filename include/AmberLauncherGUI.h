@@ -1,6 +1,8 @@
 #ifndef __AMBER_LAUNCHER_GUI_H
 #define __AMBER_LAUNCHER_GUI_H
 
+#include "core/appcore.h"
+#include "core/common.h"
 #include "gui/gui.hxx"
 #include <core/core.hxx>
 #include <nappgui.h>
@@ -19,6 +21,7 @@ struct SObserver;
 #define APP_MAX_ELEMENTS    8
 #define APP_MAX_LOCALES     8
 #define MAX_OPT_ELEMS       32
+#define MAX_TOOL_ELEMS      16
 
 /******************************************************************************
  * ENUMS
@@ -70,12 +73,15 @@ typedef enum
     UIEVENT_MAIN,
     UIEVENT_PLAY,
     UIEVENT_AUTOCONFIG,
+    UIEVENT_MODAL_CLOSE,
     UIEVENT_MODAL_MESSAGE,
     UIEVENT_MODAL_QUESTION,
     UIEVENT_MODAL_GAMENOTFOUND,
     UIEVENT_MODAL_TWEAKER,
     UIEVENT_MODAL_LOCALISATION,
     UIEVENT_MODAL_OPTIONS,
+    UIEVENT_MODAL_MODS,
+    UIEVENT_MODAL_TOOLS,
     UIEVENT_MAX
 } EUIEventType;
 
@@ -105,6 +111,16 @@ typedef struct GUIOptElement
     unsigned int    dNumOfOptions;
     unsigned int    dChoice;
 } GUIOptElement;
+
+typedef struct
+{
+    uint32_t dID;
+    SVar    tLuaRef;
+    String  *pIcon;
+    String  *pTitle;
+    String  *pDescription;
+    AppCore *pAppCore;
+} GUIToolElement;
 
 typedef struct
 {
@@ -150,6 +166,7 @@ typedef struct
     unsigned int    dPageMax;
 
     GUIOptElement   *pOptElementArray;
+    GUIToolElement  *pToolElementArray;
 
     LangInfo        tLocale[APP_MAX_LOCALES];
     unsigned int    dLocaleCount;
@@ -300,6 +317,16 @@ Panel_GetModalLocalisation(AppGUI *pApp);
 extern Panel*
 Panel_GetModalOptions(AppGUI* pApp);
 
+/**
+ * @relatedalso Panel
+ * @brief       Shows tools window (custom scripts, external apps, etc)
+ *
+ * @param       pApp
+ * @return      Panel*
+ */
+extern Panel*
+Panel_GetModalTools(AppGUI* pApp);
+
 /******************************************************************************
  * HEADER CALLBACK DECLARATIONS
  ******************************************************************************/
@@ -413,6 +440,16 @@ Callback_OnDrawLocalisation(AppGUI* pApp, Event *e);
  */
 extern void
 Callback_OnButtonModalOptions(AppGUI* pApp, Event *e);
+
+/**
+ * @relatedalso Callback
+ * @brief       Generic callback for processing external commands in tools modal window
+ *
+ * @param       pApp
+ * @param       e
+ */
+extern void
+Callback_OnButtonModalTools(AppGUI* pApp, Event *e);
 
 /**
  * @relatedalso Async

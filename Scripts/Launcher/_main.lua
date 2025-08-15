@@ -169,11 +169,18 @@ end
 --- @return bool    -Proceed with built in button processing on success
 function OnSidebuttonClick(buttonID)
 
+    local retVal = true
     if (buttonID == UISIDEBUTTON.SETTINGS) then
         ModalShowOptions()
-        return false
+        retVal = false
+    elseif (buttonID == UISIDEBUTTON.MODS) then
+        AL.UICall(UIEVENT.MODAL_MODS)
+        retVal = false
+    elseif (buttonID == UISIDEBUTTON.TOOLS) then
+        ModalShowTools()
+        retVal = false
     end
 
     print("Sidebutton clicked: "..UISIDEBUTTON_NAMES[buttonID])
-    return true
+    return retVal
 end
