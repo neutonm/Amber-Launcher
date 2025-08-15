@@ -317,6 +317,30 @@ SLuaState_ExecuteCode(SLuaState* pLuaState, const char *sCode)
     return CTRUE;
 }
 
+CAPI CBOOL
+SLuaState_ExecuteLuaFunction(SLuaState *pLuaState, unsigned int dLuaRef)
+{
+    lua_State *L = pLuaState->pState;
+    lua_rawgeti(L, LUA_REGISTRYINDEX, dLuaRef);
+
+    if (!lua_isfunction(L, -1))
+    {
+        lua_pop(L, 1);
+        fprintf(stderr, "Error: SLuaState_ExecuteLuaFunction requested to execute non-function #%u\n", dLuaRef);
+        return CFALSE;
+    }
+
+    if (lua_pcall(L, 0, 0, 0) != LUA_OK)
+    {
+        const char* sErrorMsg = lua_tostring(L, -1);
+        fprintf(stderr, "Error executing Lua function '#%u': %s\n", dLuaRef, sErrorMsg);
+        lua_pop(L, 1);
+        return CFALSE;
+    }
+
+    return CTRUE;
+}
+
 CAPI CBOOL 
 SLuaState_LoadScript(SLuaState* pLuaState, const char* sScriptPath) 
 {

@@ -37,6 +37,9 @@ AmberLauncher_ExecuteLua(struct AppCore *pApp, const char *sCommand);
 extern CAPI CBOOL
 AmberLauncher_ProcessUISideButton(struct AppCore *pApp, unsigned int dButtonTag);
 
+extern CAPI CBOOL
+AmberLauncher_ExecuteSVarLuaFunction(struct AppCore *pApp, const SVar *pVar);
+
 __END_C
 
 #endif

@@ -660,6 +660,8 @@ AmberLauncher_ProcessUISideButton(AppCore *pApp, unsigned int dButtonTag)
     SVar tVarButtonTag;
     SVar tVarRet;
 
+    assert(IS_VALID(pApp));
+
     SVAR_UINT32(tVarButtonTag, dButtonTag);
     SLuaState_CallReferencedFunctionArgs(
         pApp->pLuaState,
@@ -675,5 +677,24 @@ AmberLauncher_ProcessUISideButton(AppCore *pApp, unsigned int dButtonTag)
     }
 
     return SVAR_GET_BOOL(tVarRet);
+}
+
+CAPI CBOOL
+AmberLauncher_ExecuteSVarLuaFunction(struct AppCore *pApp, const SVar *pVar)
+{
+    assert(IS_VALID(pApp));
+    assert(IS_VALID(pVar));
+
+    if (!SVAR_IS_LUAREF(*pVar))
+    {
+        return CFALSE;
+    }
+
+    if (!SLuaState_ExecuteLuaFunction(pApp->pLuaState, SVAR_GET_LUAREF(*pVar)))
+    {
+        return CFALSE;
+    }
+
+    return CTRUE;
 }
 

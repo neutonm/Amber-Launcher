@@ -121,6 +121,16 @@ SLuaState_ExecuteCode(SLuaState* pLuaState, const char *sCode);
 
 /**
  * @relatedalso     SLuaState
+ * @brief           Executes Lua function (LuaRef)
+ *
+ * @param           pLuaState
+ * @param           dLuaRef
+ */
+extern CAPI CBOOL
+SLuaState_ExecuteLuaFunction(SLuaState* pLuaState, unsigned int dLuaRef);
+
+/**
+ * @relatedalso     SLuaState
  * @brief           Loads and Executes Lua Script
  * 
  * @param           pLuaState 
