@@ -21,6 +21,13 @@
 #endif
 
 /******************************************************************************
+ * VARIABLES
+ ******************************************************************************/
+
+/* Reference to traceback function */
+static int dTracebackFunc;
+
+/******************************************************************************
  * MACROS
  ******************************************************************************/
 
@@ -34,6 +41,9 @@
 /******************************************************************************
  * STATIC FUNCTION DECLARATION
  ******************************************************************************/
+static int
+_LuaTraceback(lua_State *L);
+
 static void
 _LoadAllLuaScripts(lua_State* L, const char* folder_path);
 
@@ -76,6 +86,10 @@ SLuaState_new(void)
     pLuaState->sScriptNameMain      = "_main";
     luaL_openlibs(pLuaState->pState);
 
+    /* Traceback */
+    lua_pushcfunction(pLuaState->pState, _LuaTraceback);
+    dTracebackFunc = lua_gettop(pLuaState->pState);
+
     SVector_Init(
         &pLuaState->tRefFunctions, sizeof(SLuaFunctionRef));
         
@@ -97,7 +111,9 @@ SLuaState_delete(SLuaState** pLuaState)
         );
         return CFALSE;
     }
-    
+
+    lua_remove((*pLuaState)->pState, dTracebackFunc);
+
     lua_close((*pLuaState)->pState);
     (*pLuaState)->pState = NULL;
     
@@ -330,7 +346,7 @@ SLuaState_ExecuteLuaFunction(SLuaState *pLuaState, unsigned int dLuaRef)
         return CFALSE;
     }
 
-    if (lua_pcall(L, 0, 0, 0) != LUA_OK)
+    if (lua_pcall(L, 0, 0, dTracebackFunc) != LUA_OK)
     {
         const char* sErrorMsg = lua_tostring(L, -1);
         fprintf(stderr, "Error executing Lua function '#%u': %s\n", dLuaRef, sErrorMsg);
@@ -391,7 +407,7 @@ SLuaState_LoadScript(SLuaState* pLuaState, const char* sScriptPath)
         return CFALSE;
     }
 
-    iLuaRetValue = lua_pcall(pLuaState->pState, 0, LUA_MULTRET, 0);
+    iLuaRetValue = lua_pcall(pLuaState->pState, 0, LUA_MULTRET, dTracebackFunc);
     if (iLuaRetValue != LUA_OK) 
     {
         const char* sLuaMessage = lua_tostring(pLuaState->pState, -1);
@@ -461,7 +477,7 @@ SLuaState_CallReferencedFunctionArgs(
         SLuaState_PushVariable(pLuaState, &pArgs[i]);
     }
 
-    if (lua_pcall(pLuaState->pState, (int)dNumArgs, IS_VALID(pRetOut) ? 1 : 0, 0) != LUA_OK) 
+    if (lua_pcall(pLuaState->pState, (int)dNumArgs, IS_VALID(pRetOut) ? 1 : 0, dTracebackFunc) != LUA_OK) 
     {
         const char *sErrorMessage = lua_tostring(pLuaState->pState, -1);
 
@@ -470,7 +486,8 @@ SLuaState_CallReferencedFunctionArgs(
             stderr, 
             "SLuaState_CallReferencedFunction"
             "(SLuaState* LuaState, ELuaFunctionRefType RefType) -> "
-            "Error calling function: %s\n",
+            "Error calling function %s\n",
+
             sErrorMessage
         );
 
@@ -527,7 +544,7 @@ SLuaState_CallEventArgs(SLuaState* pLuaState, const char* sEventName, const SVar
     }
 
     /* Execute function */
-    if (lua_pcall(L, (int)dNumArgs, 0, 0) != LUA_OK)
+    if (lua_pcall(L, (int)dNumArgs, 0, dTracebackFunc) != LUA_OK)
     {
         fprintf
         (
@@ -612,7 +629,6 @@ SLuaState_PushVariable(SLuaState* pLuaState, const SVar *pVar)
                 }
             }
             break;
-        case CTYPE_NULL:
         default:
             lua_pushnil(L);
             break;
@@ -690,7 +706,7 @@ SCommand_ExecuteLuaBasedCommand(
         lua_pushstring(L, pArg->uData.sValue);
     }
     
-    if (lua_pcall(L, pSelf->dNumArgs, 0, 0) != LUA_OK) 
+    if (lua_pcall(L, pSelf->dNumArgs, 0, dTracebackFunc) != LUA_OK)
     {
         const char* error_msg = lua_tostring(L, -1);
         fprintf(stderr, "Error executing Lua command '%s': %s\n", pSelf->sName, error_msg);
@@ -701,6 +717,20 @@ SCommand_ExecuteLuaBasedCommand(
 /******************************************************************************
  * STATIC FUNCTION DEFINITIONS
  ******************************************************************************/
+
+static int
+_LuaTraceback(lua_State *L)
+{
+    const char *sMsg = lua_tostring(L, 1);
+    if (sMsg == NULL)
+    {
+        if (luaL_callmeta(L, 1, "__tostring") && lua_type(L, -1) == LUA_TSTRING)
+            return 1;
+    }
+
+    luaL_traceback(L, L, sMsg, 1);
+    return 1;
+}
 
 static void
 _LoadAllLuaScripts(lua_State* L, const char* folder_path)
