@@ -30,17 +30,25 @@ setmetatable(events, {
 
 --- Dump helper function
 --- @param o any
-function dump(o)
-    if type(o) == 'table' then
-       local s = '{ '
-       for k,v in pairs(o) do
-          if type(k) ~= 'number' then k = '"'..k..'"' end
-          s = s .. '\n\t['..k..'] = ' .. dump(v) .. ','
-       end
-       return s .. '\n} '
-    else
-       return tostring(o)
+function dump(value, level)
+
+    level = level or 0
+    local indent      = string.rep('\t', level)
+    local indentInner = string.rep('\t', level + 1)
+
+    if type(value) ~= 'table' then
+        return tostring(value)
     end
+
+    local out = '{\n'
+    for k, v in pairs(value) do
+        local key = (type(k) == 'number') and k or ('"' .. k .. '"')
+        out = out .. indentInner
+                  .. '[' .. key .. '] = '
+                  .. dump(v, level + 1)
+                  .. ',\n'
+    end
+    return out .. indent .. '}'
 end
 
 --- os.sleep for short delays only
