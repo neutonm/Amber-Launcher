@@ -60,6 +60,23 @@ for k, v in pairs(UISIDEBUTTON) do
     UISIDEBUTTON_NAMES[v] = k
 end
 
+MODID = {
+    NULL                = 0,
+    MM7                 = 1,
+    AMBER               = 2,
+    MAX                 = 3
+}
+MODID_NAMES = {
+    [MODID.NULL]        = "null",
+    [MODID.MM7]         = "mm7",
+    [MODID.AMBER]       = "amber",
+}
+
+MODID_TITLE = {
+    [MODID.NULL]        = "(null)",
+    [MODID.MM7]         = "Might & Magic 7",
+    [MODID.AMBER]       = "Amber Island",
+}
 
 -- Variables
 OS_NAME                 = OS_NAME or "Unknown"
@@ -70,6 +87,7 @@ GAME_FOLDER_NAME        = GAME_FOLDER_NAME or {
 GAME_EXECUTABLE_FOLDERS = GAME_EXECUTABLE_FOLDERS or {}
 GAME_BASE_PATHS         = GAME_BASE_PATHS or {}
 GAME_EXECUTABLE_NAME    = GAME_EXECUTABLE_NAME or "mm7.exe"
+GAME_MOD_ID             = MODID.AMBER
 
 -- OS Specific variables
 OS_NAME = os.name()
