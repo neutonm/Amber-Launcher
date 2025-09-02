@@ -241,6 +241,14 @@ typedef struct SVarTable {
         (v).uData._int = luaL_ref((L), LUA_REGISTRYINDEX);  \
     } while (0)
 
+#define SVAR_LUATABLE(v, ptr)                    \
+    do {                                            \
+        (v).eType       = CTYPE_LUATABLE;           \
+        (v).dFlags      = 0;                        \
+        (v).dSize       = sizeof(void*);            \
+        (v).uData._void = (ptr);                \
+    } while (0)
+
 /* Fixed‑width aliases */
 #define SVAR_INT8(v,x)              SVAR_CHAR((v),(x))
 #define SVAR_UINT8(v,x)             SVAR_UCHAR((v),(x))
@@ -371,6 +379,9 @@ typedef struct SVarKeyBundle
         (b).tKeys[(b).dCount].sKey = (k);                                   \
         ++(b).dCount;                                                       \
     } while (0)
+
+#define SVARKEYB_LUATABLE(b, key, ptr)                                      \
+    SVARKEYB_PUSH(b, key, SVAR_LUATABLE, ptr)
 
 /******************************************************************************
  * COMMON PREPROCESSOR FUNCTIONALITY

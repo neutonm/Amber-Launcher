@@ -24,6 +24,9 @@ TXT_BTN_CONTINUE        Continue
 TXT_BTN_NEXT            Next
 TXT_BTN_PREVIOUS        Previous
 
+/* Extra labels */
+TXT_LABEL_MODS          Mods:
+
 /* Tooltips */
 TXT_TOOLTIP_GAME        Game
 TXT_TOOLTIP_SETTINGS    Settings

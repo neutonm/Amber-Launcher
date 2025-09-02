@@ -22,6 +22,7 @@ struct SObserver;
 #define APP_MAX_LOCALES     8
 #define MAX_OPT_ELEMS       32
 #define MAX_TOOL_ELEMS      16
+#define MAX_MOD_ELEMS       32
 
 /******************************************************************************
  * ENUMS
@@ -124,6 +125,23 @@ typedef struct
 
 typedef struct
 {
+    String  *pID;
+    String  *pName;
+    String  *pAuthor;
+    String  *pDescription;
+    String  *pVersion;
+    String  *pWebsite;
+    String  *pRoot;
+    String  *pGame;
+    String  *pScreenshot;
+    bool_t   bActive;
+    const SVar *pOnInstall;
+    const SVar *pOnUninstall;
+    SVarTable *pOptions;
+} GUIModElement;
+
+typedef struct
+{
     String          *pStringTweakerInfo;
     String          *pStringTag;
     String          *pStringImageTitle[APP_MAX_ELEMENTS];
@@ -148,13 +166,17 @@ typedef struct
 {
     struct AppCore  *pAppCore;
     GUIDebugData    *pDebugData;
+
     Window          *pWindow;
     Window          *pWindowModal;
     Panel           *pPanelMain;
     Panel           *pPanelModal;
+
+    /* GUI elements used either in main or modal window */
     Edit            *pEdit;
     TextView        *pTextView;
     ImageView       *pImageView;
+    ListBox         *pListBox;
     Layout          *pLayoutMain;
     Layout          *pLayoutWindow;
     Layout          *pLayoutModalMain;
@@ -167,6 +189,7 @@ typedef struct
 
     GUIOptElement   *pOptElementArray;
     GUIToolElement  *pToolElementArray;
+    GUIModElement   *pModElementArray;
 
     LangInfo        tLocale[APP_MAX_LOCALES];
     unsigned int    dLocaleCount;
@@ -316,6 +339,16 @@ Panel_GetModalLocalisation(AppGUI *pApp);
  */
 extern Panel*
 Panel_GetModalOptions(AppGUI* pApp);
+
+/**
+ * @relatedalso Panel
+ * @brief       Shows mod manager window (game related)
+ *
+ * @param       pApp
+ * @return      Panel*
+ */
+extern Panel*
+Panel_GetModalModManager(AppGUI* pApp);
 
 /**
  * @relatedalso Panel

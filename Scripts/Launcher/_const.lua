@@ -125,9 +125,11 @@ elseif OS_NAME == "Linux" then
         homePath.."/Games/Heroic/",
         homePath.."/Games/",
     }
-else
-    OS_FILE_SEPARATOR = '/'
 end
+
+-- Mods
+MOD_ROOT_FOLDER = (GAME_DESTINATION_FOLDER .. OS_FILE_SEPARATOR ..
+                table.concat({ "Data", "Launcher", "Mods" }, OS_FILE_SEPARATOR))
 
 -- Common files
 INI_PATH_MM7            = GAME_DESTINATION_FOLDER..OS_FILE_SEPARATOR.."mm7.ini"

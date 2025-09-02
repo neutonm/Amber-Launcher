@@ -182,7 +182,7 @@ function OnSidebuttonClick(buttonID)
         ModalShowOptions()
         retVal = false
     elseif (buttonID == UISIDEBUTTON.MODS) then
-        AL.UICall(UIEVENT.MODAL_MODS)
+        ModalShowModManager()
         retVal = false
     elseif (buttonID == UISIDEBUTTON.TOOLS) then
         ModalShowTools()
