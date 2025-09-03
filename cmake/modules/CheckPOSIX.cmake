@@ -4,8 +4,6 @@ cmake_minimum_required(VERSION 3.10)
 # Module:       CheckPOSIX
 # Description:  Check for POSIX compliance
 # ------------------------------------------------------------------------------
-project(CheckPOSIX C)
-
 include(CheckIncludeFile)
 include(CheckSymbolExists)
 include(CheckCSourceCompiles)

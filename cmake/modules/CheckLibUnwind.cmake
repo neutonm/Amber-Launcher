@@ -4,9 +4,6 @@ cmake_minimum_required(VERSION 3.10)
 # Module:       CheckLibUnwind
 # Description:  Check for libunwind - backtrace library
 # ------------------------------------------------------------------------------
-
-project(CheckPOSIX)
-
 include(CheckIncludeFile)
 include(CheckSymbolExists)
 

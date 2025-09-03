@@ -250,6 +250,18 @@ if(OPTION_BUILD_TESTS)
 endif()
 
 # ------------------------------------------------------------------------------
+# Installation preparation
+# ------------------------------------------------------------------------------
+include(GNUInstallDirs)
+
+install(TARGETS AmberLauncher
+        RUNTIME DESTINATION .)
+
+# Extra folders
+install(DIRECTORY ${CMAKE_SOURCE_DIR}/Data     DESTINATION .)
+install(DIRECTORY ${CMAKE_SOURCE_DIR}/Scripts  DESTINATION .)
+
+# ------------------------------------------------------------------------------
 # Automated Build Version
 # ------------------------------------------------------------------------------
 set(VERSION_FILE "${PROJECT_SOURCE_DIR}/include/version.h")
@@ -286,3 +298,27 @@ add_custom_command(TARGET AmberLauncher
 #                       USES_TERMINAL COMMAND_EXPAND_LISTS
 #         )
 #endif()
+
+# ------------------------------------------------------------------------------
+# Packaging with CPack
+# ------------------------------------------------------------------------------
+set(CPACK_ARCHIVE_ZIP_FILE_NAME      "AmberLauncher_${PROJECT_VERSION}_win64")
+set(CPACK_ARCHIVE_TGZ_FILE_NAME      "AmberLauncher_${PROJECT_VERSION}_linux")
+set(CPACK_NSIS_PACKAGE_NAME          "AmberLauncher-Setup")
+set(CPACK_PACKAGE_NAME               "${PROJECT_NAME}")
+set(CPACK_PACKAGE_VERSION            "${PROJECT_VERSION}")
+set(CPACK_PACKAGE_VENDOR             "Henrik Chukhran")
+set(CPACK_PACKAGE_CONTACT            "dev@mightandmagicmod.com")
+
+# generators per-platform
+if(WIN32)
+    set(CPACK_GENERATOR "ZIP;NSIS")
+    set(CPACK_PACKAGE_INSTALL_DIRECTORY "${PROJECT_NAME} ${PROJECT_VERSION}")
+else()
+    set(CPACK_GENERATOR "TGZ")
+endif()
+
+set(CPACK_RESOURCE_FILE_LICENSE      "${CMAKE_SOURCE_DIR}/LICENSE")
+set(CPACK_RESOURCE_FILE_README       "${CMAKE_SOURCE_DIR}/README.md")
+
+include(CPack)

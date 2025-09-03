@@ -13,10 +13,6 @@ Table Of Contents:
 - [GUI Library](#gui-library)
 - [Lua Scripts](#lua-scripts)
 
-> Next: David's Sprites
-> - cut into variants: none, swamp trees only, everything
-> - check SFT and adjust variables from original one to new one (there are collision marks in amberisland)
-> - david's stuff must be applied through: config wizard (tweaker) and options modal window (mod list)
 > Next:     Auto-Updater / Downloader
 > The END
 
@@ -25,10 +21,9 @@ Table Of Contents:
 
 - [X] Fix memory leaks
 - [ ] Revert/Enable/Disable features for every command
-- [ ] Uninstall Mod feature (should totally revert everything + backup saves)
+- [ ] Uninstall Game/Mod feature (should totally revert everything + backup saves)
 - [ ] App and scripts must be based on specified game (Amber Island by default)
 - - It's step into the future, providing app usage for multiple mods
-- [ ] Refactor whole number variables - change d to n
 - [ ] Update LICENSE file
 - [ ] Write code style document
 - [ ] Clang format
@@ -36,7 +31,7 @@ Table Of Contents:
 - [ ] Separate Scripting language (cmake)
 - [x] tools folder for auxilary bash/python scripts
 - [x] video conversion script (for tweak previews)
-- [ ] add cpack (cmake): pack release into "distr" folder
+- [x] add cpack (cmake): pack release into "distr" folder
 - [ ] SVar: should rather utilize #define _SVAR_GET_WHATEVER(v) and then #define SVAR_GET_WHATEVER(v) _SVAR_GET_WHATEVER(v) rather than wrap everything in do-while loop
 
 ## Core Library
@@ -57,6 +52,7 @@ Table Of Contents:
 ## GUI Library 
 *NAPPGUI user interface library that wraps Core Library calls.* 
 
+- [ ] Mod Manager: options for mods are implemented, but there's no GUI widgets to tweak it
 - [ ] String operations that re-create themselves should rely on "str_upd()"
 - [x] Autoconfigure should handle failed state
 - [x] Figure out how to show file browser (required for non-found game)
