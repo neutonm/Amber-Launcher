@@ -1425,6 +1425,8 @@ _Panel_GetModalToolsSubpanel(AppGUI *pApp)
 
         /* Layout: Main */
         layout_layout(pLayoutMain, pLayoutCell, 0, i);
+
+        image_destroy(&pImageIco);
     }
 
     /* Panel: Main */
@@ -2685,6 +2687,8 @@ _Callback_UIEvent(
                 size_t         dElemCount;
                 size_t         dSection;
                 int            dModalRetVal;
+                unsigned int   i;
+                unsigned int   j;
 
                 /* pre-checks + init */
                 cassert_no_null(pUserData);
@@ -2693,6 +2697,18 @@ _Callback_UIEvent(
 
                 pRootTable  = (SVarTable *)SVAR_GET_LUATABLE(pUserData[0]);
                 dElemCount  = 0U;
+
+                for (i = 0; i < MAX_OPT_ELEMS; ++i)
+                {
+                    GUIOptElement *pElem = &pApp->pOptElementArray[i];
+
+                    str_destopt(&pElem->pKeyID);
+                    str_destopt(&pElem->pOutputString);
+                    str_destopt(&pElem->pTitle);
+
+                    for (j = 0; j < APP_MAX_ELEMENTS; ++j)
+                        str_destopt(&pElem->pOptTitle[j]);
+                }
                 memset(pApp->pOptElementArray, 0, sizeof(GUIOptElement) * MAX_OPT_ELEMS);
 
                 /* root table */
@@ -3118,23 +3134,29 @@ _Callback_UIEvent(
 
         case UIEVENT_MODAL_TOOLS:
             {
-                /* ---- Lua field keys ---- */
                 static const char *sKeyID       = "id";
                 static const char *sKeyIcon     = "iconPath";
                 static const char *sKeyTitle    = "title";
                 static const char *sKeyDesc     = "description";
                 static const char *sKeyOnClick  = "onClick";
                 unsigned int dToolCount         = 0U;
+                unsigned int m;
 
-                /* ---- sanity checks ---- */
                 cassert_no_null(pUserData);
                 assert(dNumArgs == 1);
                 assert(pUserData[0].eType == CTYPE_LUATABLE);
 
-                /* ---- clear old data ---- */
+                for (m = 0; m < MAX_TOOL_ELEMS; ++m)
+                {
+                    GUIToolElement *pElem = &pApp->pToolElementArray[m];
+
+                    str_destopt(&pElem->pIcon);
+                    str_destopt(&pElem->pTitle);
+                    str_destopt(&pElem->pDescription);
+                }
                 memset(pApp->pToolElementArray, 0, sizeof(GUIToolElement) * MAX_TOOL_ELEMS);
 
-                /* ---- parse Lua table ---- */
+                /* parse Lua table */
                 {
                     SVarTable *pRoot;
                     size_t     i;
