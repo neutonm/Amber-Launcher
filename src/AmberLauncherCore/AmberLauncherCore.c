@@ -79,7 +79,7 @@ _SCommand_Callback_LuaCall(const SCommand* pSelf, const SCommandArg* pArgs, cons
     struct lua_State *L = NULL;
     CBOOL bResult       = CFALSE;
 
-    assert(dNumArgs == 1);
+    UNUSED(dNumArgs);
 
     if (IS_VALID(pArgs) && pArgs->eType == CTYPE_VOID)
     {

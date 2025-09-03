@@ -800,17 +800,12 @@ _Panel_TweakerButtons(AppGUI *pApp)
 Panel*
 Panel_GetModalTweaker(AppGUI *pApp)
 {
-    const GUITweaker* pTweaker;
     Panel       *pPanelMain         = panel_create();
     Panel       *pPanelDescription  = _Panel_TweakerDescription(pApp);
     Panel       *pPanelSelector     = _Panel_TweakerOptionsSelector(pApp);
     Panel       *pPanelImage        = Panel_GetImageDemo(pApp);
     Panel       *pPanelButtons      = _Panel_TweakerButtons(pApp);
     Layout      *pLayoutMain        = layout_create(1,5);
-
-    pTweaker                = &pApp->tGUITweaker[pApp->dPage];
-    pApp->pLayoutModalMain  = pLayoutMain;
-    assert(IS_VALID(pTweaker));
 
     /* Layout: Main */
     /* layout_hsize(pLayoutMain, 0, TITLE_PNG_W);

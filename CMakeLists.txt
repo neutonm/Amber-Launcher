@@ -6,7 +6,6 @@ cmake_minimum_required(VERSION 3.14)
 project(AmberLauncher
     VERSION 1.0
     DESCRIPTION "Amber Island Launcher"
-    LANGUAGES C
 )
 
 # ------------------------------------------------------------------------------
