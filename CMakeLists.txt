@@ -123,6 +123,7 @@ file(GLOB_RECURSE SRC_FILES "${CMAKE_SOURCE_DIR}/src/AmberLauncherCore/*.c")
 # ------------------------------------------------------------------------------
 add_library(AmberLauncher ${SRC_FILES})
 nap_project_desktop_app(AmberLauncherGUI src/AmberLauncherGUI)
+nap_link_inet(AmberLauncherGUI)
 
 # ------------------------------------------------------------------------------
 # Include Directories

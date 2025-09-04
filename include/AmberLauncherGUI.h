@@ -4,6 +4,7 @@
 #include "core/appcore.h"
 #include "core/common.h"
 #include "gui/gui.hxx"
+#include <bits/stdint-intn.h>
 #include <core/core.hxx>
 #include <nappgui.h>
 
@@ -209,6 +210,18 @@ typedef struct GUIAsyncTaskData
     FPanelFlags dPanelFlags;
 } GUIAsyncTaskData;
 
+/* Json names must coincide with names of C struct */
+typedef struct _InetUpdaterLauncherData
+{
+    int32_t build;
+} InetUpdaterLauncherData;
+
+typedef struct _InetUpdaterJSONData
+{
+    InetUpdaterLauncherData *launcher;
+} InetUpdaterJSONData;
+
+DeclSt(InetUpdaterLauncherData);
 
 /******************************************************************************
  * HEADER DECLARATIONS
@@ -359,6 +372,22 @@ Panel_GetModalModManager(AppGUI* pApp);
  */
 extern Panel*
 Panel_GetModalTools(AppGUI* pApp);
+
+/**
+ * @relatedalso Internet
+ * @brief       Initialises amber laucnher related inet data
+ */
+extern void
+AutoUpdate_Init(void);
+
+/**
+ * @relatedalso Internet
+ * @brief       Checks for update
+ *
+ * @return      bool_t TRUE if update is avaliable
+ */
+extern bool_t
+AutoUpdate_CheckForUpdates(void);
 
 /******************************************************************************
  * HEADER CALLBACK DECLARATIONS

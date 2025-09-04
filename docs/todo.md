@@ -14,6 +14,22 @@ Table Of Contents:
 - [Lua Scripts](#lua-scripts)
 
 > Next:     Auto-Updater / Downloader
+> - Auto Update GUI modal window + script
+> - download manifest, check versions and approve for update
+> - download full launcher files (executable, archives, images, etc)
+> - download unpacked mod files, rewrite if needed (git-style pull)
+> - re-install mods (if they are updated), maybe add "Update" button in mod manager
+> - change button to green (or whatever) to indicate "update is available" notification
+> - possible structure:
+> - - manifest.json
+> - - - launcher version
+> - - - game/mod version
+> - - launcher (contains launcher specific files)
+> - - game (contains vanilla mm7 or grayface files)
+> - - mod (contains mod specific files)
+> - - mods (mods to amber island)
+> - - archives (zip, stuff to download)
+> Mod idea: map icons (teachers, shops, etc)
 > The END
 
 ## Main

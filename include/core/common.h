@@ -5,6 +5,7 @@
 
 #include <core/apidef.h>
 #include <core/stdint.h>
+#include <version.h>
 
 /******************************************************************************
  * CONSTANTS

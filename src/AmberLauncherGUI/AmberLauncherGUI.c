@@ -8,6 +8,10 @@
 #include <AmberLauncherGUI.h>
 #include <AmberLauncherCore.h>
 
+#include <bits/stdint-intn.h>
+#include <inet/inet.h>
+#include <inet/json.h>
+#include <inet/httpreq.h>
 #include <bits/stdint-uintn.h>
 #include <bits/types/error_t.h>
 #include <core/common.h>
@@ -24,6 +28,9 @@
 /******************************************************************************
  * CONSTANTS
  ******************************************************************************/
+
+static const char *
+_sAutoUpdateManifestURL = "https://mightandmagicmod.com/updater/manifest.json";
 
 const char* EUIEventTypeStrings[] = {
     "NULL",
@@ -1461,6 +1468,65 @@ Panel_GetModalTools(AppGUI *pApp)
 }
 
 void
+AutoUpdate_Init(void)
+{
+    dbind(InetUpdaterLauncherData, int32_t, build);
+    dbind(InetUpdaterJSONData, InetUpdaterLauncherData*, launcher);
+}
+
+bool_t
+AutoUpdate_CheckForUpdates(void)
+{
+    uint32_t            dResult;
+    ierror_t            eInetError;
+    bool_t              bUpdateRequired;
+    Stream              *pJsonStream;
+    InetUpdaterJSONData *pJson;
+
+    const int32_t dBuildNumber = str_to_i32(BUILD_NUMBER, 10, NULL);
+
+    pJsonStream = http_dget(
+        _sAutoUpdateManifestURL,
+        &dResult,
+        &eInetError);
+    /* jsonStream = hfile_stream(
+        "/home/nm/Projects/c/AmberLauncher/tools/manifest.json",
+        &dResult);
+    eInetError = ekIOK; */
+
+    if (!pJsonStream)
+    {
+        bstd_printf(
+            "[Auto Updater] Couldn't fetch manifest.json"
+            "\n\tdResult: %d\n\teInetError: %d\n",
+            dResult,
+            eInetError);
+        return FALSE;
+    }
+
+    bstd_printf(
+            "[Auto Updater] Manifest retrieved successfuly:"
+            "\n\tdResult: \t\t%d\n\teInetError: \t\t%d\n",
+            dResult,
+            eInetError);
+
+    {
+        pJson           = json_read(pJsonStream, NULL, InetUpdaterJSONData);
+        bUpdateRequired = dBuildNumber < pJson->launcher->build;
+
+        bstd_printf("\tApp Version: \t\t%d\n", dBuildNumber);
+        bstd_printf("\tNet Version: \t\t%d\n", pJson->launcher->build);
+        bstd_printf("\tUpdate required: \t%s\n", bUpdateRequired ? "true" : "false");
+        bstd_printf("\n");
+
+        json_destroy(&pJson, InetUpdaterJSONData);
+    }
+    stm_close(&pJsonStream);
+
+    return bUpdateRequired;
+}
+
+void
 Callback_OnWindowHotkeyF6(AppGUI* pApp, Event *e)
 {
     _Callback_UIEvent(pApp->pAppCore, UIEVENT_DEBUG, NULL, 0);
@@ -1991,7 +2057,14 @@ _Nappgui_Start(void)
     window_OnClose(pApp->pWindow, listener(pApp, _Callback_OnCloseMainWindow, AppGUI));
     window_show(pApp->pWindow);
 
+    inet_start();
+    AutoUpdate_Init();
     AmberLauncher_Start(pApp->pAppCore);
+
+    {
+        bool_t bUpdateAvailable = AutoUpdate_CheckForUpdates();
+        bstd_printf("Update available: %s\n", bUpdateAvailable ? "true" : "false");
+    }
     
     return pApp;
 }
@@ -2080,6 +2153,7 @@ _Nappgui_End(AppGUI **pApp)
 
     str_destopt(&(*pApp)->pString);
 
+    inet_finish();
     AmberLauncher_End((*pApp)->pAppCore);
     if ((*pApp)->pWindowModal)
     {
