@@ -10,6 +10,7 @@ local _ToolsTable = {
     {
         id          = TOOLENUM.AUTOCONFIG,
         iconPath    = "Data/Launcher/tool-autoconfig.png",
+        iconDarkPath= "Data/Launcher/tool-autoconfig_dark.png",
         title       = "Autoconfig",
         description = "Re-launches the automatic configuration wizard, letting you fine-tune performance, graphics, and gameplay settings in one guided flow.",
         onClick     = function()

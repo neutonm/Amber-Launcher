@@ -120,6 +120,7 @@ typedef struct
     uint32_t dID;
     SVar    tLuaRef;
     String  *pIcon;
+    String  *pIconDark;
     String  *pTitle;
     String  *pDescription;
     AppCore *pAppCore;

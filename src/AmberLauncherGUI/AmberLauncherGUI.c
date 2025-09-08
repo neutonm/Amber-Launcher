@@ -1365,6 +1365,7 @@ _Panel_GetModalToolsSubpanel(AppGUI *pApp)
     for(i = 0; i < MAX_TOOL_ELEMS; i ++)
     {
         Image       *pImageIco;
+        Image       *pImageIcoDark;
         ImageView   *pImageViewIco;
         Button      *pButtonLaunch;
         Label       *pLabelTitle;
@@ -1395,12 +1396,15 @@ _Panel_GetModalToolsSubpanel(AppGUI *pApp)
         /* Image */
         pImageIco = image_from_file(tc(pElem->pIcon), &eError);
         assert(eError == ekFOK);
+        pImageIcoDark = image_from_file(tc(pElem->pIconDark), &eError);
 
         /* Setup widgets */
-        imageview_image(pImageViewIco, pImageIco);
+        imageview_image(pImageViewIco, gui_dark_mode() ?
+            (eError == ekFOK ? pImageIcoDark : pImageIco) : pImageIco);
         imageview_size(pImageViewIco, s2df(48.f, 48.f));
 
-        button_image(pButtonLaunch, (const Image*)ICO_RUN_PNG);
+        button_image(pButtonLaunch, gui_dark_mode() ? 
+        (const Image*)ICO_RUN_DARK_PNG : (const Image*)ICO_RUN_PNG);
         button_OnClick(
             pButtonLaunch,
             listener(
@@ -1442,6 +1446,10 @@ _Panel_GetModalToolsSubpanel(AppGUI *pApp)
         if (IS_VALID(pImageIco))
         {
             image_destroy(&pImageIco);
+        }
+        if (IS_VALID(pImageIcoDark))
+        {
+            image_destroy(&pImageIcoDark);
         }
     }
 
@@ -2245,33 +2253,49 @@ _Panel_GetRoot(AppGUI *pApp)
     pApp->pLayoutWindow = pLayoutCore;
 
     /* Buttons */
-    button_image(pButtonSettings, (const Image*)ICO_GEAR_PNG);
+    button_image(pButtonSettings, gui_dark_mode() ?
+    (const Image*)ICO_GEAR_DARK_PNG : (const Image*)ICO_GEAR_PNG);
     button_tag(pButtonSettings, CSIDEBUTTON_SETTINGS);
     button_tooltip(pButtonSettings, TXT_TOOLTIP_SETTINGS);
     button_OnClick(pButtonSettings, listener(pApp, _Callback_OnButtonMainWindow, AppGUI) );
 
-    button_image(pButtonMods, (const Image*)ICO_PUZZLE_PNG);
+    button_image(pButtonMods, gui_dark_mode() ?
+        (const Image*)ICO_PUZZLE_DARK_PNG : (const Image*)ICO_PUZZLE_PNG);
     button_tag(pButtonMods, CSIDEBUTTON_MODS);
     button_tooltip(pButtonMods, TXT_TOOLTIP_MODS);
     button_OnClick(pButtonMods, listener(pApp, _Callback_OnButtonMainWindow, AppGUI) );
 
-    button_image(pButtonTools, (const Image*)ICO_WRENCH_PNG);
+    button_image(pButtonTools, gui_dark_mode() ?
+    (const Image*)ICO_WRENCH_DARK_PNG : (const Image*)ICO_WRENCH_PNG);
     button_tag(pButtonTools, CSIDEBUTTON_TOOLS);
     button_tooltip(pButtonTools, TXT_TOOLTIP_TOOLS);
     button_OnClick(pButtonTools, listener(pApp, _Callback_OnButtonMainWindow, AppGUI) );
 
-    button_image(pButtonWebHomepage, (const Image*)ICO_WEB_PNG);
+    button_image(pButtonWebHomepage, gui_dark_mode() ?
+        (const Image*)ICO_WEB_DARK_PNG : (const Image*)ICO_WEB_PNG);
     button_tag(pButtonWebHomepage, CSIDEBUTTON_WEB_HOMEPAGE);
     button_tooltip(pButtonWebHomepage, TXT_TOOLTIP_HOMEPAGE);
     button_OnClick(pButtonWebHomepage, listener(pApp, _Callback_OnButtonMainWindow, AppGUI) );
 
-    button_image(pButtonWebDiscord, (const Image*)ICO_DISCORD_PNG);
+    button_image(pButtonWebDiscord, gui_dark_mode() ?
+        (const Image*)ICO_DISCORD_DARK_PNG : (const Image*)ICO_DISCORD_PNG);
     button_tag(pButtonWebDiscord, CSIDEBUTTON_WEB_DISCORD);
     button_tooltip(pButtonWebDiscord, TXT_TOOLTIP_DISCORD);
     button_OnClick(pButtonWebDiscord, listener(pApp, _Callback_OnButtonMainWindow, AppGUI) );
 
-    button_image(pButtonUpdate, bUpdateAvailable ?
-        (const Image*)ICO_UPDATE_AVAILABLE_PNG : (const Image*)ICO_UPDATE_PNG);
+    if (gui_dark_mode())
+    {
+        button_image(pButtonUpdate, bUpdateAvailable ?
+            (const Image*)ICO_UPDATE_AVAILABLE_DARK_PNG :
+            (const Image*)ICO_UPDATE_DARK_PNG);
+    }
+    else
+    {
+        button_image(pButtonUpdate, bUpdateAvailable ?
+            (const Image*)ICO_UPDATE_AVAILABLE_PNG :
+            (const Image*)ICO_UPDATE_PNG);
+    }
+
     button_tag(pButtonUpdate, CSIDEBUTTON_UPDATE);
     button_tooltip(pButtonUpdate, TXT_TOOLTIP_UPDATE);
     button_OnClick(pButtonUpdate, listener(pApp, _Callback_OnButtonMainWindow, AppGUI) );
@@ -2443,6 +2467,7 @@ _Nappgui_End(AppGUI **pApp)
         GUIToolElement *pElem = &(*pApp)->pToolElementArray[i];
 
         str_destopt(&pElem->pIcon);
+        str_destopt(&pElem->pIconDark);
         str_destopt(&pElem->pTitle);
         str_destopt(&pElem->pDescription);
     }
@@ -3525,6 +3550,7 @@ _Callback_UIEvent(
             {
                 static const char *sKeyID       = "id";
                 static const char *sKeyIcon     = "iconPath";
+                static const char *sKeyIconDark = "iconDarkPath";
                 static const char *sKeyTitle    = "title";
                 static const char *sKeyDesc     = "description";
                 static const char *sKeyOnClick  = "onClick";
@@ -3540,6 +3566,7 @@ _Callback_UIEvent(
                     GUIToolElement *pElem = &pApp->pToolElementArray[m];
 
                     str_destopt(&pElem->pIcon);
+                    str_destopt(&pElem->pIconDark);
                     str_destopt(&pElem->pTitle);
                     str_destopt(&pElem->pDescription);
                 }
@@ -3577,6 +3604,11 @@ _Callback_UIEvent(
                                     pDst->pIcon =
                                         str_c(SVAR_GET_CONSTCHAR(pEntry->pEntries[k].tValue));
                                 }
+                                else if (strcmp(sKey, sKeyIconDark) == 0)
+                                {
+                                    pDst->pIconDark =
+                                        str_c(SVAR_GET_CONSTCHAR(pEntry->pEntries[k].tValue));
+                                }
                                 else if (strcmp(sKey, sKeyTitle) == 0)
                                 {
                                     pDst->pTitle =
@@ -3600,11 +3632,12 @@ _Callback_UIEvent(
                             if (pApp->pTextView)
                             {
                                 textview_printf(pApp->pTextView,
-                                    "Tool %zu: id=%u title='%s' icon='%s' onClick='%d'\n",
+                                    "Tool %zu: id=%u title='%s' icon='%s' iconDark='%s' onClick='%d'\n",
                                     dToolCount,
                                     (unsigned)pDst->dID,
-                                    pDst->pTitle ? tc(pDst->pTitle) : "(null)",
-                                    pDst->pIcon  ? tc(pDst->pIcon)  : "(null)",
+                                    pDst->pTitle    ? tc(pDst->pTitle) : "(null)",
+                                    pDst->pIcon     ? tc(pDst->pIcon)  : "(null)",
+                                    pDst->pIconDark ? tc(pDst->pIconDark)  : "(null)",
                                     SVAR_GET_LUAREF(pDst->tLuaRef));
                             }
 #endif
