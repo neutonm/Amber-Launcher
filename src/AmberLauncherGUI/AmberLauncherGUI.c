@@ -58,10 +58,10 @@ const char* EUIEventTypeStrings[] = {
     NULL
 };
 
-static const int32_t TITLE_PNG_W    = 672;
-static const int32_t TITLE_PNG_H    = 200;
-static const int32_t ICO_PNG_W      = 32;
-static const int32_t ICO_PNG_H      = 32;
+static const real32_t TITLE_PNG_W    = 672;
+static const real32_t TITLE_PNG_H    = 200;
+static const real32_t ICO_PNG_W      = 32;
+static const real32_t ICO_PNG_H      = 32;
 #define MODAL_OPT_NULL      1000
 #define MODAL_OPT_A         1001
 #define MODAL_OPT_B         1002
@@ -1154,7 +1154,7 @@ _Callback_OnLabelModManagerSubpanel(String *pLabelText, Event *e)
     unref(e);
 }
 
-Panel*
+static Panel*
 _Panel_GetModalModManagerSubpanel(AppGUI *pApp, const unsigned int dModIndex)
 {
     Panel       *pPanelMain         = panel_scroll(FALSE,TRUE);
@@ -1606,7 +1606,7 @@ AutoUpdate_CheckForUpdates(AppGUI *pApp)
 
     const SVar tLuaLauncherVersion      = AmberLauncher_GetGlobalVariable(pApp->pAppCore, "LAUNCHER_VERSION");
     const int32_t dLauncherBuild        = str_to_i32(BUILD_NUMBER, 10, NULL);
-    const int32_t dLauncherVersion      = SVAR_IS_DOUBLE(tLuaLauncherVersion) ? SVAR_GET_DOUBLE(tLuaLauncherVersion) : 0;
+    const int32_t dLauncherVersion      = SVAR_IS_DOUBLE(tLuaLauncherVersion) ? (int32_t)SVAR_GET_DOUBLE(tLuaLauncherVersion) : 0;
 
     static const char *sSchemaFmt       = "• Schema: \t\t%s\n";
     static const char *sGeneratedFmt    = "• Generated: \t\t%s\n";
@@ -1943,7 +1943,7 @@ Callback_OnButtonModalTweaker(AppGUI *pApp, Event *e)
         case MODAL_NEXT:
             {
                 const int dStep = (dButtonTag == MODAL_NEXT) ? 1 : -1;
-                pApp->dPage     = bmath_clampd(pApp->dPage + dStep, 0, pApp->dPageMax - 1);
+                pApp->dPage     = (unsigned int)bmath_clampd(pApp->dPage + dStep, 0, pApp->dPageMax - 1);
                 bPageSwitch     = TRUE;
                 break;
             }
@@ -2236,8 +2236,8 @@ _Panel_GetRoot(AppGUI *pApp)
 
     bool_t bUpdateAvailable = AutoUpdate_CheckForUpdates(pApp);
 
-    static const int32_t dButtonIconWidth   = ICO_PNG_W + (ICO_PNG_W / 2);
-    static const int32_t dButtonIconHeight  = ICO_PNG_H + (ICO_PNG_H / 2);
+    static const real32_t dButtonIconWidth   = ICO_PNG_W + (ICO_PNG_W / 2);
+    static const real32_t dButtonIconHeight  = ICO_PNG_H + (ICO_PNG_H / 2);
 
     pApp->pLayoutMain   = pLayoutMain;
     pApp->pLayoutWindow = pLayoutCore;
@@ -2421,58 +2421,46 @@ _Nappgui_End(AppGUI **pApp)
     }
 
     /* Options */
+    for (i = 0; i < MAX_OPT_ELEMS; ++i)
     {
-        unsigned int i, j;
+        GUIOptElement *pElem = &(*pApp)->pOptElementArray[i];
 
-        for (i = 0; i < MAX_OPT_ELEMS; ++i)
-        {
-            GUIOptElement *pElem = &(*pApp)->pOptElementArray[i];
+        str_destopt(&pElem->pKeyID);
+        str_destopt(&pElem->pOutputString);
+        str_destopt(&pElem->pTitle);
 
-            str_destopt(&pElem->pKeyID);
-            str_destopt(&pElem->pOutputString);
-            str_destopt(&pElem->pTitle);
-
-            for (j = 0; j < APP_MAX_ELEMENTS; ++j)
-                str_destopt(&pElem->pOptTitle[j]);
-        }
+        for (j = 0; j < APP_MAX_ELEMENTS; ++j)
+            str_destopt(&pElem->pOptTitle[j]);
     }
     heap_delete_n(&(*pApp)->pOptElementArray, MAX_OPT_ELEMS, GUIOptElement);
     (*pApp)->pOptElementArray = NULL;
 
     /* Tools */
+    for (i = 0; i < MAX_TOOL_ELEMS; ++i)
     {
-        unsigned int i;
+        GUIToolElement *pElem = &(*pApp)->pToolElementArray[i];
 
-        for (i = 0; i < MAX_TOOL_ELEMS; ++i)
-        {
-            GUIToolElement *pElem = &(*pApp)->pToolElementArray[i];
-
-            str_destopt(&pElem->pIcon);
-            str_destopt(&pElem->pTitle);
-            str_destopt(&pElem->pDescription);
-        }
+        str_destopt(&pElem->pIcon);
+        str_destopt(&pElem->pTitle);
+        str_destopt(&pElem->pDescription);
     }
     heap_delete_n(&(*pApp)->pToolElementArray, MAX_TOOL_ELEMS, GUIToolElement);
     (*pApp)->pToolElementArray = NULL;
 
     /* Mods */
+    for (i = 0; i < MAX_MOD_ELEMS; ++i)
     {
-        unsigned int i;
+        GUIModElement *pElem = &(*pApp)->pModElementArray[i];
 
-        for (i = 0; i < MAX_MOD_ELEMS; ++i)
-        {
-            GUIModElement *pElem = &(*pApp)->pModElementArray[i];
-
-            str_destopt(&pElem->pID);
-            str_destopt(&pElem->pName);
-            str_destopt(&pElem->pAuthor);
-            str_destopt(&pElem->pDescription);
-            str_destopt(&pElem->pVersion);
-            str_destopt(&pElem->pWebsite);
-            str_destopt(&pElem->pRoot);
-            str_destopt(&pElem->pGame);
-            str_destopt(&pElem->pScreenshot);
-        }
+        str_destopt(&pElem->pID);
+        str_destopt(&pElem->pName);
+        str_destopt(&pElem->pAuthor);
+        str_destopt(&pElem->pDescription);
+        str_destopt(&pElem->pVersion);
+        str_destopt(&pElem->pWebsite);
+        str_destopt(&pElem->pRoot);
+        str_destopt(&pElem->pGame);
+        str_destopt(&pElem->pScreenshot);
     }
     heap_delete_n(&(*pApp)->pModElementArray, MAX_MOD_ELEMS, GUIModElement);
     (*pApp)->pModElementArray = NULL;
@@ -2920,7 +2908,7 @@ _Callback_UIEvent(
                         }
                     }
 
-                    pApp->tGUITweaker[i].dMaxOptions = dOptionIndex;
+                    pApp->tGUITweaker[i].dMaxOptions = (int)dOptionIndex;
 
                     textview_printf(pApp->pTextView, "Group %zu Info: %s (%zu options)\n",
                                 i + 1,
@@ -2932,7 +2920,7 @@ _Callback_UIEvent(
 
                 /* Set the current page to first group */
                 pApp->dPage     = 0;
-                pApp->dPageMax  = dGroupCount;
+                pApp->dPageMax  = (int)dGroupCount;
                 for(i = 0; i < APP_MAX_ELEMENTS; i++)
                 {
                     pApp->tGUITweaker[i].dSelectedOption    = 0;
@@ -2962,7 +2950,6 @@ _Callback_UIEvent(
                         break;
                     default:
                         {
-                            unsigned int i;
                             const char *sOptName[APP_MAX_ELEMENTS] =
                             {
                                 "opt1",
@@ -3086,7 +3073,6 @@ _Callback_UIEvent(
                 SVarTable     *pRootTable;
                 size_t         dElemCount;
                 size_t         dSection;
-                int            dModalRetVal;
                 unsigned int   i;
                 unsigned int   j;
 

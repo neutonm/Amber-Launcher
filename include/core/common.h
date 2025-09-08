@@ -300,7 +300,6 @@ typedef struct SVarTable {
 #define SVAR_IS_ULLONG(v)         (SVAR_TYPE(v) == CTYPE_UNSIGNED_LONG_LONG)
 #define SVAR_IS_FLOAT(v)          (SVAR_TYPE(v) == CTYPE_FLOAT)
 #define SVAR_IS_DOUBLE(v)         (SVAR_TYPE(v) == CTYPE_DOUBLE)
-#define SVAR_IS_LDOUBLE(v)        (SVAR_TYPE(v) == CTYPE_LONG_DOUBLE)
 #define SVAR_IS_VOID(v)           (SVAR_TYPE(v) == CTYPE_VOID)
 #define SVAR_IS_LUAREF(v)         (SVAR_TYPE(v) == CTYPE_LUAREF)
 #define SVAR_IS_LUATABLE(v)       (SVAR_TYPE(v) == CTYPE_LUATABLE)
