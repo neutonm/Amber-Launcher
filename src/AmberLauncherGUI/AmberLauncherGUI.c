@@ -1439,7 +1439,10 @@ _Panel_GetModalToolsSubpanel(AppGUI *pApp)
         /* Layout: Main */
         layout_layout(pLayoutMain, pLayoutCell, 0, i);
 
-        image_destroy(&pImageIco);
+        if (IS_VALID(pImageIco))
+        {
+            image_destroy(&pImageIco);
+        }
     }
 
     /* Panel: Main */
@@ -1906,7 +1909,7 @@ Callback_OnButtonModalGameNotFound(AppGUI *pApp, Event *e)
         const char *sBrowserPath = comwin_open_file(pApp->pWindowModal, sFileFormat, 1, NULL);
         str_upd(&pApp->pString, sBrowserPath ? sBrowserPath : "");
     }
-    
+
     if (pApp->pEdit)
     {
         edit_text(pApp->pEdit, tc(pApp->pString));
@@ -2150,12 +2153,11 @@ Callback_OnDrawLocalisation(AppGUI *pApp, Event *e)
     draw_clear(pCtx, color_rgb(0, 0, 0));
 
     if (IS_VALID(pImageBG))
+    {
         draw_image(pCtx, pImageBG, 0, 0);
-
-    if (IS_VALID(pImageFG))
         draw_image(pCtx, pImageFG, 0, 0);
-
-    image_destroy(&pImageBG);
+        image_destroy(&pImageBG);
+    }
     image_destroy(&pImageFG);
     unref(pApp);
 }
