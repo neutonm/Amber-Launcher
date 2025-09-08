@@ -187,6 +187,9 @@ function OnSidebuttonClick(buttonID)
     elseif (buttonID == UISIDEBUTTON.TOOLS) then
         ModalShowTools()
         retVal = false
+    elseif (buttonID == UISIDEBUTTON.UPDATE) then
+        AL.UICall(UIEVENT.MODAL_UPDATER)
+        retVal = false
     end
 
     print("Sidebutton clicked: "..UISIDEBUTTON_NAMES[buttonID])

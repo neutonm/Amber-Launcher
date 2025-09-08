@@ -1,10 +1,13 @@
 #include "core/core.hxx"
 #include "core/stdint.h"
+#include "core/hfile.h"
 #include "draw2d/draw2d.hxx"
 #include "draw2d/guictx.hxx"
 #include "ext/miniz.h"
 #include "gui/gui.hxx"
+#include "osbs/osbs.hxx"
 #include "sewer/types.hxx"
+#include "version.h"
 #include <AmberLauncherGUI.h>
 #include <AmberLauncherCore.h>
 
@@ -23,11 +26,15 @@
 #include <assert.h>
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 /******************************************************************************
  * CONSTANTS
  ******************************************************************************/
+
+static const char *
+_sAutoUpdateRemoteRootURL = "https://mightandmagicmod.com/updater/";
 
 static const char *
 _sAutoUpdateManifestURL = "https://mightandmagicmod.com/updater/manifest.json";
@@ -47,6 +54,7 @@ const char* EUIEventTypeStrings[] = {
     "MODAL_OPTIONS",
     "MODAL_MODS",
     "MODAL_TOOLS",
+    "MODAL_UPDATER",
     NULL
 };
 
@@ -54,15 +62,16 @@ static const int32_t TITLE_PNG_W    = 672;
 static const int32_t TITLE_PNG_H    = 200;
 static const int32_t ICO_PNG_W      = 32;
 static const int32_t ICO_PNG_H      = 32;
-#define MODAL_OPT_NULL  1000
-#define MODAL_OPT_A     1001
-#define MODAL_OPT_B     1002
-#define MODAL_OPT_MAX   1030
-#define MODAL_CANCEL    1031
-#define MODAL_ACCEPT    1032
-#define MODAL_BROWSE    1033
-#define MODAL_PREVIOUS  1034
-#define MODAL_NEXT      1035
+#define MODAL_OPT_NULL      1000
+#define MODAL_OPT_A         1001
+#define MODAL_OPT_B         1002
+#define MODAL_OPT_MAX       1030
+#define MODAL_CANCEL        1031
+#define MODAL_ACCEPT        1032
+#define MODAL_BROWSE        1033
+#define MODAL_PREVIOUS      1034
+#define MODAL_NEXT          1035
+#define MODAL_UPDATE_APP    1036
 
 /******************************************************************************
  * STATIC DECLARATIONS
@@ -1467,15 +1476,127 @@ Panel_GetModalTools(AppGUI *pApp)
     return pPanelMain;
 }
 
+static Panel*
+_Panel_GetModalUpdaterSubpanel(AppGUI *pApp)
+{
+    Panel    *pPanelMain           = panel_create();
+    Layout   *pLayoutMain          = layout_create(1,3);
+    Layout   *pLayoutText          = layout_create(1,3);
+    Layout   *pLayoutTextView      = layout_create(1,1);
+    Layout   *pLayoutProgressbar   = layout_create(1,1);
+    Label    *pLabelTitle          = label_create();
+    Label    *pLabelInfo           = label_create();
+    TextView *pTextView            = textview_create();
+    Progress *pProgressbar         = progress_create();
+
+    /* Labels */
+    label_text(pLabelTitle, TXT_LABEL_UPDATER_TITLE);
+    label_text(pLabelInfo, TXT_UPDATERINFO);
+
+    /* Text View: Log */
+    pApp->pTextView = pTextView;
+    textview_size(pTextView, s2df(480, 128));
+
+    /* Progress: Download */
+    progress_value(pProgressbar, 0.32f);
+
+    /* Layout: Text */
+    layout_label(pLayoutText,pLabelTitle, 0, 0);
+    layout_label(pLayoutText,pLabelInfo, 0, 2);
+
+    /* Layout: Text View */
+    layout_textview(pLayoutTextView, pTextView, 0, 0);
+
+    /* Layout: Progressbar */
+    layout_progress(pLayoutProgressbar, pProgressbar, 0, 0);
+
+    /* Layout: Main */
+    layout_layout(pLayoutMain, pLayoutText, 0, 0);
+    layout_layout(pLayoutMain, pLayoutTextView, 0, 1);
+    layout_layout(pLayoutMain, pLayoutProgressbar, 0, 2);
+
+    /* Panel: Main */
+    panel_layout(pPanelMain, pLayoutMain);
+
+    unref(pApp);
+
+    return pPanelMain;
+}
+
+Panel*
+Panel_GetModalUpdater(AppGUI* pApp)
+{
+    Panel       *pPanelMain         = panel_create();
+    Panel       *pPanelExt          = _Panel_GetModalUpdaterSubpanel(pApp);
+    Layout      *pLayoutMain        = layout_create(1,3);
+    Layout      *pLayoutExt         = layout_create(1,1);
+    Layout      *pLayoutHeader      = layout_create(1,1);
+    Layout      *pLayoutButtons     = layout_create(4,1);
+    Button      *pButtonCancel      = button_push();
+    Button      *pButtonUpdate      = button_push();
+    ImageView   *pImageViewHeader   = imageview_create();
+
+    /* Image View: Header Image */
+    imageview_scale(pImageViewHeader, ekGUI_SCALE_ADJUST);
+    imageview_size(pImageViewHeader, s2df(480,240));
+    imageview_image(pImageViewHeader, (const Image*)UPDATE_HEADER_JPG);
+
+    /* Button: Cancel */
+    button_text(pButtonCancel, TXT_BTN_CANCEL);
+    button_tag(pButtonCancel, MODAL_CANCEL);
+    button_OnClick(pButtonCancel, listener(pApp, Callback_OnButtonModalUpdater, AppGUI));
+
+    /* Button: Update App */
+    button_text(pButtonUpdate, TXT_BTN_UPDATE_APP);
+    button_tag(pButtonUpdate, MODAL_UPDATE_APP);
+    button_OnClick(pButtonUpdate, listener(pApp, Callback_OnButtonModalUpdater, AppGUI));
+
+    /* Layout: External */
+    layout_panel(pLayoutExt, pPanelExt, 0, 0);
+
+    /* Layout: Header */
+    layout_imageview(pLayoutHeader, pImageViewHeader, 0, 0);
+
+    /* Layout: Buttons */
+    layout_hsize(pLayoutButtons, 0, 120);
+    layout_hsize(pLayoutButtons, 1, 120);
+    layout_hsize(pLayoutButtons, 2, 120);
+    layout_hsize(pLayoutButtons, 3, 120);
+    layout_halign(pLayoutButtons, 0, 0, ekLEFT);
+    layout_halign(pLayoutButtons, 3, 0, ekRIGHT);
+    layout_button(pLayoutButtons, pButtonCancel, 0,0);
+    layout_button(pLayoutButtons, pButtonUpdate, 3,0);
+
+    /* Layout: Main */
+    layout_layout(pLayoutMain, pLayoutHeader, 0, 0);
+    layout_layout(pLayoutMain, pLayoutExt, 0, 1);
+    layout_layout(pLayoutMain, pLayoutButtons, 0, 2);
+
+    panel_layout(pPanelMain, pLayoutMain);
+
+    unref(pApp);
+
+    return pPanelMain;
+}
+
 void
 AutoUpdate_Init(void)
 {
+    dbind(InetUpdaterFile, String*, path);
+    dbind(InetUpdaterFile, String*, sha256);
+    dbind(InetUpdaterFile, uint32_t, size);
+
+    dbind(InetUpdaterLauncherData, int32_t, version);
     dbind(InetUpdaterLauncherData, int32_t, build);
+
+    dbind(InetUpdaterJSONData, String*, schema);
+    dbind(InetUpdaterJSONData, String*, generated);
     dbind(InetUpdaterJSONData, InetUpdaterLauncherData*, launcher);
+    dbind(InetUpdaterJSONData, ArrSt(InetUpdaterFile)*, files);
 }
 
 bool_t
-AutoUpdate_CheckForUpdates(void)
+AutoUpdate_CheckForUpdates(AppGUI *pApp)
 {
     uint32_t            dResult;
     ierror_t            eInetError;
@@ -1483,16 +1604,21 @@ AutoUpdate_CheckForUpdates(void)
     Stream              *pJsonStream;
     InetUpdaterJSONData *pJson;
 
-    const int32_t dBuildNumber = str_to_i32(BUILD_NUMBER, 10, NULL);
+    const SVar tLuaLauncherVersion      = AmberLauncher_GetGlobalVariable(pApp->pAppCore, "LAUNCHER_VERSION");
+    const int32_t dLauncherBuild        = str_to_i32(BUILD_NUMBER, 10, NULL);
+    const int32_t dLauncherVersion      = SVAR_IS_DOUBLE(tLuaLauncherVersion) ? SVAR_GET_DOUBLE(tLuaLauncherVersion) : 0;
+
+    static const char *sSchemaFmt       = "• Schema: \t\t%s\n";
+    static const char *sGeneratedFmt    = "• Generated: \t\t%s\n";
+    static const char *sAppVersionFmt   = "• App version: \t\t%d\n";
+    static const char *sNetVersionFmt   = "• Net version: \t\t%d\n";
+    static const char *sAppBuildFmt     = "• App build: \t\t%d\n";
+    static const char *sNetBuildFmt     = "• Net build: \t\t%d\n";
 
     pJsonStream = http_dget(
         _sAutoUpdateManifestURL,
         &dResult,
         &eInetError);
-    /* jsonStream = hfile_stream(
-        "/home/nm/Projects/c/AmberLauncher/tools/manifest.json",
-        &dResult);
-    eInetError = ekIOK; */
 
     if (!pJsonStream)
     {
@@ -1501,29 +1627,200 @@ AutoUpdate_CheckForUpdates(void)
             "\n\tdResult: %d\n\teInetError: %d\n",
             dResult,
             eInetError);
+        if (pApp->pTextView)
+        {
+            textview_printf(
+                pApp->pTextView,
+                "[Auto Updater] Couldn't fetch manifest.json"
+                "\n\tdResult: %d\n\teInetError: %d\n",
+                dResult,
+                eInetError);
+        }
+        return FALSE;
+    }
+
+    pJson           = json_read(pJsonStream, NULL, InetUpdaterJSONData);
+    bUpdateRequired = dLauncherBuild < pJson->launcher->build ||
+                        dLauncherVersion < pJson->launcher->version;
+
+    bstd_printf(
+            "[Auto Updater] Manifest retrieved successfuly:\n"
+            "• dResult: \t\t%d\n• eInetError: \t\t%d\n• Update required: \t%s\n",
+            dResult,
+            eInetError,
+            bUpdateRequired ? "true" : "false");
+    bstd_printf(sSchemaFmt, tc(pJson->schema));
+    bstd_printf(sGeneratedFmt, tc(pJson->generated));
+    bstd_printf(sAppVersionFmt, dLauncherVersion);
+    bstd_printf(sNetVersionFmt, pJson->launcher->version);
+    bstd_printf(sAppBuildFmt, dLauncherBuild);
+    bstd_printf(sNetBuildFmt, pJson->launcher->build);
+
+    if (pApp->pTextView)
+    {
+        textview_printf(
+            pApp->pTextView,
+            "[Auto Updater] Manifest retrieved successfuly:\n"
+            "• dResult: \t\t%d\n• eInetError: \t\t%d\n• Update required: \t\t%s\n",
+            dResult,
+            eInetError,
+            bUpdateRequired ? "true" : "false"
+        );
+        textview_printf(pApp->pTextView, sSchemaFmt, tc(pJson->schema));
+        textview_printf(pApp->pTextView, sGeneratedFmt, tc(pJson->generated));
+        textview_printf(pApp->pTextView, sAppVersionFmt, dLauncherVersion);
+        textview_printf(pApp->pTextView, sNetVersionFmt, pJson->launcher->version);
+        textview_printf(pApp->pTextView, sAppBuildFmt, dLauncherBuild);
+        textview_printf(pApp->pTextView, sNetBuildFmt, pJson->launcher->build);
+    }
+
+    stm_close(&pJsonStream);
+    json_destroy(&pJson, InetUpdaterJSONData);
+
+    return bUpdateRequired;
+}
+
+bool_t
+AutoUpdate_Update(AppGUI *pApp)
+{
+    uint32_t            dResult;
+    ierror_t            eInetError;
+    Stream              *pJsonStream;
+    InetUpdaterJSONData *pJson;
+
+    static const char *sFileArrayFmt = "• File: %s\n• • sha256: \n%s\n• • size: %u\n";
+
+    pJsonStream = http_dget(
+        _sAutoUpdateManifestURL,
+        &dResult,
+        &eInetError);
+
+    if (!pJsonStream)
+    {
+        bstd_printf(
+            "[Auto Updater] Couldn't fetch manifest.json"
+            "\n\tdResult: %d\n\teInetError: %d\n",
+            dResult,
+            eInetError);
+        if (pApp->pTextView)
+        {
+            textview_printf(
+                pApp->pTextView,
+                "[Auto Updater] Couldn't fetch manifest.json"
+                "\n\tdResult: %d\n\teInetError: %d\n",
+                dResult,
+                eInetError);
+        }
         return FALSE;
     }
 
     bstd_printf(
-            "[Auto Updater] Manifest retrieved successfuly:"
-            "\n\tdResult: \t\t%d\n\teInetError: \t\t%d\n",
+            "[Auto Updater] Manifest retrieved successfuly:\n"
+            "• dResult: \t\t%d\n• eInetError: \t\t%d\n",
             dResult,
             eInetError);
-
+    if (pApp->pTextView)
     {
-        pJson           = json_read(pJsonStream, NULL, InetUpdaterJSONData);
-        bUpdateRequired = dBuildNumber < pJson->launcher->build;
-
-        bstd_printf("\tApp Version: \t\t%d\n", dBuildNumber);
-        bstd_printf("\tNet Version: \t\t%d\n", pJson->launcher->build);
-        bstd_printf("\tUpdate required: \t%s\n", bUpdateRequired ? "true" : "false");
-        bstd_printf("\n");
-
-        json_destroy(&pJson, InetUpdaterJSONData);
+        textview_printf(
+            pApp->pTextView,
+            "[Auto Updater] Manifest retrieved successfuly:\n"
+            "• dResult: \t\t%d\n• eInetError: \t\t%d\n",
+            dResult,
+            eInetError);
     }
+
+    /* Read JSON from manifest */
+    pJson = json_read(pJsonStream, NULL, InetUpdaterJSONData);
     stm_close(&pJsonStream);
 
-    return bUpdateRequired;
+    /* Print files */
+    arrst_foreach(elem, pJson->files, InetUpdaterFile)
+        bstd_printf(sFileArrayFmt, tc(elem->path), tc(elem->sha256), elem->size);
+    arrst_end()
+    bstd_printf("\n");
+
+    if (pApp->pTextView)
+    {
+        arrst_foreach(elem, pJson->files, InetUpdaterFile)
+            textview_printf(pApp->pTextView, sFileArrayFmt, tc(elem->path), tc(elem->sha256), elem->size);
+        arrst_end()
+        textview_printf(pApp->pTextView, "\n");
+    }
+
+    /* Download files */
+    bstd_printf("Remote Updater Server: %s\n", _sAutoUpdateRemoteRootURL);
+    arrst_foreach(elem, pJson->files, InetUpdaterFile)
+        bool_t bFileExists  = hfile_exists(tc(elem->path),0);
+        char *sSHA256Hash   = AmberLauncher_SHA256_HashFile(tc(elem->path));
+
+        bstd_printf("Downloading %s...\n", tc(elem->path));
+        if (pApp->pTextView)
+        {
+            textview_printf(pApp->pTextView, "Downloading %s...\n", tc(elem->path));
+        }
+
+        if (!bFileExists)
+        {
+            Stream *pFile           = stm_to_file(tc(elem->path), NULL);
+            String *sDownloadLink   = str_printf("%s%s", _sAutoUpdateRemoteRootURL, tc(elem->path));
+
+            bstd_printf("Local file doesn't exist!\n");
+            if (pApp->pTextView)
+            {
+                textview_printf(pApp->pTextView, "Local file doesn't exist!\n");
+            }
+            pFile = http_dget(tc(sDownloadLink), NULL, NULL);
+            if (pFile)
+            {
+                /* download file */
+                Stream *pOutputFile = stm_to_file(tc(elem->path), NULL);
+                stm_write(pOutputFile, stm_buffer(pFile), stm_buffer_size (pFile));
+                stm_close(&pOutputFile);
+            }
+            str_destroy(&sDownloadLink);
+            stm_close(&pFile);
+        }
+        else if (sSHA256Hash)
+        {
+            bstd_printf("sha256 dummy.lua:\n\t%s\n", sSHA256Hash);
+            if (pApp->pTextView)
+            {
+                textview_printf(pApp->pTextView, "sha256 dummy.lua:\n\t%s\n", sSHA256Hash);
+            }
+
+            if (str_cmp(elem->sha256, sSHA256Hash) != 0)
+            {
+                Stream *pFile;
+                String *sDownloadLink = str_printf("%s%s", _sAutoUpdateRemoteRootURL, tc(elem->path));
+
+                bstd_printf("Remote file is different!\n");
+                if (pApp->pTextView)
+                {
+                    textview_printf(pApp->pTextView, "Remote file is different!\n");
+                }
+                pFile = http_dget(tc(sDownloadLink), NULL, NULL);
+                if (pFile)
+                {
+                    /* download file */
+                    Stream *pOutputFile;
+
+                    /* stm_to_file doesn't overwrite as it promises to do, so, delete file.. */
+                    bfile_delete(tc(elem->path), NULL);
+
+                    pOutputFile = stm_to_file(tc(elem->path), NULL);
+                    stm_write(pOutputFile, stm_buffer(pFile), stm_buffer_size (pFile));
+                    stm_close(&pOutputFile);
+                }
+                str_destroy(&sDownloadLink);
+                stm_close(&pFile);
+            }
+        }
+        free(sSHA256Hash);
+    arrst_end()
+
+    json_destroy(&pJson, InetUpdaterJSONData);
+
+    return TRUE;
 }
 
 void
@@ -1783,6 +2080,36 @@ Callback_OnButtonModalOptions(AppGUI *pApp, Event *e)
 }
 
 void
+Callback_OnButtonModalUpdater(AppGUI* pApp, Event *e)
+{
+    Button *pButton     = event_sender(e, Button);
+    uint32_t dButtonTag = button_get_tag(pButton);
+
+    switch(dButtonTag)
+    {
+        case MODAL_UPDATE_APP:
+            {
+                const bool_t bUpdateAvailable = AutoUpdate_CheckForUpdates(pApp);
+                if (!bUpdateAvailable)
+                {
+                    break;
+                }
+
+                AutoUpdate_Update(pApp);
+            }
+            break;
+
+        default:
+            pApp->pTextView = NULL;
+            window_stop_modal(pApp->pWindowModal, dButtonTag);
+            break;
+    }
+
+    unref(pButton);
+    unref(e);
+}
+
+void
 Callback_OnButtonModalTools(AppGUI *pApp, Event *e)
 {
     Button *pButton             = event_sender(e, Button);
@@ -1907,6 +2234,8 @@ _Panel_GetRoot(AppGUI *pApp)
     Button      *pButtonWebDiscord  = button_flat();
     Button      *pButtonUpdate      = button_flat();
 
+    bool_t bUpdateAvailable = AutoUpdate_CheckForUpdates(pApp);
+
     static const int32_t dButtonIconWidth   = ICO_PNG_W + (ICO_PNG_W / 2);
     static const int32_t dButtonIconHeight  = ICO_PNG_H + (ICO_PNG_H / 2);
 
@@ -1939,7 +2268,8 @@ _Panel_GetRoot(AppGUI *pApp)
     button_tooltip(pButtonWebDiscord, TXT_TOOLTIP_DISCORD);
     button_OnClick(pButtonWebDiscord, listener(pApp, _Callback_OnButtonMainWindow, AppGUI) );
 
-    button_image(pButtonUpdate, (const Image*)ICO_UPDATE_PNG);
+    button_image(pButtonUpdate, bUpdateAvailable ?
+        (const Image*)ICO_UPDATE_AVAILABLE_PNG : (const Image*)ICO_UPDATE_PNG);
     button_tag(pButtonUpdate, CSIDEBUTTON_UPDATE);
     button_tooltip(pButtonUpdate, TXT_TOOLTIP_UPDATE);
     button_OnClick(pButtonUpdate, listener(pApp, _Callback_OnButtonMainWindow, AppGUI) );
@@ -2041,6 +2371,9 @@ _Nappgui_Start(void)
     pApp->pModElementArray   = heap_new_n0(MAX_MOD_ELEMS, GUIModElement);
     cassert_no_null(pApp->pModElementArray);
 
+    inet_start();
+    AutoUpdate_Init();
+
     pPanel           = _Panel_GetRoot(pApp);
     pApp->pWindow    = window_create(
         ekWINDOW_TITLE |
@@ -2057,15 +2390,8 @@ _Nappgui_Start(void)
     window_OnClose(pApp->pWindow, listener(pApp, _Callback_OnCloseMainWindow, AppGUI));
     window_show(pApp->pWindow);
 
-    inet_start();
-    AutoUpdate_Init();
     AmberLauncher_Start(pApp->pAppCore);
 
-    {
-        bool_t bUpdateAvailable = AutoUpdate_CheckForUpdates();
-        bstd_printf("Update available: %s\n", bUpdateAvailable ? "true" : "false");
-    }
-    
     return pApp;
 }
 
@@ -2250,6 +2576,11 @@ _Callback_OnCloseModalWindow(AppGUI *pApp, Event *e)
 
         case ekGUI_CLOSE_ESC:
         case ekGUI_CLOSE_BUTTON:
+
+            if (pApp->eCurrentUIEvent == UIEVENT_MODAL_UPDATER)
+            {
+                pApp->pTextView = NULL;
+            }
             break;
 
         default:
@@ -2981,6 +3312,7 @@ _Callback_UIEvent(
                 }
             }
             break;
+
         case UIEVENT_MODAL_MODS:
             {
                 static const char *sKeyAvail     = "available";
@@ -3297,6 +3629,18 @@ _Callback_UIEvent(
                     pApp,
                     Panel_GetModalTools(pApp),
                     TXT_TITLE_TOOLS
+                );
+
+                SVARKEYB_BOOL(tRetVal, sStatusKey, CTRUE);
+            }
+            break;
+
+        case UIEVENT_MODAL_UPDATER:
+            {
+                dModalRetVal = _Nappgui_ShowModal(
+                    pApp,
+                    Panel_GetModalUpdater(pApp),
+                    TXT_TITLE_UPDATER
                 );
 
                 SVARKEYB_BOOL(tRetVal, sStatusKey, CTRUE);

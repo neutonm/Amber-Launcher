@@ -84,6 +84,7 @@ typedef enum
     UIEVENT_MODAL_OPTIONS,
     UIEVENT_MODAL_MODS,
     UIEVENT_MODAL_TOOLS,
+    UIEVENT_MODAL_UPDATER,
     UIEVENT_MAX
 } EUIEventType;
 
@@ -213,15 +214,26 @@ typedef struct GUIAsyncTaskData
 /* Json names must coincide with names of C struct */
 typedef struct _InetUpdaterLauncherData
 {
+    int32_t version;
     int32_t build;
 } InetUpdaterLauncherData;
 
+typedef struct _InetUpdaterFile
+{
+    String *path;
+    String *sha256;
+    uint32_t size;
+} InetUpdaterFile;
+
 typedef struct _InetUpdaterJSONData
 {
+    String *schema;
+    String *generated;
     InetUpdaterLauncherData *launcher;
+    ArrSt(InetUpdaterFile) *files;
 } InetUpdaterJSONData;
 
-DeclSt(InetUpdaterLauncherData);
+DeclSt(InetUpdaterFile);
 
 /******************************************************************************
  * HEADER DECLARATIONS
@@ -374,6 +386,16 @@ extern Panel*
 Panel_GetModalTools(AppGUI* pApp);
 
 /**
+ * @relatedalso Panel
+ * @brief       Shows auto update window
+ *
+ * @param       pApp
+ * @return      Panel*
+ */
+extern Panel*
+Panel_GetModalUpdater(AppGUI* pApp);
+
+/**
  * @relatedalso Internet
  * @brief       Initialises amber laucnher related inet data
  */
@@ -387,7 +409,16 @@ AutoUpdate_Init(void);
  * @return      bool_t TRUE if update is avaliable
  */
 extern bool_t
-AutoUpdate_CheckForUpdates(void);
+AutoUpdate_CheckForUpdates(AppGUI *pApp);
+
+/**
+ * @relatedalso Internet
+ * @brief       Executes update session
+ *
+ * @return      bool_t TRUE On success
+ */
+extern bool_t
+AutoUpdate_Update(AppGUI *pApp);
 
 /******************************************************************************
  * HEADER CALLBACK DECLARATIONS
@@ -512,6 +543,16 @@ Callback_OnButtonModalOptions(AppGUI* pApp, Event *e);
  */
 extern void
 Callback_OnButtonModalTools(AppGUI* pApp, Event *e);
+
+/**
+ * @relatedalso Callback
+ * @brief       Generic callback for (auto) updater modal window
+ *
+ * @param       pApp
+ * @param       e
+ */
+extern void
+Callback_OnButtonModalUpdater(AppGUI* pApp, Event *e);
 
 /**
  * @relatedalso Async

@@ -1,10 +1,12 @@
 #include "core/luacommon.h"
+#include "version.h"
 #include <AmberLauncherCore.h>
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <errno.h>
 
 #include <core/common.h>
 #include <core/observer.h>
@@ -19,11 +21,15 @@
 #include <commands/regedit.h>
 #include <commands/music.h>
 
+#include <ext/sha256.h>
+
 #include <lua.h>
 #include <lauxlib.h>
 
 static const char* STR_AL_GLOBAL    = "AL";
 static const char* STR_AL_APPCORE   = "AL.AppCore";
+
+#define AL_SHA_BUF 65536U
 
 static CBOOL
 _SCommand_Callback_Null(const SCommand* pSelf, const SCommandArg* pArgs, const unsigned int dNumArgs)
@@ -515,6 +521,20 @@ luaL_Reg AL[] =
     {NULL, NULL}
 };
 
+static void
+_SHA256toHex(const unsigned char *sDigestIn, char *sHexOut)
+{
+    static const char tbl[] = "0123456789abcdef";
+    size_t i;
+
+    for (i = 0; i < SHA256_HASH_SIZE; ++i)
+    {
+        sHexOut[i * 2]     = tbl[sDigestIn[i] >> 4];
+        sHexOut[i * 2 + 1] = tbl[sDigestIn[i] & 0x0F];
+    }
+    sHexOut[SHA256_HASH_SIZE * 2] = '\0';
+}
+
 CAPI void
 AmberLauncher_Start(AppCore* pAppCore)
 {
@@ -531,6 +551,10 @@ AmberLauncher_Start(AppCore* pAppCore)
     lua_pushboolean(pAppCore->pLuaState->pState, 1);
 #endif
     lua_setglobal(pAppCore->pLuaState->pState, "_DEBUG");
+
+    /* Build */
+    lua_pushstring(pAppCore->pLuaState->pState, BUILD_NUMBER);
+    lua_setglobal(pAppCore->pLuaState->pState, "_BUILD_NUMBER");
 
     /* Register pAppCore */
     lua_pushlightuserdata(pAppCore->pLuaState->pState, (void*)pAppCore);
@@ -654,6 +678,34 @@ AmberLauncher_ExecuteLua(AppCore *pApp, const char *sCommand)
     SLuaState_ExecuteCode(pApp->pLuaState, sCommand);
 }
 
+CAPI SVar
+AmberLauncher_GetGlobalVariable(AppCore *pApp, const char *sVarName)
+{
+    SLuaVar tLuaVar;
+    SVar tRetVar;
+
+    SLuaState_GetGlobalVariable(pApp->pLuaState, sVarName, &tLuaVar);
+
+    /* Convert to Svar */
+    switch(tLuaVar.type)
+    {
+        case SLUA_TYPE_BOOL:
+            SVAR_BOOL(tRetVar, tLuaVar.data.boolean);
+            break;
+        case SLUA_TYPE_NUMBER:
+            SVAR_DOUBLE(tRetVar, tLuaVar.data.num);
+            break;
+        case SLUA_TYPE_STRING:
+            SVAR_CONSTCHAR(tRetVar, tLuaVar.data.str);
+            break;
+        default:
+            SVAR_NULL(tRetVar);
+            break;
+    }
+
+    return tRetVar;
+}
+
 CAPI CBOOL
 AmberLauncher_ProcessUISideButton(AppCore *pApp, unsigned int dButtonTag)
 {
@@ -696,5 +748,51 @@ AmberLauncher_ExecuteSVarLuaFunction(struct AppCore *pApp, const SVar *pVar)
     }
 
     return CTRUE;
+}
+
+char *
+AmberLauncher_SHA256_HashFile(const char *sPath)
+{
+    FILE            *fp;
+    unsigned char   sBuf[AL_SHA_BUF];
+    size_t          dNread;
+    SHA256_Context  tCtx;
+    unsigned char   sDigest[SHA256_HASH_SIZE];
+    char            *sHex;
+
+    if (sPath == NULL)
+    {
+        errno = EINVAL;
+        return NULL;
+    }
+
+    fp = fopen(sPath, "rb");
+    if (fp == NULL)
+    {
+        return NULL;
+    }
+
+    sha256_initialize(&tCtx);
+
+    while ((dNread = fread(sBuf, 1, AL_SHA_BUF, fp)) > 0) 
+    {
+        sha256_add_bytes(&tCtx, sBuf, dNread);
+    }
+
+    if (ferror(fp))
+    {
+        fclose(fp);
+        return NULL;
+    }
+    fclose(fp);
+
+    sha256_calculate(&tCtx, sDigest);
+
+    sHex = (char *)malloc(SHA256_HASH_SIZE * 2 + 1);
+    if (sHex == NULL)
+        return NULL;
+
+    _SHA256toHex(sDigest, sHex);
+    return sHex;
 }
 

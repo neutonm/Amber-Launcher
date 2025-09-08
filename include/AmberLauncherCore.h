@@ -34,11 +34,17 @@ AmberLauncher_Play(struct AppCore* pApp);
 extern CAPI void
 AmberLauncher_ExecuteLua(struct AppCore *pApp, const char *sCommand);
 
+extern CAPI SVar
+AmberLauncher_GetGlobalVariable(struct AppCore *pApp, const char *sVarName);
+
 extern CAPI CBOOL
 AmberLauncher_ProcessUISideButton(struct AppCore *pApp, unsigned int dButtonTag);
 
 extern CAPI CBOOL
 AmberLauncher_ExecuteSVarLuaFunction(struct AppCore *pApp, const SVar *pVar);
+
+extern char *
+AmberLauncher_SHA256_HashFile(const char *sPath);
 
 __END_C
 

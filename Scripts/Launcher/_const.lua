@@ -32,7 +32,8 @@ UIEVENT = {
     MODAL_OPTIONS       = 12, -- Modal: All in one options tweaker
     MODAL_MODS          = 13, -- Modal: Mod Manager
     MODAL_TOOLS         = 14, -- Modal: External App/Command launcher
-    MAX
+    MODAL_UPDATER       = 15, -- Modal: Auto Update
+    MAX                 = 16
 }
 
 UIWIDGET = {
@@ -41,7 +42,7 @@ UIWIDGET = {
     POPUP               = 2,
     EDIT                = 3,
     LISTBOX             = 4,
-    MAX
+    MAX                 = 5
 }
 
 UISIDEBUTTON = {
@@ -53,7 +54,7 @@ UISIDEBUTTON = {
     UPDATE              = 5,
     WEB_HOMEPAGE        = 6,
     WEB_DISCORD         = 7,
-    MAX
+    MAX                 = 8
 }
 UISIDEBUTTON_NAMES = {}
 for k, v in pairs(UISIDEBUTTON) do
@@ -88,6 +89,10 @@ GAME_EXECUTABLE_FOLDERS = GAME_EXECUTABLE_FOLDERS or {}
 GAME_BASE_PATHS         = GAME_BASE_PATHS or {}
 GAME_EXECUTABLE_NAME    = GAME_EXECUTABLE_NAME or "mm7.exe"
 GAME_MOD_ID             = MODID_NAMES[MODID.AMBER]
+
+LAUNCHER_BUILD          = _BUILD_NUMBER
+LAUNCHER_VERSION        = 100
+
 
 -- OS Specific variables
 OS_NAME = os.name()
