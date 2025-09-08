@@ -1902,13 +1902,11 @@ Callback_OnButtonModalGameNotFound(AppGUI *pApp, Event *e)
     }
 
     /* Button clicked: Browse */
-    if (pApp->pString)
     {
-        str_destroy(&pApp->pString);
+        const char *sBrowserPath = comwin_open_file(pApp->pWindowModal, sFileFormat, 1, NULL);
+        str_upd(&pApp->pString, sBrowserPath ? sBrowserPath : "");
     }
-
-    pApp->pString = str_c(comwin_open_file(pApp->pWindowModal, sFileFormat, 1, NULL));
-
+    
     if (pApp->pEdit)
     {
         edit_text(pApp->pEdit, tc(pApp->pString));
