@@ -682,7 +682,7 @@ CAPI SVar
 AmberLauncher_GetGlobalVariable(AppCore *pApp, const char *sVarName)
 {
     SLuaVar tLuaVar;
-    SVar tRetVar;
+    SVar    tRetVar;
 
     SLuaState_GetGlobalVariable(pApp->pLuaState, sVarName, &tLuaVar);
 

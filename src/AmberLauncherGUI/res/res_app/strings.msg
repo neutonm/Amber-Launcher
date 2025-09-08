@@ -57,7 +57,7 @@ TXT_LOC_RUSSIAN         Russian
 
 /* Texts */
 TXT_NULL                Null
-TXT_MAININTRO           Welcome to Amber Island, adventurer!\n\nMystery and excitement await - hit "Play" to step into a realm of secrets, challenges, and unforgettable discoveries.
+TXT_MAININTRO           Welcome to Amber Island, adventurer!\n\nMystery and excitement await - hit Play to step into a realm of secrets, challenges, and unforgettable discoveries.
 TXT_CONFIGINTRO         Greetings adventurer, before you can play Amber Island, you have to configure the game.\nMake sure you have Might and Magic 7 installed on your PC.
 TXT_CONFIGSUCCESS       Setup complete! You can now play the Amber Island mod. Press Next to close autoconfig and jump in.
 TXT_GAMENOTFOUND        Launcher couldn't locate the Might and Magic 7 installation. Please locate the game executable (mm7.exe)

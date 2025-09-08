@@ -70,7 +70,6 @@ typedef union UVarData
     unsigned long long      _ulonglong;         /* CTYPE_UNSIGNED_LONG_LONG */
     void*                   _void;              /* CTYPE_VOID               */
     double                  _double;            /* CTYPE_DOUBLE             */
-    long double             _longdouble;        /* CTYPE_LONG_DOUBLE        */
 } UVarData;
 
 typedef struct SVar
@@ -221,14 +220,6 @@ typedef struct SVarTable {
         (v).uData._double = (x);                    \
     } while (0)
 
-#define SVAR_LDOUBLE(v,x)                           \
-    do {                                            \
-        (v).eType = CTYPE_LONG_DOUBLE;              \
-        (v).dFlags = 0;                             \
-        (v).dSize = sizeof((v).uData._longdouble);  \
-        (v).uData._longdouble = (x);                \
-    } while (0)
-
 /**
  * non-trivial: lua reference as int
  * @note include lua headers before usage
@@ -275,7 +266,6 @@ typedef struct SVarTable {
 #define SVAR_GET_ULLONG(v)          ((v).uData._ulonglong)
 #define SVAR_GET_FLOAT(v)           ((v).uData._float)
 #define SVAR_GET_DOUBLE(v)          ((v).uData._double)
-#define SVAR_GET_LDOUBLE(v)         ((v).uData._longdouble)
 #define SVAR_GET_VOID(v)            ((v).uData._void)
 #define SVAR_GET_VOID_SIZE(v)       ((v).uData.dSize)
 

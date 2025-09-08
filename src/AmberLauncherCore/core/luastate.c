@@ -607,9 +607,9 @@ SLuaState_PushVariable(SLuaState* pLuaState, const SVar *pVar)
         case CTYPE_DOUBLE:
             lua_pushnumber(L, pVar->uData._double);
             break;
-        case CTYPE_LONG_DOUBLE:
+        /*case CTYPE_LONG_DOUBLE:
             lua_pushnumber(L, (lua_Number)pVar->uData._longdouble);
-            break;
+            break;*/
         case CTYPE_VOID:
             lua_pushlightuserdata(L, pVar->uData._void);
             break;

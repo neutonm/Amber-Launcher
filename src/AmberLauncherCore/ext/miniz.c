@@ -4364,7 +4364,7 @@ static MZ_FORCEINLINE int mz_zip_filename_compare(const mz_zip_array *pCentral_d
     pE = pL + MZ_MIN(l_len, r_len);
     while (pL < pE)
     {
-        if ((l = MZ_TOLOWER(*pL)) != (r = MZ_TOLOWER(*pR)))
+        if ((l = MZ_TOLOWER(*pL)) != (r = MZ_TOLOWER((mz_uint8)*pR)))
             break;
         pL++;
         pR++;
