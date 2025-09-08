@@ -38,9 +38,9 @@ Complete overhaul of foliage sprites: trees, flowers, plant pots, etc.
   end,
 
   options = {
-    dummy = {
+    davidsprites = {
       type    = "enum",
-      values  = {1, 2, 3},
+      values  = {1},
       default = 1
     }
   }
