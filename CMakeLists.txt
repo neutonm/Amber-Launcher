@@ -168,17 +168,15 @@ else()
             -g \
             -fPIE")
         
-    if(UNIX AND NOT APPLE)
-        set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} \
-            -fsanitize=address \
-            -fsanitize=leak \
-            -fsanitize-recover=address")
-        set(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} \
-            -fsanitize=address \
-            -fsanitize=leak \
-            -fno-omit-frame-pointer \
-            -g3")
-    endif()
+        if(UNIX AND NOT APPLE)
+            set(CMAKE_C_FLAGS_DEBUG
+                "${CMAKE_C_FLAGS_DEBUG} -fsanitize=address -fsanitize=leak -fsanitize-recover=address"
+                CACHE STRING "C flags for Debug" FORCE)
+            
+            set(CMAKE_EXE_LINKER_FLAGS_DEBUG
+                "${CMAKE_EXE_LINKER_FLAGS_DEBUG} -fsanitize=address -fsanitize=leak -fno-omit-frame-pointer -g3"
+                CACHE STRING "Linker flags for Debug" FORCE)
+        endif()
 endif()
 
 # ------------------------------------------------------------------------------
