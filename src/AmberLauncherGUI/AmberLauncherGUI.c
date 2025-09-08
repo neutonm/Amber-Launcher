@@ -823,6 +823,8 @@ Panel_GetModalTweaker(AppGUI *pApp)
     Panel       *pPanelButtons      = _Panel_TweakerButtons(pApp);
     Layout      *pLayoutMain        = layout_create(1,5);
 
+    pApp->pLayoutModalMain = pLayoutMain;
+
     /* Layout: Main */
     /* layout_hsize(pLayoutMain, 0, TITLE_PNG_W);
     layout_vsize(pLayoutMain, 0, TITLE_PNG_H);
