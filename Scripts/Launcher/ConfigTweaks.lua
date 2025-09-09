@@ -28,6 +28,12 @@ local _TweakerWizardEntries = {
     }
 }
 
+local function _INISet(ini, )
+    local myStr = AL.INIGet(ini, "Settings", "AlwaysStrafe")
+    AL.INISet(ini, "Settings", "AlwaysStrafe", tostring(1 - uiResponse.strafe))
+    myStr = AL.INIGet(ini, "Settings", "AlwaysStrafe")
+end
+
 local function _ConfigTweaks()
 
     AL_print("Tweaking mm7 config...")
@@ -38,19 +44,20 @@ local function _ConfigTweaks()
         return false
     end
 
+    -- Necessary changes
+    AL.INISet(ini, "Settings", "NoIntro",   "0")
+    AL.INISet(ini, "Settings", "MouseLook", "1")
+    AL.INISet(ini, "Settings", "tviewdist", "1600")
+
     local uiResponse = AL.UICall(UIEVENT.MODAL_TWEAKER, _TweakerWizardEntries)
     if uiResponse and uiResponse.status == true then
 
         if uiResponse.strafe then
-            local myStr = AL.INIGet(ini, "Settings", "AlwaysStrafe")
             AL.INISet(ini, "Settings", "AlwaysStrafe", tostring(1 - uiResponse.strafe))
-            myStr = AL.INIGet(ini, "Settings", "AlwaysStrafe")
         end
 
         if uiResponse.gui then
-            local myStr = AL.INIGet(ini, "Settings", "UILayout")
             AL.INISet(ini, "Settings", "UILayout", uiResponse.gui == 0 and "UI" or "0")
-            myStr = AL.INIGet(ini, "Settings", "UILayout")
         end
 
         if uiResponse.david then
@@ -74,9 +81,9 @@ local function _ConfigTweaks()
                 end
             end
         end
-
-        AL.INISave(ini, INI_PATH_MM7)
     end
+
+    AL.INISave(ini, INI_PATH_MM7)
 
     AL_print("Tweaking done!")
     AL.INIClose(ini)
