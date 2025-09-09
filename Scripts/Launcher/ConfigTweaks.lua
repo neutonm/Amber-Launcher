@@ -25,14 +25,14 @@ local _TweakerWizardEntries = {
         tag = "mapicons",
         { optionName = "Extra Icons",imagePath = "Data/Launcher/tweak-mapicons-a.jpg" },
         { optionName = "Original",   imagePath = "Data/Launcher/tweak-mapicons-b.jpg" }
+    },
+    {
+        info = "Would you like to create desktop link to Might and Magic: Amber Island?",
+        tag = "desktoplink",
+        { optionName = "Yes"},
+        { optionName = "No"}
     }
 }
-
-local function _INISet(ini, )
-    local myStr = AL.INIGet(ini, "Settings", "AlwaysStrafe")
-    AL.INISet(ini, "Settings", "AlwaysStrafe", tostring(1 - uiResponse.strafe))
-    myStr = AL.INIGet(ini, "Settings", "AlwaysStrafe")
-end
 
 local function _ConfigTweaks()
 
@@ -80,6 +80,13 @@ local function _ConfigTweaks()
                     print("Failed:", err)
                 end
             end
+        end
+
+        if uiResponse.desktoplink then
+            local curDir = FS.CurrentDir()
+            local exe    = FS.PathJoin(curDir,GAME_DESTINATION_FOLDER, 
+                (FS.OS_NAME=="Windows") and (LAUNCHER_NAME..".exe") or LAUNCHER_NAME)
+            FS.CreateDesktopLink(GAME_MOD_ID_TITLE,exe,FS.PathJoin(curDir, "icon.ico"))
         end
     end
 

@@ -62,6 +62,12 @@ end
 -- Directory functions
 -------------------------------------------------------------------------------
 
+function fs.CurrentDir()
+    return (fs.OS_NAME == "Windows")
+           and io.popen("cd"):read("*l")
+           or  io.popen("pwd"):read("*l")
+end
+
 function fs.DirectoryList(dir)
     local listing, cmd = {}, ""
     if fs.OS_NAME == "Windows" then
@@ -216,6 +222,65 @@ function fs.IsFilePresent(path)
         end
     end
     p:close()
+    return false
+end
+
+-------------------------------------------------------------------------------
+-- Misc
+-------------------------------------------------------------------------------
+
+--- Create a desktop link to an executable.
+-- @tparam string name       Friendly title (e.g. "Amber Launcher")
+-- @tparam string target     Absolute path to the EXE / ELF you want to launch
+-- @tparam[opt] string icon  Absolute path to an .ico / .png (falls back to target)
+-- @treturn boolean          true on success, false on failure
+function fs.CreateDesktopLink(name, target, icon)
+
+    assert(type(name)   == "string" and name  ~= "",  "name required")
+    assert(type(target) == "string" and target ~= "", "target required")
+
+    -- Resolve desktop folder
+    local desktop
+    if fs.OS_NAME == "Windows" then
+        desktop = os.getenv("USERPROFILE") .. "\\Desktop"
+    else  -- Linux (XDG-desktop fallback)
+        desktop = os.getenv("HOME") .. "/Desktop"
+    end
+    fs.DirectoryEnsure(desktop)
+
+    -- Windows: generate <name>.lnk with PowerShell & WSH
+    if fs.OS_NAME == "Windows" then
+        local lnkPath = fs.PathJoin(desktop, name .. ".lnk")
+        icon         = icon or target     -- .lnk accepts “file,iconindex”
+        local psCmd  = ([[
+            $s=(New-Object -ComObject WScript.Shell).CreateShortcut('%s');
+            $s.TargetPath='%s';
+            $s.WorkingDirectory='%s';
+            $s.IconLocation='%s,0';
+            $s.Save()]]):format(lnkPath, target, fs.PathGetDirectory(target), icon)
+        local ok = os.execute(("powershell -NoProfile -Command \"%s\""):format(psCmd))
+        return ok == 0
+
+    -- Linux: generate <name>.desktop
+    elseif fs.OS_NAME == "Linux" then
+        local file = fs.PathJoin(desktop, name .. ".desktop")
+        local f = io.open(file, "w")
+        if not f then return false end
+
+        icon = icon or target
+        f:write("[Desktop Entry]\n")
+        f:write("Type=Application\n")
+        f:write("Name=", name, "\n")
+        f:write("Exec=\"", target, "\"\n")
+        f:write("Icon=", icon, "\n")
+        f:write("Terminal=false\n")
+        f:write("Categories=Game;\n")
+        f:close()
+        os.execute('chmod +x "'..file..'"')
+        return true
+    end
+
+    io.stderr:write("CreateDesktopLink: Unsupported OS: "..tostring(fs.OS_NAME).."\n")
     return false
 end
 
