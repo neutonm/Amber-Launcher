@@ -101,7 +101,7 @@ function OnAppConfigure()
 
     local configSuccessful = true
 
-    FS.DirectoryEnsure(GAME_DESTINATION_FOLDER)
+    FS.DirectoryEnsure(GAME_DESTINATION_PATH)
 
     -- Execute all available commands
     local commandTable = AL.GetTableOfCommands()
@@ -137,7 +137,7 @@ function OnPlay()
 
     print("Starting game...")
 
-    local destDir = (GAME_DESTINATION_FOLDER or ".")
+    local destDir = (GAME_DESTINATION_PATH or ".")
     local sep     = FS.OS_FILE_SEPARATOR
     destDir       = destDir:gsub(sep.."*$", "")
 

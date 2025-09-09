@@ -99,11 +99,11 @@ function AL_DetectGame(searchFolder, bIgnoreWav)
     print("Search path: "..dump(searchFolders))
 
     -- 1) Already in launcher folder?
-    local localExe = FS.PathResolveCaseInsensitive(GAME_DESTINATION_FOLDER, GAME_EXECUTABLE_NAME)
+    local localExe = FS.PathResolveCaseInsensitive(GAME_DESTINATION_PATH, GAME_EXECUTABLE_NAME)
     if localExe then
         print("Game executable present in destination folder.")
-        if FS.FilesCheck(GAME_DESTINATION_FOLDER, listOfFilesToCheck) then
-            return GAME_DESTINATION_FOLDER, "local"
+        if FS.FilesCheck(GAME_DESTINATION_PATH, listOfFilesToCheck) then
+            return GAME_DESTINATION_PATH, "local"
         else
             print("Game in destination is incomplete -> will continue searching…")
         end
@@ -165,7 +165,7 @@ local function _DetectAndCopyGame(searchFolder)
 
     sleep(1) -- give that ui time to close
 
-    return _CopyGameFiles(src, GAME_DESTINATION_FOLDER)
+    return _CopyGameFiles(src, GAME_DESTINATION_PATH)
 end
 
 -- Global callbacks

@@ -3,7 +3,7 @@
 
 local function _ConvertMusic()
 
-    musicDir = FS.PathJoin(GAME_DESTINATION_FOLDER, "Music")
+    musicDir = FS.PathJoin(GAME_DESTINATION_PATH, "Music")
     AL_print("Converting music files in directory: "..musicDir)
 
     local files = FS.DirectoryList(musicDir)

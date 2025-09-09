@@ -4,7 +4,7 @@
 -- Modal Mod Manager
 
 local modsRoot         = FS.PathJoin("Data", "Launcher", "Mods")
-local gameScriptsRoot  = FS.PathJoin(GAME_DESTINATION_FOLDER, "Scripts")
+local gameScriptsRoot  = FS.PathJoin(GAME_DESTINATION_PATH, "Scripts")
 local activeLua        = FS.PathJoin(modsRoot, "_active.lua")
 
 local function _Serialize(t, indent)
@@ -49,7 +49,7 @@ function AL_ScanMods()
         local manifestPath = FS.PathJoin(modsRoot, dir, "manifest.lua")
         if FS.IsFilePresent(manifestPath) then
             local ok, manifest = pcall(dofile, manifestPath)
-            if ok and type(manifest) == "table" and manifest.game == GAME_MOD_ID then
+            if ok and type(manifest) == "table" and manifest.game == GAME_MOD_ID_NAME then
                 manifest.id         = manifest.id or dir
                 manifest.root       = FS.PathJoin(modsRoot, dir)
                 manifest.screenshot = FS.PathJoin(manifest.root, "screenshot.jpg")
@@ -65,7 +65,7 @@ local function _CopyRule(m, rule)
     local dstRel = rule.dst or srcRel
 
     local srcAbs = FS.PathJoin(m.root, srcRel)
-    local dstAbs = FS.PathJoin(GAME_DESTINATION_FOLDER, dstRel)
+    local dstAbs = FS.PathJoin(GAME_DESTINATION_PATH, dstRel)
 
     FS.DirectoryEnsure(FS.PathGetDirectory(dstAbs))
 
@@ -90,13 +90,13 @@ local function _CopyRule(m, rule)
 end
 
 local function _DeleteRule(rule)
-    FS.PathDelete(FS.PathJoin(GAME_DESTINATION_FOLDER, rule.dst))
+    FS.PathDelete(FS.PathJoin(GAME_DESTINATION_PATH, rule.dst))
 end
 
 local function _MakeCtx(m, opts)
     return {
         FS       = FS,
-        gameRoot = GAME_DESTINATION_FOLDER,
+        gameRoot = GAME_DESTINATION_PATH,
         modRoot  = m.root,
         options  = opts or {},
         log      = function(...) print("[Mod " .. m.id .. "]", ...) end,

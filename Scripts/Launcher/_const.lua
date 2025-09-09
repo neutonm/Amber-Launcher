@@ -88,10 +88,13 @@ GAME_FOLDER_NAME        = GAME_FOLDER_NAME or {
 GAME_EXECUTABLE_FOLDERS = GAME_EXECUTABLE_FOLDERS or {}
 GAME_BASE_PATHS         = GAME_BASE_PATHS or {}
 GAME_EXECUTABLE_NAME    = GAME_EXECUTABLE_NAME or "mm7.exe"
-GAME_MOD_ID             = MODID_NAMES[MODID.AMBER]
+GAME_MOD_ID             = GAME_MOD_ID or MODID.AMBER
+GAME_MOD_ID_NAME        = MODID_NAMES[GAME_MOD_ID]
+GAME_MOD_ID_TITLE       = MODID_TITLE[GAME_MOD_ID]
 
-LAUNCHER_BUILD          = _BUILD_NUMBER
-LAUNCHER_VERSION        = 100
+LAUNCHER_NAME           = LAUNCHER_NAME or "AmberLauncherGUI"
+LAUNCHER_BUILD          = LAUNCHER_BUILD or _BUILD_NUMBER
+LAUNCHER_VERSION        = LAUNCHER_VERSION or 100
 
 
 -- OS Specific variables
@@ -102,8 +105,8 @@ else
     OS_FILE_SEPARATOR = '/'
 end
 
-local extGameFolder     = _DEBUG and "DST" or ""
-GAME_DESTINATION_FOLDER = GAME_DESTINATION_FOLDER or "."..OS_FILE_SEPARATOR..extGameFolder
+GAME_DESTINATION_FOLDER = _DEBUG and "DST" or ""
+GAME_DESTINATION_PATH   = GAME_DESTINATION_PATH or "."..OS_FILE_SEPARATOR..GAME_DESTINATION_FOLDER
 
 -- Common system-specific folders for the game
 if OS_NAME == "Windows" then
@@ -133,12 +136,12 @@ elseif OS_NAME == "Linux" then
 end
 
 -- Mods
-MOD_ROOT_FOLDER = (GAME_DESTINATION_FOLDER .. OS_FILE_SEPARATOR ..
+MOD_ROOT_FOLDER = (GAME_DESTINATION_PATH .. OS_FILE_SEPARATOR ..
                 table.concat({ "Data", "Launcher", "Mods" }, OS_FILE_SEPARATOR))
 
 -- Common files
-INI_PATH_MM7            = GAME_DESTINATION_FOLDER..OS_FILE_SEPARATOR.."mm7.ini"
-INI_PATH_MOD            = GAME_DESTINATION_FOLDER..OS_FILE_SEPARATOR.."mod.ini"
+INI_PATH_MM7            = GAME_DESTINATION_PATH..OS_FILE_SEPARATOR.."mm7.ini"
+INI_PATH_MOD            = GAME_DESTINATION_PATH..OS_FILE_SEPARATOR.."mod.ini"
 
 -- Generate the combinations of base paths and game folder names
 for _, basePath in ipairs(GAME_BASE_PATHS) do

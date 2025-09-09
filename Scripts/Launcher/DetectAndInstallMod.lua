@@ -67,12 +67,12 @@ local function _DetectAndInstallMod()
 
     print("Detecting mod...")
 
-    if IsAmberIslandMod(GAME_DESTINATION_FOLDER) then
+    if IsAmberIslandMod(GAME_DESTINATION_PATH) then
         return true
     end
 
     AL_print("Amber Island mod is not detected. Installing it now...")
-    if not InstallMod(GAME_DESTINATION_FOLDER) then
+    if not InstallMod(GAME_DESTINATION_PATH) then
         return false
     end
 

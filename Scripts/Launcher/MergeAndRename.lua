@@ -139,8 +139,8 @@ local function _MergeAndRename()
     AL_print("Merging/Renaming files...")
 
     -- Run the processing function
-    ProcessFolders(GAME_DESTINATION_FOLDER, folderNames)
-    ProcessFiles(GAME_DESTINATION_FOLDER, fileNames)
+    ProcessFolders(GAME_DESTINATION_PATH, folderNames)
+    ProcessFiles(GAME_DESTINATION_PATH, fileNames)
 
     AL_print("Done!")
 

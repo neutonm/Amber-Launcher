@@ -3,7 +3,7 @@
 --              modal window during autoconfig
 
 local archivesDir      = FS.PathJoin("Data", "Launcher", "Archives")
-local localizationDir  = FS.PathJoin(GAME_DESTINATION_FOLDER, "Scripts", "Localization")
+local localizationDir  = FS.PathJoin(GAME_DESTINATION_PATH, "Scripts", "Localization")
 
 -------------------------------------------------------------------------------
 ---
@@ -74,7 +74,7 @@ function AL_LocaliseCoreFreeAll()
         FS.PathJoin("SOUNDS", "loc.Audio.snd"),
     }
 
-    return _DeleteList(GAME_DESTINATION_FOLDER, files)
+    return _DeleteList(GAME_DESTINATION_PATH, files)
 end
 
 local function _LocaliseCore(t)
@@ -82,7 +82,7 @@ local function _LocaliseCore(t)
     AL_print("Core game localisation: "..(t.code).."\n")
 
     local archivePath = _FindArchive("core", t.code)
-    if not AL.ArchiveExtract(archivePath, GAME_DESTINATION_FOLDER) then
+    if not AL.ArchiveExtract(archivePath, GAME_DESTINATION_PATH) then
         AL_print("Failed to extract core-"..(t.code)..".zip")
         return false
     end
@@ -108,7 +108,7 @@ AL_TLocales = {
                             "mm7text.dll"
                         }
 
-                        _DeleteList(GAME_DESTINATION_FOLDER, files)
+                        _DeleteList(GAME_DESTINATION_PATH, files)
                         
                         return true
                     end,
@@ -136,7 +136,7 @@ AL_TLocales = {
                             "mm7text.dll"
                         }
 
-                        _DeleteList(GAME_DESTINATION_FOLDER, files)
+                        _DeleteList(GAME_DESTINATION_PATH, files)
 
                         return true
                     end,
