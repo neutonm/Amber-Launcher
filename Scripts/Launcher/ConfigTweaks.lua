@@ -9,16 +9,22 @@ local _TweakerWizardEntries = {
         { optionName = "Turn",      imagePath = "Data/Launcher/tweak-strafe-b.gif" },
     },
     {
-        info = "Decide how GUI would look like.",
+        info = "Choose between the classic UI or a new HD widescreen interface that gives you more view space.",
         tag = "gui",
         { optionName = "Modern",    imagePath = "Data/Launcher/tweak-gui-a.jpg" },
         { optionName = "Original",  imagePath = "Data/Launcher/tweak-gui-b.jpg" }
     },
     {
-        info = "David's sprites",
+        info = "Mod: Uses DaveHer’s HD foliage sprites, replacing the vanilla foliage.",
         tag = "david",
-        { optionName = "HD",        imagePath = "Data/Launcher/tweak-gui-a.jpg" }, -- temp
-        { optionName = "Original",  imagePath = "Data/Launcher/tweak-gui-b.jpg" }  -- temp
+        { optionName = "HD",        imagePath = "Data/Launcher/tweak-daveher-a.jpg" },
+        { optionName = "Original",  imagePath = "Data/Launcher/tweak-daveher-b.jpg" }
+    },
+    {
+        info = "Mod: Replaces the default map texture with a version that marks shops, teachers, and dungeons for easier navigation.",
+        tag = "mapicons",
+        { optionName = "Extra Icons",imagePath = "Data/Launcher/tweak-mapicons-a.jpg" },
+        { optionName = "Original",   imagePath = "Data/Launcher/tweak-mapicons-b.jpg" }
     }
 }
 
@@ -35,7 +41,6 @@ local function _ConfigTweaks()
     local uiResponse = AL.UICall(UIEVENT.MODAL_TWEAKER, _TweakerWizardEntries)
     if uiResponse and uiResponse.status == true then
 
-
         if uiResponse.strafe then
             local myStr = AL.INIGet(ini, "Settings", "AlwaysStrafe")
             AL.INISet(ini, "Settings", "AlwaysStrafe", tostring(1 - uiResponse.strafe))
@@ -49,7 +54,25 @@ local function _ConfigTweaks()
         end
 
         if uiResponse.david then
-            -- special non-ini case...
+            AL_UninstallMod("davidsprites")
+
+            if uiResponse.david == 0 then
+                local ok, err = AL_InstallMod("davidsprites")
+                if not ok then
+                    print("Failed:", err)
+                end
+            end
+        end
+
+        if uiResponse.mapicons then
+            AL_UninstallMod("extramapicons")
+
+            if uiResponse.mapicons == 0 then
+                local ok, err = AL_InstallMod("extramapicons")
+                if not ok then
+                    print("Failed:", err)
+                end
+            end
         end
 
         AL.INISave(ini, INI_PATH_MM7)

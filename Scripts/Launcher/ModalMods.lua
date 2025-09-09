@@ -41,7 +41,9 @@ local function _TablesEqual(a, b)
     return true
 end
 
-local function _ScanMods()
+--- Scans for mods with a valid `manifest.lua` and returns normalized manifests (`id`, `root`, `screenshot`).
+-- @treturn {table,...} List of manifest tables
+function AL_ScanMods()
     local list = {}
     for _, dir in ipairs(FS.DirectoryList(modsRoot) or {}) do
         local manifestPath = FS.PathJoin(modsRoot, dir, "manifest.lua")
@@ -130,7 +132,9 @@ local function _SaveSettings(modId, tbl)
     f:close()
 end
 
-local function _LoadActive()
+--- Loads the active mods table
+-- @treturn table Active mods table (empty if missing/invalid)
+function AL_LoadActiveMods()
     if FS.IsFilePresent(activeLua) then
         local ok, t = pcall(dofile, activeLua)
         if ok and type(t) == "table" then
@@ -154,11 +158,109 @@ local function _DebugList(mods, activeSet)
     end
 end
 
+-- Extra Public api functions
+function AL_InstallMod(modId, opts)
+    assert(type(modId) == "string", "modId must be a string")
+
+    -- Discover and index mods
+    local byId = {}
+    for _, m in ipairs(AL_ScanMods()) do
+        byId[m.id] = m
+    end
+
+    local m = byId[modId]
+    if not m then
+        return nil, "Unknown mod: " .. tostring(modId)
+    end
+
+    local active = AL_LoadActiveMods()
+    for _, id in ipairs(active) do
+        if id == modId then
+            return true -- already installed
+        end
+    end
+
+    -- Install
+    _InstallManifest(m, opts or {})
+    active[#active + 1] = modId
+    _SaveActive(active)
+
+    return true
+end
+
+--- Uninstalls the given mod if currently active.
+-- @tparam      string modId The ID of the mod to uninstall
+-- @tparam[opt] table opts Runtime option overrides
+-- @treturn[1]  true When uninstallation succeeds or mod already inactive
+-- @treturn[1]  nil|string errmsg Error description on failure
+function AL_UninstallMod(modId, opts)
+    assert(type(modId) == "string", "modId must be a string")
+
+    local byId = {}
+
+    for _, m in ipairs(AL_ScanMods()) do
+        byId[m.id] = m
+    end
+
+    local m = byId[modId]
+    if not m then
+        return nil, "Unknown mod: " .. tostring(modId)
+    end
+
+    local active = AL_LoadActiveMods()
+    local idx
+    for i, id in ipairs(active) do
+        if id == modId then
+            idx = i break
+        end
+    end
+
+    if not idx then
+        return true
+    end
+
+    -- Uninstall
+    _UninstallManifest(m, opts or {})
+    table.remove(active, idx)
+    _SaveActive(active)
+    return true
+end
+
+--- Reinstalls the given mod by performing an uninstall (if necessary) followed by a fresh install.
+-- @tparam      string modId The ID of the mod to reinstall
+-- @tparam[opt] table opts Runtime option overrides to apply during (re)install
+-- @treturn[1]  true When reinstall succeeds
+-- @treturn[1]  nil|string errmsg Error description on failure
+function AL_ReinstallMod(modId, opts)
+
+    local ok, err = AL_UninstallMod(modId, opts)
+
+    if not ok and err then
+        return nil, err
+    end
+
+    return AL_InstallMod(modId, opts)
+end
+
+--- Checks whether the given mod is currently active.
+-- @tparam string modId
+-- @treturn boolean
+function AL_IsModActive(modId)
+
+    for _, id in ipairs(AL_LoadActiveMods()) do
+        if id == modId then
+            return true
+        end
+    end
+    return false
+end
+
+-- Manager
 local modsTable = {}
 
 function ModalShowModManager()
-    local mods      = _ScanMods()
-    local activeSeq = _LoadActive()
+    local mods      = AL_ScanMods()
+    local activeSeq = AL_LoadActiveMods()
     local activeSet = {}
     for _, id in ipairs(activeSeq) do
         activeSet[id] = true
