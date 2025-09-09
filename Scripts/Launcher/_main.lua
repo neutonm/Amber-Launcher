@@ -188,7 +188,7 @@ function OnSidebuttonClick(buttonID)
         ModalShowTools()
         retVal = false
     elseif (buttonID == UISIDEBUTTON.UPDATE) then
-        AL.UICall(UIEVENT.MODAL_UPDATER)
+        ModalShowUpdater()
         retVal = false
     end
 

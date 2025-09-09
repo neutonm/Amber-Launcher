@@ -1711,7 +1711,7 @@ AutoUpdate_Update(AppGUI *pApp)
     if (!pJsonStream)
     {
         bstd_printf(
-            "[Auto Updater] Couldn't fetch manifest.json"
+            "[Updater] Couldn't fetch manifest.json"
             "\n\tdResult: %d\n\teInetError: %d\n",
             dResult,
             eInetError);
@@ -1719,7 +1719,7 @@ AutoUpdate_Update(AppGUI *pApp)
         {
             textview_printf(
                 pApp->pTextView,
-                "[Auto Updater] Couldn't fetch manifest.json"
+                "[Updater] Couldn't fetch manifest.json"
                 "\n\tdResult: %d\n\teInetError: %d\n",
                 dResult,
                 eInetError);
@@ -1728,7 +1728,7 @@ AutoUpdate_Update(AppGUI *pApp)
     }
 
     bstd_printf(
-            "[Auto Updater] Manifest retrieved successfuly:\n"
+            "[Updater] Manifest retrieved successfuly:\n"
             "• dResult: \t\t%d\n• eInetError: \t\t%d\n",
             dResult,
             eInetError);
@@ -1736,7 +1736,7 @@ AutoUpdate_Update(AppGUI *pApp)
     {
         textview_printf(
             pApp->pTextView,
-            "[Auto Updater] Manifest retrieved successfuly:\n"
+            "[Updater] Manifest retrieved successfuly:\n"
             "• dResult: \t\t%d\n• eInetError: \t\t%d\n",
             dResult,
             eInetError);
@@ -1761,15 +1761,15 @@ AutoUpdate_Update(AppGUI *pApp)
     }
 
     /* Download files */
-    bstd_printf("Remote Updater Server: %s\n", _sAutoUpdateRemoteRootURL);
+    bstd_printf("[Updater] Remote Updater Server: %s\n", _sAutoUpdateRemoteRootURL);
     arrst_foreach(elem, pJson->files, InetUpdaterFile)
         bool_t bFileExists  = hfile_exists(tc(elem->path),0);
         char *sSHA256Hash   = AmberLauncher_SHA256_HashFile(tc(elem->path));
 
-        bstd_printf("Downloading %s...\n", tc(elem->path));
+        bstd_printf("[Updater] Downloading %s...\n", tc(elem->path));
         if (pApp->pTextView)
         {
-            textview_printf(pApp->pTextView, "Downloading %s...\n", tc(elem->path));
+            textview_printf(pApp->pTextView, "[Updater] Downloading %s...\n", tc(elem->path));
         }
 
         if (!bFileExists)
@@ -1777,10 +1777,10 @@ AutoUpdate_Update(AppGUI *pApp)
             Stream *pFile           = stm_to_file(tc(elem->path), NULL);
             String *sDownloadLink   = str_printf("%s%s", _sAutoUpdateRemoteRootURL, tc(elem->path));
 
-            bstd_printf("Local file doesn't exist!\n");
+            bstd_printf("[Updater] Local file doesn't exist!\n");
             if (pApp->pTextView)
             {
-                textview_printf(pApp->pTextView, "Local file doesn't exist!\n");
+                textview_printf(pApp->pTextView, "[Updater] Local file doesn't exist!\n");
             }
             pFile = http_dget(tc(sDownloadLink), NULL, NULL);
             if (pFile)
@@ -1795,10 +1795,10 @@ AutoUpdate_Update(AppGUI *pApp)
         }
         else if (sSHA256Hash)
         {
-            bstd_printf("sha256 dummy.lua:\n\t%s\n", sSHA256Hash);
+            bstd_printf("[Updater] sha256 dummy.lua:\n\t%s\n", sSHA256Hash);
             if (pApp->pTextView)
             {
-                textview_printf(pApp->pTextView, "sha256 dummy.lua:\n\t%s\n", sSHA256Hash);
+                textview_printf(pApp->pTextView, "[Updater] sha256 dummy.lua:\n\t%s\n", sSHA256Hash);
             }
 
             if (str_cmp(elem->sha256, sSHA256Hash) != 0)
@@ -1806,10 +1806,10 @@ AutoUpdate_Update(AppGUI *pApp)
                 Stream *pFile;
                 String *sDownloadLink = str_printf("%s%s", _sAutoUpdateRemoteRootURL, tc(elem->path));
 
-                bstd_printf("Remote file is different!\n");
+                bstd_printf("[Updater] Remote file is different!\n");
                 if (pApp->pTextView)
                 {
-                    textview_printf(pApp->pTextView, "Remote file is different!\n");
+                    textview_printf(pApp->pTextView, "[Updater] Remote file is different!\n");
                 }
                 pFile = http_dget(tc(sDownloadLink), NULL, NULL);
                 if (pFile)
