@@ -377,26 +377,30 @@ Panel_GetImageDemo(AppGUI *pApp)
     Panel       *pPanelMain     = panel_create();
     Layout      *pLayoutMain    = layout_create(1, 1);
     ImageView   *pImageView     = imageview_create();
-    Image       *pImage;
+    Image       *pImage         = NULL;
     ferror_t    eError;
 
-    assert(pApp->pString);
-
     /* Image */
-    pImage = image_from_file(tc(pApp->pString), &eError);
-    assert(eError == ekFOK);
+    if (IS_VALID(pApp->pString))
+    {
+        pImage = image_from_file(tc(pApp->pString), &eError);
+        assert(eError == ekFOK);
+    }
 
     /* Image View */
     imageview_scale(pImageView, ekGUI_SCALE_AUTO);
     imageview_size(pImageView, s2df(480,320));
-    imageview_image(pImageView, pImage);
+    imageview_image(pImageView, eError == ekFOK ? pImage : NULL);
 
     /* Layout: Main */
     layout_imageview(pLayoutMain, pImageView, 0, 0);
 
     panel_layout(pPanelMain, pLayoutMain);
 
-    image_destroy(&pImage);
+    if (IS_VALID(pImage))
+    {
+        image_destroy(&pImage);
+    }
 
     unref(pApp);
     return pPanelMain;
@@ -1981,7 +1985,11 @@ Callback_OnButtonModalTweaker(AppGUI *pApp, Event *e)
     }
 
     str_destopt(&pApp->pString);
-    pApp->pString = str_copy(pTweaker->pStringImagePath[dImageIndex]);
+    pApp->pString = NULL;
+    if (pTweaker->pStringImagePath[dImageIndex])
+    {
+        pApp->pString = str_copy(pTweaker->pStringImagePath[dImageIndex]);
+    }
     layout_panel_replace(pApp->pLayoutModalMain, Panel_GetImageDemo(pApp), 0, 2);
 
     layout_update(pApp->pLayoutModalMain);
