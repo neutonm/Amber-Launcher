@@ -13,18 +13,10 @@ Table Of Contents:
 - [GUI Library](#gui-library)
 - [Lua Scripts](#lua-scripts)
 
-> Next:     Auto-Updater / Downloader
-> - Auto Update GUI modal window + script
-> - re-install mods (if they are updated), maybe add "Update" button in mod manager
-> - change button to green (or whatever) to indicate "update is available" notification
-> Mod idea: map icons (teachers, shops, etc)
-> The END
-
 ## Main
 *General points towards development*
 
 - [X] Fix memory leaks
-- [ ] Revert/Enable/Disable features for every command
 - [ ] Uninstall Game/Mod feature (should totally revert everything + backup saves)
 - [ ] App and scripts must be based on specified game (Amber Island by default)
 - - It's step into the future, providing app usage for multiple mods
@@ -46,7 +38,7 @@ Table Of Contents:
 - [ ] rename header guards: conform to one convention
 - [ ] extern_c for every header!
 - [ ] lua error report
-- [ ] SCOmmand - change SCommandArg to SVar
+- [ ] SCommand - change SCommandArg to SVar
  
 #### Lua Module:
 - [x] Return status code from AL.CommandCall
@@ -78,7 +70,6 @@ Table Of Contents:
 - - INI file gets opened too many times, very stupid move.
 - [ ] DetectAndCopyGame.lua
 - - check and warn if user suddenly points to mm6 or mm8 (optional)
-- - Browse button: if file browser window is canceled without specifiying, you get appcrash (nappgui error)
 - - if during game detection issues occur - decide whether to continue searching game or not
 - - UI:
 - - - extra: put a header picture
@@ -91,12 +82,9 @@ Table Of Contents:
 - - Errors should show modal window with error message and allow to continue or abort operation.
 - - - UserEvent call can be utilized here (or separate internal errorReport event)
 - - printfs should really print to pApp->pTextView
-- [ ] DetectAndInstallMod.lua
-- [ ] MergeAndRename.lua
-- [ ] ConvertMusic.lua
-- [ ] RegistryTweaks.lua
-- [ ] ConfigTweak.lua
-- - import precached default mm7.ini
-> Tweaker: 
-> - David's HD sprite pack
+- [X] DetectAndInstallMod.lua
+- [X] MergeAndRename.lua
+- [X] ConvertMusic.lua
+- [X] RegistryTweaks.lua
+- [X] ConfigTweak.lua
 - [X] Localization.lua
