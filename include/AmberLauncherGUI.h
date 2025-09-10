@@ -186,6 +186,7 @@ typedef struct
     Layout          *pLayoutModalMain;
     Layout          *pLayoutExtra;
     String          *pString;
+    Progress        *pProgressbar;
 
     GUITweaker      tGUITweaker[APP_MAX_ELEMENTS];
     unsigned int    dPage;

@@ -1507,6 +1507,8 @@ _Panel_GetModalUpdaterSubpanel(AppGUI *pApp)
     TextView *pTextView            = textview_create();
     Progress *pProgressbar         = progress_create();
 
+    pApp->pProgressbar = pProgressbar;
+
     /* Labels */
     label_text(pLabelTitle, TXT_LABEL_UPDATER_TITLE);
     label_text(pLabelInfo, TXT_UPDATERINFO);
@@ -1516,7 +1518,7 @@ _Panel_GetModalUpdaterSubpanel(AppGUI *pApp)
     textview_size(pTextView, s2df(480, 128));
 
     /* Progress: Download */
-    progress_value(pProgressbar, 0.32f);
+    progress_value(pProgressbar, 0.0f);
 
     /* Layout: Text */
     layout_label(pLayoutText,pLabelTitle, 0, 0);
@@ -1705,6 +1707,8 @@ AutoUpdate_Update(AppGUI *pApp)
     ierror_t            eInetError;
     Stream              *pJsonStream;
     InetUpdaterJSONData *pJson;
+    real32_t            fProgressIndex;
+    real32_t            fProgressMax;
 
     static const char *sFileArrayFmt = "• File: %s\n• • sha256: \n%s\n• • size: %u\n";
 
@@ -1766,6 +1770,14 @@ AutoUpdate_Update(AppGUI *pApp)
     }
 
     /* Download files */
+    fProgressIndex  = 0.0f;
+    fProgressMax    = (real32_t)arrst_size(pJson->files, InetUpdaterFile);
+    if (pApp->pProgressbar)
+    {
+        progress_value(pApp->pProgressbar, 
+            0.0f);
+    }
+    
     bstd_printf("[Updater] Remote Updater Server: %s\n", _sAutoUpdateRemoteRootURL);
     arrst_foreach(elem, pJson->files, InetUpdaterFile)
         bool_t bFileExists  = hfile_exists(tc(elem->path),0);
@@ -1832,6 +1844,12 @@ AutoUpdate_Update(AppGUI *pApp)
                 str_destroy(&sDownloadLink);
                 stm_close(&pFile);
             }
+        }
+        fProgressIndex += 1.0f;
+        if (pApp->pProgressbar)
+        {
+            progress_value(pApp->pProgressbar, 
+                fProgressIndex / fProgressMax);
         }
         free(sSHA256Hash);
     arrst_end()
