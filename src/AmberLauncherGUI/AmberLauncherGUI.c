@@ -2409,6 +2409,8 @@ _Nappgui_Start(void)
     inet_start();
     AutoUpdate_Init();
 
+    AmberLauncher_Start(pApp->pAppCore);
+
     pPanel           = _Panel_GetRoot(pApp);
     pApp->pWindow    = window_create(
         ekWINDOW_TITLE |
@@ -2424,8 +2426,6 @@ _Nappgui_Start(void)
     /* window_origin(pApp->pWindow, v2df(800, 400)); */
     window_OnClose(pApp->pWindow, listener(pApp, _Callback_OnCloseMainWindow, AppGUI));
     window_show(pApp->pWindow);
-
-    AmberLauncher_Start(pApp->pAppCore);
 
     return pApp;
 }
