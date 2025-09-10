@@ -89,6 +89,35 @@ local function _GetOptionsTable()
                 end
             },
             {
+                title       = "Close App On Game Launch:",
+                id          = "closeonlaunch",
+                type        = UIWIDGET.RADIO,
+                optTitle    = {
+                    "False",
+                    "True"
+                },
+                default     = (function()
+                    local ini    = AL.INILoad(INI_PATH_MOD)
+                    local retStr = AL.INIGet(ini, "Settings", "CloseOnLaunch")
+                    AL.INIClose(ini)
+
+                    if retStr == nil or retStr == "" then
+                        retStr = "0"
+                    end
+
+                    return tonumber(retStr)
+                end)(),
+                callback    = function(t)
+
+                    local ini = AL.INILoad(INI_PATH_MOD)
+                    if ini ~= nil then
+                        AL.INISet(ini, "Settings", "CloseOnLaunch", tonumber(t.value))
+                        AL.INISave(ini, INI_PATH_MOD)
+                    end
+                    AL.INIClose(ini)
+                end
+            },
+            {
                 title       = "Window Mode:",
                 id          = "windowmode",
                 type        = UIWIDGET.RADIO,
@@ -99,7 +128,7 @@ local function _GetOptionsTable()
                 default     = AL.GetRegistryKey("startinwindow"),
                 callback    = function(t)
 
-                    AL.SetRegistryKey("startinwindow", t.value)
+                    AL.SetRegistryKey("startinwindow", tonumber(t.value))
                 end
             },
             {

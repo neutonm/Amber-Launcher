@@ -44,6 +44,7 @@ const char* EUIEventTypeStrings[] = {
     "PRINT",
     "MAIN",
     "PLAY",
+    "EXITAPP",
     "AUTOCONFIG",
     "MODAL_CLOSE",
     "MODAL_MESSAGE",
@@ -986,7 +987,7 @@ static Panel*
 _Panel_GetModalOptionSubpanel(AppGUI *pApp)
 {
     Panel       *pPanelMain         = panel_scroll(FALSE,TRUE);
-    Layout      *pLayoutMain        = layout_create(8,16);
+    Layout      *pLayoutMain        = layout_create(8,MAX_OPT_ELEMS);
 
     unsigned int i      = 0;
     unsigned int j      = 0;
@@ -2718,6 +2719,11 @@ _Callback_UIEvent(
             {
                 AmberLauncher_Play(pApp->pAppCore);
                 SVARKEYB_BOOL(tRetVal, sStatusKey, CTRUE);
+            }
+            break;
+        case UIEVENT_EXITAPP:
+            {
+                osapp_finish();
             }
             break;
 

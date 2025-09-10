@@ -146,8 +146,18 @@ function OnPlay()
         return
     end
 
+    local ini               = AL.INILoad(INI_PATH_MOD)
+    local bCloseOnLaunch    = nil
+    local sLaunchCmd        = nil
+    if ini ~= nil then
+        bCloseOnLaunch      = AL.INIGet(ini, "Settings", "CloseOnLaunch")
+        sLaunchCmd          = AL.INIGet(ini, "Settings", "LaunchCommand")
+        bCloseOnLaunch      = tonumber(bCloseOnLaunch)
+    end
+    AL.INIClose(ini)
+
     local fullExePath  = FS.PathJoin(destDir, GAME_EXECUTABLE_NAME)
-    local cmd          = AL.GetLaunchCommand()
+    local cmd          = sLaunchCmd or AL.GetLaunchCommand()
     if cmd:find(fullExePath, 1, true) then
         return
     end
@@ -169,6 +179,11 @@ function OnPlay()
     -- Permission for exe on Linux
     if OS_NAME ~= "Windows" and not FS.IsFileExecutable(fullExePath) then
         os.execute(('chmod +x "%s" 2>/dev/null'):format(fullExePath))
+    end
+
+    -- close nappgui (cleaner solution)
+    if bCloseOnLaunch > 0 then
+        AL.UICall(UIEVENT.EXITAPP)
     end
 end
 

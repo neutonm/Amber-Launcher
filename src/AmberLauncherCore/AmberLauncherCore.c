@@ -668,7 +668,7 @@ AmberLauncher_Play(AppCore* pAppCore)
         pAppCore->sLaunchCmd,
         0,
         NULL,
-        CTRUE
+        CFALSE
     );
 }
 
