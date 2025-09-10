@@ -15,6 +15,11 @@ Complete overhaul of foliage sprites: trees, flowers, plant pots, etc.
       autoclear = true 
     },
     { 
+      src       = "Assets/dsft.bin", 
+      dst       = "DataFiles/dsft.bin", 
+      autoclear = true 
+    },
+    { 
       src       = "Assets/SFT.txt",
       dst       = "Data/Tables/SFT_david.txt",
       autoclear = true
