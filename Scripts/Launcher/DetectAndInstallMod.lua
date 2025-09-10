@@ -1,17 +1,29 @@
 
+local function _parseVersion(v)
+    -- "major.minor.patch" or "major.minor"
+    local maj, min, pat = v:match("^(%d+)%.(%d+)%.?(%d*)$")
+    return tonumber(maj) or 0,
+           tonumber(min) or 0,
+           tonumber(pat) or 0
+end
+
 local function IsAmberIslandMod(destinationFolder)
 
     local approxCustomDungeonScriptSize = 4
+    
+    local modManifestLua   = FS.PathJoin(destinationFolder, "Scripts", "manifest.lua")
+    local modManifestTable = {}
 
     -- Latest iteration
-    local ini = AL.INILoad(INI_PATH_MOD)
-    if ini then
-        local myStr = AL.INIGet(ini, "Info", "Version")
-        if myStr then
-            print("Detected Amber Island Mod. Version: "..myStr)
-            return true, tonumber(myStr)
+    if FS.IsFilePresent(modManifestLua) then
+        local ok, t = pcall(dofile, modManifestLua)
+        if ok and type(t) == "table" then
+            modManifestTable = t
+            print(string.format("Detected Amber Island Mod.\n"..
+            "• Name: \t\t%s (%s)\n\tVersion: \t\t%s\n\tLast update: \t%s",
+            t.name, t.game, t.version, t.updated))
+            return true, _parseVersion(t.version)
         end
-        AL.INIClose(ini)
     end
 
     -- Original Public release
