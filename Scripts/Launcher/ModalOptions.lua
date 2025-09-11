@@ -91,11 +91,7 @@ local function _GetOptionsTable()
             {
                 title       = "Close App On Game Launch:",
                 id          = "closeonlaunch",
-                type        = UIWIDGET.RADIO,
-                optTitle    = {
-                    "False",
-                    "True"
-                },
+                type        = UIWIDGET.CHECKBOX,
                 default     = (function()
                     local ini    = AL.INILoad(INI_PATH_MOD)
                     local retStr = AL.INIGet(ini, "Settings", "CloseOnLaunch")
@@ -125,7 +121,7 @@ local function _GetOptionsTable()
                     "Fullscreen",
                     "Windowed"
                 },
-                default     = AL.GetRegistryKey("startinwindow"),
+                default     = 0, AL.GetRegistryKey("startinwindow"),
                 callback    = function(t)
 
                     AL.SetRegistryKey("startinwindow", tonumber(t.value))
@@ -139,7 +135,7 @@ local function _GetOptionsTable()
                     "Software",
                     "Hardware"
                 },
-                default     = AL.GetRegistryKey("2dacceloff"),
+                default     = 0, AL.GetRegistryKey("2dacceloff"),
                 callback    = function(t)
 
                     local registryValues = {
@@ -238,8 +234,8 @@ local function _GetOptionsTable()
                 id          = "strafe",
                 type        = UIWIDGET.RADIO,
                 optTitle    = {
-                    "Turn left/right",
-                    "Move left/right (strafe)"
+                    "Turn ",
+                    "Move (strafe)"
                 },
                 default     = 1,
                 callback    = function(t)
@@ -276,11 +272,7 @@ local function _GetOptionsTable()
             {
                 title       = "Mouse Look Mode:",
                 id          = "mouselook",
-                type        = UIWIDGET.RADIO,
-                optTitle    = {
-                    "Disabled",
-                    "Enabled"
-                },
+                type        = UIWIDGET.CHECKBOX,
                 default     = 1,
                 callback    = function(t)
 
@@ -291,22 +283,6 @@ local function _GetOptionsTable()
                     AL.INISet(ini, "Settings", "MouseLook", tostring(t.value))
                     AL.INISave(ini, INI_PATH_MM7)
                     AL.INIClose(ini)
-                end
-            },
-        },
-        {
-            sectionName     = "Mods",
-            {
-                title       = "Mods:",
-                id          = "modslist",
-                type        = UIWIDGET.LISTBOX,
-                optTitle    = {
-                    "David's Stuff",
-                },
-                default     = 0,
-                callback    = function(t)
-
-                    -- @todo
                 end
             },
         },

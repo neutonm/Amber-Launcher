@@ -17,7 +17,7 @@ local _TweakerWizardEntries = {
     {
         info = "Mod: Uses DaveHer’s HD foliage sprites, replacing the vanilla foliage.",
         tag = "david",
-        { optionName = "HD",        imagePath = "Data/Launcher/tweak-daveher-a.jpg" },
+        { optionName = "New",       imagePath = "Data/Launcher/tweak-daveher-a.jpg" },
         { optionName = "Original",  imagePath = "Data/Launcher/tweak-daveher-b.jpg" }
     },
     {

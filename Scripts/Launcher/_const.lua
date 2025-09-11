@@ -40,10 +40,11 @@ UIEVENT = {
 UIWIDGET = {
     NULL                = 0,
     RADIO               = 1,
-    POPUP               = 2,
-    EDIT                = 3,
-    LISTBOX             = 4,
-    MAX                 = 5
+    CHECKBOX            = 2,
+    POPUP               = 3,
+    EDIT                = 4,
+    LISTBOX             = 5,
+    MAX                 = 6
 }
 
 UISIDEBUTTON = {

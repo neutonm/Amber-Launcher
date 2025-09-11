@@ -59,20 +59,30 @@ const char* EUIEventTypeStrings[] = {
     NULL
 };
 
-static const real32_t TITLE_PNG_W    = 672;
-static const real32_t TITLE_PNG_H    = 200;
-static const real32_t ICO_PNG_W      = 32;
-static const real32_t ICO_PNG_H      = 32;
-#define MODAL_OPT_NULL      1000
-#define MODAL_OPT_A         1001
-#define MODAL_OPT_B         1002
-#define MODAL_OPT_MAX       1030
-#define MODAL_CANCEL        1031
-#define MODAL_ACCEPT        1032
-#define MODAL_BROWSE        1033
-#define MODAL_PREVIOUS      1034
-#define MODAL_NEXT          1035
-#define MODAL_UPDATE_APP    1036
+static const real32_t PANEL_DEFAULT_W       = 640.f;
+static const real32_t PANEL_DEFAULT_H       = 480.f;
+static const real32_t LAYOUT_DEFAULT_MARGIN = 4.f;
+static const real32_t TITLE_PNG_W           = 672.f;
+static const real32_t TITLE_PNG_H           = 200.f;
+static const real32_t ICO_PNG_W             = 32.f;
+static const real32_t ICO_PNG_H             = 32.f;
+static const real32_t IMAGE_DEFAULT_W       = 480.f;
+static const real32_t IMAGE_DEFAULT_H       = 320.f;
+
+/* shortcut */
+static const real32_t _fDefMarg             = LAYOUT_DEFAULT_MARGIN;
+static const real32_t _fMinBtnWidth         = 128.f;
+
+#define MODAL_OPT_NULL                      1000
+#define MODAL_OPT_A                         1001
+#define MODAL_OPT_B                         1002
+#define MODAL_OPT_MAX                       1030
+#define MODAL_CANCEL                        1031
+#define MODAL_ACCEPT                        1032
+#define MODAL_BROWSE                        1033
+#define MODAL_PREVIOUS                      1034
+#define MODAL_NEXT                          1035
+#define MODAL_UPDATE_APP                    1036
 
 /******************************************************************************
  * STATIC DECLARATIONS
@@ -390,7 +400,7 @@ Panel_GetImageDemo(AppGUI *pApp)
 
     /* Image View */
     imageview_scale(pImageView, ekGUI_SCALE_AUTO);
-    imageview_size(pImageView, s2df(480,320));
+    imageview_size(pImageView, s2df(IMAGE_DEFAULT_W,IMAGE_DEFAULT_H));
     imageview_image(pImageView, eError == ekFOK ? pImage : NULL);
 
     /* Layout: Main */
@@ -482,11 +492,13 @@ Panel_GetModalMessage(AppGUI* pApp)
 {
     Panel   *pPanelMain     = panel_create();
     Layout  *pLayoutMain    = layout_create(1,2);
+    Layout  *pLayoutButton  = layout_create(1,1);
     Label   *pLabelMessage  = label_create();
     Button  *pButtonOK      = button_push();
 
     /* Label: Message */
     label_text(pLabelMessage, TXT_NULL);
+    label_multiline(pLabelMessage, TRUE);
     if (pApp)
     {
         if (pApp->pString)
@@ -500,9 +512,17 @@ Panel_GetModalMessage(AppGUI* pApp)
     button_tag(pButtonOK, MODAL_ACCEPT);
     button_OnClick(pButtonOK, listener(pApp, Callback_OnButtonModalMessage, AppGUI));
 
+    /* Layout: Button */
+    layout_hsize(pLayoutButton, 0, IMAGE_DEFAULT_W / 2.f);
+    layout_vsize(pLayoutButton, 0, IMAGE_DEFAULT_H / 2.f);
+    layout_valign(pLayoutButton, 0, 0, ekCENTER);
+    layout_margin(pLayoutButton, LAYOUT_DEFAULT_MARGIN);
+    layout_button(pLayoutButton, pButtonOK, 0, 0);
+
     /* Layout: Main */
+    layout_margin(pLayoutMain, LAYOUT_DEFAULT_MARGIN);
     layout_label(pLayoutMain, pLabelMessage,0,0);
-    layout_button(pLayoutMain, pButtonOK, 0, 1);
+    layout_layout(pLayoutMain, pLayoutButton, 0, 1);
 
     panel_layout(pPanelMain, pLayoutMain);
 
@@ -516,13 +536,15 @@ Panel_GetModalQuestion(AppGUI* pApp)
 {
     Panel   *pPanelMain     = panel_create();
     Layout  *pLayoutMain    = layout_create(1,2);
-    Layout  *pLayoutButtons = layout_create(2,1);
+    Layout  *pLayoutMessage = layout_create(1,1);
+    Layout  *pLayoutButtons = layout_create(4,1);
     Label   *pLabelMessage  = label_create();
     Button  *pButtonContinue= button_push();
     Button  *pButtonCancel  = button_push();
 
     /* Label: Message */
     label_text(pLabelMessage, TXT_NULL);
+    label_multiline(pLabelMessage, TRUE);
     if (pApp)
     {
         if (pApp->pString)
@@ -541,12 +563,25 @@ Panel_GetModalQuestion(AppGUI* pApp)
     button_tag(pButtonCancel, MODAL_CANCEL);
     button_OnClick(pButtonCancel, listener(pApp, Callback_OnButtonModalQuestion, AppGUI));
 
+    /* Layout: Message */
+    layout_hsize(pLayoutMessage, 0, IMAGE_DEFAULT_W / 2.f);
+    layout_vsize(pLayoutMessage, 0, IMAGE_DEFAULT_H / 3.f);
+    layout_valign(pLayoutMessage, 0, 0, ekTOP);
+    layout_margin(pLayoutMessage, LAYOUT_DEFAULT_MARGIN);
+    layout_label(pLayoutMessage, pLabelMessage,0,0);
+
     /* Layout: Buttons */
+    layout_margin4(pLayoutButtons, _fDefMarg * 2.f, _fDefMarg, _fDefMarg, _fDefMarg);
+    layout_halign(pLayoutButtons, 0, 0, ekLEFT);
+    layout_halign(pLayoutButtons, 3, 0, ekRIGHT);
     layout_button(pLayoutButtons, pButtonCancel, 0, 0);
-    layout_button(pLayoutButtons, pButtonContinue, 1, 0);
+    layout_button(pLayoutButtons, pButtonContinue, 3, 0);
 
     /* Layout: Main */
-    layout_label(pLayoutMain, pLabelMessage,0,0);
+    layout_hsize(pLayoutMain, 0, IMAGE_DEFAULT_W / 2.f);
+    layout_vsize(pLayoutMain, 0, IMAGE_DEFAULT_H / 3.f);
+    layout_margin(pLayoutMain, LAYOUT_DEFAULT_MARGIN);
+    layout_layout(pLayoutMain, pLayoutMessage,0,0);
     layout_layout(pLayoutMain, pLayoutButtons, 0, 1);
 
     panel_layout(pPanelMain, pLayoutMain);
@@ -563,17 +598,20 @@ Panel_GetModalGameNotFound(AppGUI* pApp)
     Layout      *pLayoutMain    = layout_create(1,3);
     Layout      *pLayoutPath    = layout_create(2,1);
     Layout      *pLayoutTxt     = layout_create(1,1);
-    Layout      *pLayoutButtons = layout_create(2, 1);
+    Layout      *pLayoutButtons = layout_create(4, 1);
+    Layout      *pLayoutEdit    = layout_create(1,1);
+    Layout      *pLayoutBrowse  = layout_create(1,1);
     Edit        *pEditPath      = edit_create();
     Label       *pLabelInfo     = label_create();
     Button      *pButtonSubmit  = button_push();
     Button      *pButtonCancel  = button_push();
     Button      *pButtonBrowse  = button_push();
     Font        *pFontInfo      = font_system(18, ekFNORMAL | ekFPIXELS);
-    Font        *pFontSubmit    = font_system(24, ekFNORMAL | ekFPIXELS);
+    Font        *pFontSubmit    = font_system(20, ekFNORMAL | ekFPIXELS);
 
     /* Label: Greetings Text */
     label_text(pLabelInfo, TXT_GAMENOTFOUND);
+    label_multiline(pLabelInfo, TRUE);
     label_font(pLabelInfo, pFontInfo);
 
     /* Edit: Game Path */
@@ -584,6 +622,7 @@ Panel_GetModalGameNotFound(AppGUI* pApp)
     button_font(pButtonSubmit, pFontSubmit);
     button_vpadding (pButtonSubmit, 16);
     button_tag(pButtonSubmit, MODAL_ACCEPT);
+    button_min_width(pButtonSubmit, _fMinBtnWidth);
     button_OnClick(pButtonSubmit, listener(pApp, Callback_OnButtonModalGameNotFound, AppGUI));
 
     /* Button: Cancel */
@@ -591,6 +630,7 @@ Panel_GetModalGameNotFound(AppGUI* pApp)
     button_font(pButtonCancel, pFontSubmit);
     button_vpadding (pButtonCancel, 16);
     button_tag(pButtonCancel, MODAL_CANCEL);
+    button_min_width(pButtonCancel, _fMinBtnWidth);
     button_OnClick(pButtonCancel, listener(pApp, Callback_OnButtonModalGameNotFound, AppGUI));
 
     /* Button: Browse (file) */
@@ -600,19 +640,36 @@ Panel_GetModalGameNotFound(AppGUI* pApp)
     button_OnClick(pButtonBrowse, listener(pApp, Callback_OnButtonModalGameNotFound, AppGUI));
 
     /* Layout: Text */
+    layout_hsize(pLayoutTxt, 0, IMAGE_DEFAULT_W);
+    layout_vsize(pLayoutTxt, 0, IMAGE_DEFAULT_H / 2.f);
+    layout_valign(pLayoutTxt, 0, 0, ekTOP);
     layout_margin(pLayoutTxt, 4);
     layout_label(pLayoutTxt, pLabelInfo, 0, 0);
 
+    /* Layout: Game Path Edit widget */
+    layout_margin4(pLayoutEdit, _fDefMarg, _fDefMarg, _fDefMarg, 0.f);
+    layout_edit(pLayoutEdit, pEditPath, 0,0);
+
+    /* Layout: Game Path Browse Button widget */
+    layout_margin4(pLayoutBrowse, _fDefMarg, 0.f, _fDefMarg, _fDefMarg);
+    layout_button(pLayoutBrowse, pButtonBrowse, 0, 0);
+
     /* Layout: Game Path */
-    layout_edit(pLayoutPath, pEditPath, 0,0);
-    layout_button(pLayoutPath, pButtonBrowse, 1, 0);
+    layout_hsize(pLayoutPath, 0, IMAGE_DEFAULT_W / 2.f);
+    layout_margin(pLayoutPath, LAYOUT_DEFAULT_MARGIN);
+    layout_layout(pLayoutPath, pLayoutEdit, 0,0);
+    layout_layout(pLayoutPath, pLayoutBrowse, 1, 0);
 
     /* Layout: Buttons */
-    layout_button(pLayoutButtons,pButtonCancel,0, 0);
-    layout_button(pLayoutButtons,pButtonSubmit,1, 0);
+    layout_margin4(pLayoutButtons, _fDefMarg * 2.f, _fDefMarg, _fDefMarg, _fDefMarg);
+    layout_halign(pLayoutButtons, 0, 0, ekLEFT);
+    layout_halign(pLayoutButtons, 3, 0, ekRIGHT);
+    layout_button(pLayoutButtons, pButtonCancel, 0, 0);
+    layout_button(pLayoutButtons, pButtonSubmit, 3, 0);
 
     /* Layout: Main */
-    layout_hsize(pLayoutMain, 0, 250);
+    layout_hsize(pLayoutMain, 0, IMAGE_DEFAULT_W);
+    layout_vsize(pLayoutMain, 0, IMAGE_DEFAULT_H / 2.f);
     layout_layout(pLayoutMain, pLayoutTxt, 0, 0);
     layout_layout(pLayoutMain, pLayoutPath, 0, 1);
     layout_layout(pLayoutMain,pLayoutButtons,0, 2);
@@ -640,16 +697,26 @@ _Panel_TweakerDescription(AppGUI *pApp)
     Layout      *pLayoutMain        = layout_create(1,1);
     Label       *pLabelDescription  = label_create();
 
-    pTweaker            = &pApp->tGUITweaker[pApp->dPage];
+    pTweaker = &pApp->tGUITweaker[pApp->dPage];
     assert(IS_VALID(pTweaker));
 
     /* Label: Feature Description */
     label_multiline(pLabelDescription, TRUE);
     label_text(pLabelDescription, tc(pTweaker->pStringTweakerInfo));
 
+    /* Layout: Main */
+    layout_vexpand(pLayoutMain, 0);
+    layout_valign(pLayoutMain, 0, 0, ekTOP);
+    layout_margin(pLayoutMain, LAYOUT_DEFAULT_MARGIN);
+    layout_hsize(pLayoutMain, 0, PANEL_DEFAULT_W - (_fDefMarg * 2.f));
+    layout_vsize(pLayoutMain, 0, PANEL_DEFAULT_H / 5.f);
     layout_label(pLayoutMain, pLabelDescription, 0, 0);
 
     /* Panel: Main */
+    panel_size(pPanelMain, s2df(
+        PANEL_DEFAULT_W - (_fDefMarg * 2.f), 
+        (PANEL_DEFAULT_H / 5.f) - (_fDefMarg * 4.f))
+    );
     panel_layout(pPanelMain, pLayoutMain);
 
     return pPanelMain;
@@ -754,33 +821,40 @@ _Panel_TweakerButtons(AppGUI *pApp)
     button_text(pButtonCancel, TXT_BTN_CANCEL);
     button_tag(pButtonCancel, MODAL_CANCEL);
     button_OnClick(pButtonCancel, listener(pApp, Callback_OnButtonModalTweaker, AppGUI));
+    button_min_width(pButtonCancel, _fMinBtnWidth);
 
     /* Button: Confirm */
     button_text(pButtonConfirm, TXT_BTN_ACCEPT);
     button_tag(pButtonConfirm, MODAL_ACCEPT);
     button_OnClick(pButtonConfirm, listener(pApp, Callback_OnButtonModalTweaker, AppGUI));
+    button_min_width(pButtonConfirm, _fMinBtnWidth);
 
     button_text(pButtonFirstConfirm, TXT_BTN_ACCEPT);
     button_tag(pButtonFirstConfirm, MODAL_ACCEPT);
     button_OnClick(pButtonFirstConfirm, listener(pApp, Callback_OnButtonModalTweaker, AppGUI));
+    button_min_width(pButtonFirstConfirm, _fMinBtnWidth);
 
     /* Button: Previous */
     button_text(pButtonPrev, TXT_BTN_PREVIOUS);
     button_tag(pButtonPrev, MODAL_PREVIOUS);
     button_OnClick(pButtonPrev, listener(pApp, Callback_OnButtonModalTweaker, AppGUI));
+    button_min_width(pButtonPrev, _fMinBtnWidth);
 
     button_text(pButtonLastPrev, TXT_BTN_PREVIOUS);
     button_tag(pButtonLastPrev, MODAL_PREVIOUS);
     button_OnClick(pButtonLastPrev, listener(pApp, Callback_OnButtonModalTweaker, AppGUI));
+    button_min_width(pButtonLastPrev, _fMinBtnWidth);
 
     /* Button: Next */
     button_text(pButtonFirstNext, TXT_BTN_NEXT);
     button_tag(pButtonFirstNext, MODAL_NEXT);
     button_OnClick(pButtonFirstNext, listener(pApp, Callback_OnButtonModalTweaker, AppGUI));
+    button_min_width(pButtonFirstNext, _fMinBtnWidth);
 
     button_text(pButtonNext, TXT_BTN_NEXT);
     button_tag(pButtonNext, MODAL_NEXT);
     button_OnClick(pButtonNext, listener(pApp, Callback_OnButtonModalTweaker, AppGUI));
+    button_min_width(pButtonNext, _fMinBtnWidth);
 
     /* Layout: Single Page */
     layout_button(pLayoutSinglePage, pButtonFirstConfirm, 5,0);
@@ -797,12 +871,14 @@ _Panel_TweakerButtons(AppGUI *pApp)
     layout_button(pLayoutLastPage, pButtonConfirm, 5, 0);
 
     /* Layout: Dynamic Buttons */
+    layout_hsize(pLayoutDynamicButtons, 0, IMAGE_DEFAULT_W - _fMinBtnWidth);
     layout_layout(pLayoutDynamicButtons, pLayoutSinglePage, 0, 0);
     layout_layout(pLayoutDynamicButtons, pLayoutFirstPage, 0, 1);
     layout_layout(pLayoutDynamicButtons, pLayoutNPage, 0, 2);
     layout_layout(pLayoutDynamicButtons, pLayoutLastPage, 0, 3);
 
     /* Layout: Main */
+    layout_margin(pLayoutMain, LAYOUT_DEFAULT_MARGIN);
     layout_button(pLayoutMain, pButtonCancel, 0, 0);
     layout_layout(pLayoutMain, pLayoutDynamicButtons, 1, 0);
 
@@ -845,6 +921,7 @@ Panel_GetModalTweaker(AppGUI *pApp)
     layout_panel(pLayoutMain, pPanelButtons, 0, 3);
 
     /* Panel: Main */
+    panel_size(pPanelMain, s2df(PANEL_DEFAULT_W, PANEL_DEFAULT_H));
     panel_layout(pPanelMain, pLayoutMain);
 
     return pPanelMain;
@@ -890,8 +967,8 @@ Panel_GetModalLocalisation(AppGUI *pApp)
     Panel       *pPanelMain         = panel_create();
     /* Panel       *pPanelImage        = Panel_GetImageDemo(pApp); */
     Layout      *pLayoutMain        = layout_create(1,6);
-    Layout      *pLayoutPopupLabels = layout_create(3,1);
-    Layout      *pLayoutPopups      = layout_create(3,1);
+    Layout      *pLayoutDescription = layout_create(1,1);
+    Layout      *pLayoutPopups      = layout_create(3,2);
     Layout      *pLayoutButtons     = layout_create(4,1);
     Label       *pLabelDescription  = label_create();
     Label       *pLabelLocCore      = label_create();
@@ -942,37 +1019,44 @@ Panel_GetModalLocalisation(AppGUI *pApp)
     /* Button: Accept */
     button_text(pButtonAccept, TXT_BTN_ACCEPT);
     button_tag(pButtonAccept, MODAL_ACCEPT);
+    button_min_width(pButtonAccept, _fMinBtnWidth);
     button_OnClick(pButtonAccept, listener(pApp, Callback_OnButtonModalLocalisation, AppGUI));
 
     /* Button: Cancel */
     button_text(pButtonCancel, TXT_BTN_CANCEL);
     button_tag(pButtonCancel, MODAL_CANCEL);
+    button_min_width(pButtonCancel, _fMinBtnWidth);
     button_OnClick(pButtonCancel, listener(pApp, Callback_OnButtonModalLocalisation, AppGUI));
 
-    /* Layout: Popup Labels */
-    layout_hsize(pLayoutPopupLabels, 0, 200);
-    layout_hsize(pLayoutPopupLabels, 1, 200);
-    layout_hsize(pLayoutPopupLabels, 2, 200);
-    layout_label(pLayoutPopupLabels, pLabelLocCore, 0, 0);
-    layout_label(pLayoutPopupLabels, pLabelLocMod, 1, 0);
+    /* Layout: Description */
+    layout_margin(pLayoutDescription, LAYOUT_DEFAULT_MARGIN);
+    layout_hsize(pLayoutDescription, 0, PANEL_DEFAULT_W - (LAYOUT_DEFAULT_MARGIN * 2.f));
+    layout_valign(pLayoutDescription, 0, 0, ekTOP);
+    layout_label(pLayoutDescription, pLabelDescription, 0, 0);
 
     /* Layout: Popups */
-    layout_hsize(pLayoutPopups, 0, 200);
-    layout_hsize(pLayoutPopups, 1, 200);
-    layout_hsize(pLayoutPopups, 2, 200);
-    layout_popup(pLayoutPopups, pPopUpCore, 0, 0);
-    layout_popup(pLayoutPopups, pPopUpMod, 1, 0);
+    layout_margin(pLayoutPopups, LAYOUT_DEFAULT_MARGIN);
+    layout_halign(pLayoutPopups, 0, 0, ekLEFT);
+    layout_halign(pLayoutPopups, 1, 0, ekLEFT);
+    layout_hsize(pLayoutPopups, 0, PANEL_DEFAULT_W / 2.f);
+    layout_hsize(pLayoutPopups, 1, PANEL_DEFAULT_W / 2.f);
+    layout_label(pLayoutPopups, pLabelLocCore, 0, 0);
+    layout_label(pLayoutPopups, pLabelLocMod, 1, 0);
+    layout_popup(pLayoutPopups, pPopUpCore, 0, 1);
+    layout_popup(pLayoutPopups, pPopUpMod, 1, 1);
 
     /* Layout: Buttons */
+    layout_margin4(pLayoutButtons, _fDefMarg * 2.f, _fDefMarg, _fDefMarg, _fDefMarg);
+    layout_halign(pLayoutButtons, 0, 0, ekLEFT);
+    layout_halign(pLayoutButtons, 3, 0, ekRIGHT);
     layout_button(pLayoutButtons, pButtonCancel, 0, 0);
     layout_button(pLayoutButtons, pButtonAccept, 3, 0);
 
     /* Layout: Main */
-    layout_hsize(pLayoutMain, 0, 640);
+    layout_hsize(pLayoutMain, 0, PANEL_DEFAULT_W);
 
-    layout_label(pLayoutMain, pLabelDescription, 0, 0);
-    layout_layout(pLayoutMain, pLayoutPopupLabels, 0,1);
-    layout_layout(pLayoutMain, pLayoutPopups, 0,2);
+    layout_layout(pLayoutMain, pLayoutDescription, 0, 0);
+    layout_layout(pLayoutMain, pLayoutPopups, 0,1);
     layout_view(pLayoutMain, pViewPreview, 0, 4);
     layout_layout(pLayoutMain, pLayoutButtons, 0, 5);
     /* layout_panel(pLayoutMain, pPanelImage, 0, 4); */
@@ -986,8 +1070,9 @@ Panel_GetModalLocalisation(AppGUI *pApp)
 static Panel*
 _Panel_GetModalOptionSubpanel(AppGUI *pApp)
 {
-    Panel       *pPanelMain         = panel_scroll(FALSE,TRUE);
-    Layout      *pLayoutMain        = layout_create(8,MAX_OPT_ELEMS);
+    Panel       *pPanelMain  = panel_scroll(FALSE,TRUE);
+    Layout      *pLayoutMain = layout_create(1,MAX_OPT_ELEMS);
+    Font        *pFontBold   = font_system(16, ekFBOLD | ekFPIXELS);
 
     unsigned int i      = 0;
     unsigned int j      = 0;
@@ -998,24 +1083,40 @@ _Panel_GetModalOptionSubpanel(AppGUI *pApp)
     cassert_no_null(pApp->pOptElementArray);
 
     /* Layout: Main */
-    layout_hsize(pLayoutMain, 0, 640);
+    layout_skcolor(pLayoutMain, gui_line_color());
+    layout_margin4(pLayoutMain, _fDefMarg, _fDefMarg * 4.f, _fDefMarg, _fDefMarg);
 
     for(i = 0; i < MAX_OPT_ELEMS; i ++)
     {
+        Label  *pLabel          = label_create();
+        Layout *pLayoutLabelRow = layout_create(2, 1);
+        int dCurRow             = dRow;
+
         pElem = &pApp->pOptElementArray[i];
         assert(IS_VALID(pElem));
 
+        /* Default row widgets */
+        label_font(pLabel, pFontBold);
+        label_text(pLabel, tc(pElem->pTitle));
+
+        layout_halign(pLayoutLabelRow, 0, 0, ekLEFT);
+        layout_hexpand(pLayoutLabelRow, 0);
+        layout_hsize(pLayoutLabelRow, 0, 384.f);
+        layout_margin4(pLayoutLabelRow, dRow > 0 ? _fDefMarg : 0.f, 0.f, _fDefMarg, 0.f);
+        layout_label(pLayoutLabelRow, pLabel, 0, 0);
+
+        /* Custom widgets */
         switch(pElem->eType)
         {
             case UI_WIDGET_RADIO:
                 {
-                    Label *pLabel           = label_create();
                     Layout *pLayoutButton   = layout_create(pElem->dNumOfOptions*2, 1);
+                    Layout *pLayoutExtraRow = layout_create(1,1);
 
                     /* Store layout instead of button because there are multiple buttons present there */
                     pElem->pElement = pLayoutButton;
 
-                    label_text(pLabel, tc(pElem->pTitle));
+                    layout_margin4(pLayoutButton, 0.f, LAYOUT_DEFAULT_MARGIN, 0.f, 0.f);
 
                     for(j = 0; j < pElem->dNumOfOptions; j++)
                     {
@@ -1034,25 +1135,50 @@ _Panel_GetModalOptionSubpanel(AppGUI *pApp)
 
                         layout_label(pLayoutButton, pLabelOpt, pos, 0);
                         layout_button(pLayoutButton, pButton, pos + 1, 0);
-                        layout_halign(pLayoutButton, pos, 0, ekJUSTIFY);
+
+                        layout_hexpand(pLayoutButton, pos);
+                        layout_hexpand(pLayoutButton, pos+1);
+                        layout_halign(pLayoutButton, pos, 0, ekLEFT);
+                        layout_halign(pLayoutButton, pos+1, 0, ekLEFT);
                         layout_hsize(pLayoutButton, pos, 128);
                         layout_hsize(pLayoutButton, pos+1, 64);
                     }
 
-                    layout_label(pLayoutMain, pLabel, 0, dRow);
-                    layout_layout(pLayoutMain, pLayoutButton, 0, dRow+1);
+                    
+                    layout_margin(pLayoutButton, LAYOUT_DEFAULT_MARGIN);
+                    layout_skcolor(pLayoutButton, gui_line_color());
+
+                    layout_hsize(pLayoutExtraRow, 0, 512);
+                    layout_layout(pLayoutExtraRow, pLayoutButton, 0, 0);
+                    layout_layout(pLayoutMain, pLayoutExtraRow, 0, dRow+1);
 
                     dRow += 2;
                 }
                 break;
+            case UI_WIDGET_CHECKBOX:
+                {
+                    Button *pCheckbox  = button_check();
+
+                    pElem->pElement    = pCheckbox;
+
+                    button_text(pCheckbox, tc(pElem->pOptTitle[0]));
+
+                    layout_halign(pLayoutLabelRow, 1, 0, ekRIGHT);
+                    layout_button(pLayoutLabelRow, pCheckbox, 1, 0);
+
+                    if (pElem->dChoice > 0)
+                    {
+                        button_state(pCheckbox, ekGUI_ON);
+                    }
+
+                    dRow++;
+                }
+                break;
             case UI_WIDGET_POPUP:
                 {
-                    Label *pLabel = label_create();
                     PopUp *pPopup = popup_create();
 
                     pElem->pElement = pPopup;
-
-                    label_text(pLabel, tc(pElem->pTitle));
 
                     for(j = 0; j < pElem->dNumOfOptions; j++)
                     {
@@ -1060,38 +1186,32 @@ _Panel_GetModalOptionSubpanel(AppGUI *pApp)
                     }
 
                     popup_selected(pPopup, pElem->dChoice);
-                    layout_label(pLayoutMain, pLabel, 0, dRow);
-                    layout_popup(pLayoutMain, pPopup, 7, dRow);
-                    layout_hsize(pLayoutMain, 0, 256);
+                    layout_popup(pLayoutLabelRow, pPopup, 1, 0);
+                    layout_hsize(pLayoutLabelRow, 1, 192.f);
 
                     dRow++;
                 }
                 break;
             case UI_WIDGET_EDIT:
                 {
-                    Label *pLabel   = label_create();
                     Edit  *pEdit    = edit_create();
 
                     pElem->pElement = pEdit;
 
-                    label_text(pLabel, tc(pElem->pTitle));
                     edit_text(pEdit, tc(pElem->pOptTitle[0]));
 
-                    layout_label(pLayoutMain, pLabel, 0, dRow);
-                    layout_edit(pLayoutMain, pEdit, 7, dRow);
-                    layout_hsize(pLayoutMain, 0, 256);
+                    layout_edit(pLayoutLabelRow, pEdit, 1, 0);
+                    layout_hsize(pLayoutLabelRow, 1, 192.f);
 
                     dRow++;
                 }
                 break;
             case UI_WIDGET_LISTBOX:
                 {
-                    Label       *pLabel   = label_create();
-                    ListBox     *pListbox = listbox_create();
+                    ListBox *pListbox        = listbox_create();
+                    Layout  *pLayoutExtraRow = layout_create(1,1);
 
                     pElem->pElement = pListbox;
-
-                    label_text(pLabel, tc(pElem->pTitle));
 
                     listbox_checkbox(pListbox, TRUE);
                     for(j = 0; j < pElem->dNumOfOptions; j++)
@@ -1102,20 +1222,33 @@ _Panel_GetModalOptionSubpanel(AppGUI *pApp)
                         listbox_check(pListbox, j, bCheckbox);
                     }
 
-                    layout_label(pLayoutMain, pLabel, 0, dRow);
-                    layout_listbox(pLayoutMain, pListbox, 0, dRow+1);
-                    layout_hsize(pLayoutMain, 0, 256);
+                    layout_listbox(pLayoutLabelRow, pListbox, 0, dRow+1);
+
+                    layout_hsize(pLayoutExtraRow, 0, 256.f);
+                    layout_listbox(pLayoutExtraRow, pListbox, 0, 0);
+                    layout_layout(pLayoutMain, pLayoutExtraRow, 0, dRow+1);
 
                     dRow += 2;
                 }
                 break;
             default:
+                dCurRow = -1; /* wrong/corrupted widget */
                 break;
+        }
+
+        if (dCurRow >= 0)
+        {
+            layout_layout(pLayoutMain, pLayoutLabelRow, 0, dCurRow);
         }
     }
 
     /* Panel: Main */
+    panel_size(pPanelMain,
+        s2df(0.f, PANEL_DEFAULT_H - (PANEL_DEFAULT_H / 8.f)));
     panel_layout(pPanelMain, pLayoutMain);
+
+    /* cleanup */
+    font_destroy(&pFontBold);
 
     return pPanelMain;
 }
@@ -1134,21 +1267,30 @@ Panel_GetModalOptions(AppGUI *pApp)
     button_text(pButtonAccept, TXT_BTN_ACCEPT);
     button_tag(pButtonAccept, MODAL_ACCEPT);
     button_OnClick(pButtonAccept, listener(pApp, Callback_OnButtonModalOptions, AppGUI));
+    button_min_width(pButtonAccept, 128.f);
 
     /* Button: Cancel */
     button_text(pButtonCancel, TXT_BTN_CANCEL);
     button_tag(pButtonCancel, MODAL_CANCEL);
     button_OnClick(pButtonCancel, listener(pApp, Callback_OnButtonModalOptions, AppGUI));
+    button_min_width(pButtonCancel, 128.f);
 
     /* Layout: Buttons */
+    layout_margin4(pLayoutButtons, _fDefMarg * 2.f, _fDefMarg, _fDefMarg, _fDefMarg);
+    layout_halign(pLayoutButtons, 0, 0, ekLEFT);
+    layout_halign(pLayoutButtons, 3, 0, ekRIGHT);
     layout_button(pLayoutButtons, pButtonCancel, 0, 0);
     layout_button(pLayoutButtons, pButtonAccept, 3, 0);
-
+    
     /* Layout: Main */
+    layout_margin(pLayoutMain, LAYOUT_DEFAULT_MARGIN);
+    layout_valign(pLayoutMain, 0, 0, ekTOP);
+    layout_valign(pLayoutMain, 0, 1, ekBOTTOM);
     layout_panel(pLayoutMain, pPanelSubpanel, 0,0);
     layout_layout(pLayoutMain, pLayoutButtons, 0, 1);
 
     /* Panel: Main */
+    panel_size(pPanelMain,s2df(PANEL_DEFAULT_W, PANEL_DEFAULT_H));
     panel_layout(pPanelMain, pLayoutMain);
 
     return pPanelMain;
@@ -1167,14 +1309,16 @@ _Panel_GetModalModManagerSubpanel(AppGUI *pApp, const unsigned int dModIndex)
     Panel       *pPanelMain         = panel_scroll(FALSE,TRUE);
     Layout      *pLayoutMain        = layout_create(1,1);
     Layout      *pLayoutScreen      = layout_create(1,1);
-    Layout      *pLayoutModPreview  = layout_create(1, 5);
-    Layout      *pLayoutTitleVersion= layout_create(2,1);
+    Layout      *pLayoutModPreview  = layout_create(1, 6);
+    Layout      *pLayoutDescription = layout_create(1,1);
     Label       *pLabelModTitle     = label_create();
     Label       *pLabelModAuthor    = label_create();
     Label       *pLabelModDesc      = label_create();
     Label       *pLabelModVersion   = label_create();
     Label       *pLabelModWebsite   = label_create();
     ImageView   *pImageViewScreen   = imageview_create();
+    Font        *pFontBold          = font_system(16, ekFBOLD | ekFPIXELS);
+    Font        *pFontItalic        = font_system(16, ekFITALIC | ekFPIXELS );
     Image       *pImage;
     ferror_t    eError;
 
@@ -1186,10 +1330,14 @@ _Panel_GetModalModManagerSubpanel(AppGUI *pApp, const unsigned int dModIndex)
 
     /* Labels: Mod credentials */
     label_text(pLabelModTitle, tc(pElem->pName));
+    label_font(pLabelModTitle, pFontBold);
     label_text(pLabelModAuthor, tc(pElem->pAuthor));
+    label_font(pLabelModAuthor, pFontItalic);
     label_text(pLabelModDesc, tc(pElem->pDescription));
     label_text(pLabelModVersion, tc(pElem->pVersion));
+    label_font(pLabelModVersion, pFontItalic);
     label_text(pLabelModWebsite, tc(pElem->pWebsite));
+    label_multiline(pLabelModWebsite, TRUE);
     label_multiline(pLabelModDesc, TRUE);
     label_style_over(pLabelModWebsite, ekFUNDERLINE);
     label_OnClick(pLabelModWebsite, listener(pElem->pWebsite, _Callback_OnLabelModManagerSubpanel, String));
@@ -1197,46 +1345,63 @@ _Panel_GetModalModManagerSubpanel(AppGUI *pApp, const unsigned int dModIndex)
     /* Image View: Mod Preview */
     pImage = image_from_file(tc(pElem->pScreenshot), &eError);
     imageview_image(pImageViewScreen, eError == ekFOK ? pImage : (const Image*)TITLE_JPG);
-    imageview_size(pImageViewScreen, s2df(320, 240));
+    imageview_size(pImageViewScreen, s2df(PANEL_DEFAULT_W / 2.f, 240));
+    imageview_scale(pImageViewScreen, ekGUI_SCALE_ADJUST);
 
     /* Layout: Screenshot */
-    layout_margin(pLayoutScreen, 2);
+    layout_margin(pLayoutScreen, 0.f);
+    layout_hsize(pLayoutScreen, 0, PANEL_DEFAULT_W / 2.f);
     layout_imageview(pLayoutScreen, pImageViewScreen, 0, 0);
 
-    /* Layout: Mod Title / Version */
-    layout_halign(pLayoutTitleVersion, 0, 0, ekLEFT);
-    layout_halign(pLayoutTitleVersion, 1, 0, ekRIGHT);
-    layout_label(pLayoutTitleVersion, pLabelModTitle, 0, 0);
-    layout_label(pLayoutTitleVersion, pLabelModVersion, 1, 0);
+    /* Layout: Mod Description */
+    layout_hsize(pLayoutDescription, 0, (PANEL_DEFAULT_W / 2.f) - (_fDefMarg * 2.f));
+    layout_margin4(pLayoutDescription, _fDefMarg * 2.f, _fDefMarg, _fDefMarg, _fDefMarg);
+    layout_skcolor(pLayoutDescription, gui_line_color());
+    layout_label(pLayoutDescription, pLabelModDesc, 0, 0);
 
     /* Layout: Mod Preview */
-    layout_hsize(pLayoutModPreview, 0, 320);
+    layout_hsize(pLayoutModPreview, 0, PANEL_DEFAULT_W);
     layout_vsize(pLayoutModPreview, 0, 240);
-    layout_vsize(pLayoutModPreview, 1, 32);
-    layout_vsize(pLayoutModPreview, 2, 32);
-    layout_vsize(pLayoutModPreview, 3, 128);
+    layout_vsize(pLayoutModPreview, 1, 64);
+    layout_vsize(pLayoutModPreview, 2, 64);
+    layout_vsize(pLayoutModPreview, 3, 64);
+    layout_vsize(pLayoutModPreview, 4, 128);
     layout_valign(pLayoutModPreview, 0, 0, ekTOP);
     layout_valign(pLayoutModPreview, 0, 1, ekTOP);
     layout_valign(pLayoutModPreview, 0, 2, ekTOP);
     layout_valign(pLayoutModPreview, 0, 3, ekTOP);
+    layout_halign(pLayoutModPreview, 0, 0, ekLEFT);
+    layout_halign(pLayoutModPreview, 0, 1, ekLEFT);
+    layout_halign(pLayoutModPreview, 0, 2, ekLEFT);
+    layout_halign(pLayoutModPreview, 0, 3, ekLEFT);
+    layout_halign(pLayoutModPreview, 0, 4, ekLEFT);
+    
     
     layout_layout(pLayoutModPreview, pLayoutScreen, 0, 0);
-    layout_layout(pLayoutModPreview, pLayoutTitleVersion, 0, 1);
-    layout_label(pLayoutModPreview, pLabelModAuthor, 0, 2);
-    layout_label(pLayoutModPreview, pLabelModWebsite, 0, 3);
-    layout_label(pLayoutModPreview, pLabelModDesc, 0, 4);
+    layout_label(pLayoutModPreview, pLabelModTitle, 0, 1);
+    layout_label(pLayoutModPreview, pLabelModVersion, 0, 2);
+    layout_label(pLayoutModPreview, pLabelModAuthor, 0, 3);
+    layout_label(pLayoutModPreview, pLabelModWebsite, 0, 4);
+    layout_layout(pLayoutModPreview, pLayoutDescription, 0, 5);
 
     /* Layout: Main */
-    layout_margin4(pLayoutMain, 0, 4, 0, 4);
+    layout_margin4(pLayoutMain, 0, _fDefMarg, 0, _fDefMarg);
     layout_valign(pLayoutMain, 0, 0, ekTOP);
-    layout_hsize(pLayoutModPreview, 0, 320 - 8); /* subtract margin */
+    layout_hsize(pLayoutModPreview, 0, PANEL_DEFAULT_W / 2.f);
     layout_layout(pLayoutMain, pLayoutModPreview, 0, 0);
 
     /* Panel: Main */
-    panel_size(pPanelMain, s2df(320, 480));
+    panel_size(pPanelMain, 
+        s2df((PANEL_DEFAULT_W / 2.f), PANEL_DEFAULT_H));
     panel_layout(pPanelMain, pLayoutMain);
 
-    image_destroy(&pImage);
+    /* cleanup */
+    font_destroy(&pFontBold);
+    font_destroy(&pFontItalic);
+    if (IS_VALID(pImage))
+    {
+        image_destroy(&pImage);
+    }
 
     return pPanelMain;
 }
@@ -1271,8 +1436,7 @@ Panel_GetModalModManager(AppGUI* pApp)
     Layout      *pLayoutMain        = layout_create(1,2);
     Layout      *pLayoutButtons     = layout_create(2,1);
     Layout      *pLayoutCore        = layout_create(2,1);
-    Layout      *pLayoutListboxes   = layout_create(1,4);
-    Label       *pLabelMods         = label_create();
+    Layout      *pLayoutListboxes   = layout_create(1,1);
     Button      *pButtonCancel      = button_push();
     Button      *pButtonOK          = button_push();
     ListBox     *pListboxMods       = listbox_create();
@@ -1282,22 +1446,21 @@ Panel_GetModalModManager(AppGUI* pApp)
     pApp->pLayoutExtra  = pLayoutCore;
     pApp->pListBox      = pListboxMods;
 
-    /* Labels: Listbox titles */
-    label_text(pLabelMods, TXT_LABEL_MODS);
-
     /* Button: Cancel */
     button_text(pButtonCancel, TXT_BTN_CANCEL);
     button_tag(pButtonCancel, MODAL_CANCEL);
     button_OnClick(pButtonCancel, listener(pApp, _Callback_OnButtonModalModManager, AppGUI));
+    button_min_width(pButtonCancel, 128.f);
 
     /* Button: OK */
     button_text(pButtonOK, TXT_BTN_ACCEPT);
     button_tag(pButtonOK, MODAL_ACCEPT);
     button_OnClick(pButtonOK, listener(pApp, _Callback_OnButtonModalModManager, AppGUI));
+    button_min_width(pButtonOK, 128.f);
 
     /* Listboxes: */
     listbox_checkbox(pListboxMods, TRUE);
-    listbox_size(pListboxMods, s2df(320, 480));
+    listbox_size(pListboxMods, s2df((PANEL_DEFAULT_W / 2.f) - 16.f, 480));
     listbox_OnSelect(pListboxMods, listener(pApp, _Callback_OnModManagerListbox, AppGUI));
     for(i = 0; i < MAX_MOD_ELEMS;i++)
     {
@@ -1318,26 +1481,33 @@ Panel_GetModalModManager(AppGUI* pApp)
     }
 
     /* Layout: Listboxes */
-    layout_label(pLayoutListboxes, pLabelMods,0,0);
-    layout_listbox(pLayoutListboxes, pListboxMods, 0, 1);
+    layout_listbox(pLayoutListboxes, pListboxMods, 0, 0);
 
     /* Layout: Core */
+    layout_hsize(pLayoutCore, 0, (PANEL_DEFAULT_W / 2.f) - 16.f);
+    /* layout_hsize(pLayoutCore, 1, PANEL_DEFAULT_W / 2.f); */
     layout_valign(pLayoutCore, 0, 0, ekTOP);
     layout_valign(pLayoutCore, 1, 0, ekTOP);
     layout_layout(pLayoutCore, pLayoutListboxes, 0, 0);
     layout_panel(pLayoutCore, pPanelModPreview, 1, 0);
 
     /* Layout: Buttons */
+    layout_margin4(pLayoutButtons, _fDefMarg * 2.f, _fDefMarg, _fDefMarg, _fDefMarg);
     layout_button(pLayoutButtons, pButtonCancel, 0, 0);
     layout_button(pLayoutButtons, pButtonOK, 1, 0);
     layout_halign(pLayoutButtons, 0, 0, ekLEFT);
     layout_halign(pLayoutButtons, 1, 0, ekRIGHT);
 
     /* Layout: Main */
+    layout_margin(pLayoutMain, LAYOUT_DEFAULT_MARGIN);
     layout_layout(pLayoutMain, pLayoutCore,0, 0);
     layout_layout(pLayoutMain, pLayoutButtons, 0, 1);
 
     /* Panel: Main */
+    panel_size(pPanelMain,
+        s2df(
+            PANEL_DEFAULT_W + (LAYOUT_DEFAULT_MARGIN * 2.f), 
+            PANEL_DEFAULT_H + (PANEL_DEFAULT_H / 8.f)));
     panel_layout(pPanelMain, pLayoutMain);
 
     unref(pApp);
@@ -1480,8 +1650,12 @@ Panel_GetModalTools(AppGUI *pApp)
     button_text(pButtonCancel, TXT_BTN_CANCEL);
     button_tag(pButtonCancel, MODAL_CANCEL);
     button_OnClick(pButtonCancel, listener(pApp, Callback_OnButtonModalTools, AppGUI));
+    button_min_width(pButtonCancel, 128.f);
 
     /* Layout: Buttons */
+    layout_margin4(pLayoutButtons, _fDefMarg * 2.f, _fDefMarg, _fDefMarg, _fDefMarg);
+    layout_halign(pLayoutButtons, 0, 0, ekLEFT);
+    /* layout_halign(pLayoutButtons, 3, 0, ekRIGHT); */
     layout_button(pLayoutButtons, pButtonCancel, 0, 0);
 
     /* Layout: Main */
@@ -1521,13 +1695,16 @@ _Panel_GetModalUpdaterSubpanel(AppGUI *pApp)
     progress_value(pProgressbar, 0.0f);
 
     /* Layout: Text */
+    layout_margin(pLayoutText, LAYOUT_DEFAULT_MARGIN);
     layout_label(pLayoutText,pLabelTitle, 0, 0);
     layout_label(pLayoutText,pLabelInfo, 0, 2);
 
     /* Layout: Text View */
+    layout_margin(pLayoutTextView, LAYOUT_DEFAULT_MARGIN);
     layout_textview(pLayoutTextView, pTextView, 0, 0);
 
     /* Layout: Progressbar */
+    layout_margin(pLayoutProgressbar, LAYOUT_DEFAULT_MARGIN);
     layout_progress(pLayoutProgressbar, pProgressbar, 0, 0);
 
     /* Layout: Main */
@@ -1565,27 +1742,27 @@ Panel_GetModalUpdater(AppGUI* pApp)
     button_text(pButtonCancel, TXT_BTN_CANCEL);
     button_tag(pButtonCancel, MODAL_CANCEL);
     button_OnClick(pButtonCancel, listener(pApp, Callback_OnButtonModalUpdater, AppGUI));
+    button_min_width(pButtonCancel, 128.f);
 
     /* Button: Update App */
     button_text(pButtonUpdate, TXT_BTN_UPDATE_APP);
     button_tag(pButtonUpdate, MODAL_UPDATE_APP);
     button_OnClick(pButtonUpdate, listener(pApp, Callback_OnButtonModalUpdater, AppGUI));
+    button_min_width(pButtonUpdate, 128.f);
 
     /* Layout: External */
     layout_panel(pLayoutExt, pPanelExt, 0, 0);
 
     /* Layout: Header */
+    layout_margin4(pLayoutHeader, LAYOUT_DEFAULT_MARGIN, 0.f, 0.f, 0.f);
     layout_imageview(pLayoutHeader, pImageViewHeader, 0, 0);
 
     /* Layout: Buttons */
-    layout_hsize(pLayoutButtons, 0, 120);
-    layout_hsize(pLayoutButtons, 1, 120);
-    layout_hsize(pLayoutButtons, 2, 120);
-    layout_hsize(pLayoutButtons, 3, 120);
+    layout_margin4(pLayoutButtons, _fDefMarg * 2.f, _fDefMarg, _fDefMarg, _fDefMarg);
     layout_halign(pLayoutButtons, 0, 0, ekLEFT);
     layout_halign(pLayoutButtons, 3, 0, ekRIGHT);
-    layout_button(pLayoutButtons, pButtonCancel, 0,0);
-    layout_button(pLayoutButtons, pButtonUpdate, 3,0);
+    layout_button(pLayoutButtons, pButtonCancel, 0, 0);
+    layout_button(pLayoutButtons, pButtonUpdate, 3, 0);
 
     /* Layout: Main */
     layout_layout(pLayoutMain, pLayoutHeader, 0, 0);
@@ -2070,6 +2247,13 @@ Callback_OnButtonModalOptions(AppGUI *pApp, Event *e)
                                     break;
                                 }
                             }
+                        }
+                        break;
+                    case UI_WIDGET_CHECKBOX:
+                        {
+                            const Button *pButtonUI = (const Button*)pElem->pElement;
+                            unsigned int dIndex     = button_get_state(pButtonUI);
+                            pElem->dChoice          = dIndex == ekGUI_OFF ? 0 : 1;
                         }
                         break;
                     case UI_WIDGET_POPUP:
@@ -2858,7 +3042,10 @@ _Callback_UIEvent(
                 /* Idea: Process multidata lua table as argument */
                 pTable = (SVarTable *)SVAR_GET_LUATABLE(pUserData[0]);
 
-                textview_printf(pApp->pTextView, "Processing %zu groups\n", pTable->dCount);
+                if (pApp->pTextView)
+                {
+                    textview_printf(pApp->pTextView, "Processing %zu groups\n", pTable->dCount);
+                }
 
                 /* Process each group */
                 for (i = 0; i < pTable->dCount && i < APP_MAX_ELEMENTS; ++i)
@@ -2958,10 +3145,13 @@ _Callback_UIEvent(
                                 pApp->tGUITweaker[i].pStringImagePath[dOptionIndex] = str_c(sImagePath);
                             }
 
-                            textview_printf(pApp->pTextView, "Group %zu - Option %zu: %s, Asset: %s\n",
-                                        i + 1, dOptionIndex + 1,
-                                        sOptionName ? sOptionName : "Unknown",
-                                        sImagePath ? sImagePath : "No image");
+                            if (pApp->pTextView)
+                            {
+                                textview_printf(pApp->pTextView, "Group %zu - Option %zu: %s, Asset: %s\n",
+                                            i + 1, dOptionIndex + 1,
+                                            sOptionName ? sOptionName : "Unknown",
+                                            sImagePath ? sImagePath : "No image");
+                            }
 
                             dOptionIndex++;
                         }
@@ -2969,10 +3159,13 @@ _Callback_UIEvent(
 
                     pApp->tGUITweaker[i].dMaxOptions = (int)dOptionIndex;
 
-                    textview_printf(pApp->pTextView, "Group %zu Info: %s (%zu options)\n",
-                                i + 1,
-                                sGroupInfo ? sGroupInfo : "No description",
-                                dOptionIndex);
+                    if (pApp->pTextView)
+                    {
+                        textview_printf(pApp->pTextView, "Group %zu Info: %s (%zu options)\n",
+                                    i + 1,
+                                    sGroupInfo ? sGroupInfo : "No description",
+                                    dOptionIndex);
+                    }
 
                     dGroupCount++;
                 }
@@ -2991,7 +3184,10 @@ _Callback_UIEvent(
                     str_upd(&pApp->pString, tc(pApp->tGUITweaker[0].pStringImagePath[0]));
                 }
 
-                textview_printf(pApp->pTextView, "Total groups processed: %zu\n", dGroupCount);
+                if (pApp->pTextView)
+                {
+                    textview_printf(pApp->pTextView, "Total groups processed: %zu\n", dGroupCount);
+                }
 
                 /* Show modal dialog */
                 dModalRetVal = _Nappgui_ShowModal(
@@ -3087,9 +3283,12 @@ _Callback_UIEvent(
                         dst->bCore      = !str_empty_c(sCorePath);
                         dst->bMod       = !str_empty_c(sModPath);
 
-                        textview_printf(pApp->pTextView,
-                            "Language detected: %s\n\tCore path: %s\n\tMod Path: %s\n",
-                            sCode,sCorePath,sModPath);
+                        if (pApp->pTextView)
+                        {
+                            textview_printf(pApp->pTextView,
+                                "Language detected: %s\n\tCore path: %s\n\tMod Path: %s\n",
+                                sCode,sCorePath,sModPath);
+                        }
                     }
                 }
 
@@ -3345,6 +3544,7 @@ _Callback_UIEvent(
                                 case UI_WIDGET_LISTBOX:
                                 case UI_WIDGET_POPUP:
                                 case UI_WIDGET_RADIO:
+                                case UI_WIDGET_CHECKBOX:
                                     SVARKEYB_INT(tRetVal, sOutKey, (int)pElem->dChoice);
                                     break;
 
