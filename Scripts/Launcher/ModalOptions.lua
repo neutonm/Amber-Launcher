@@ -121,7 +121,7 @@ local function _GetOptionsTable()
                     "Fullscreen",
                     "Windowed"
                 },
-                default     = 0, AL.GetRegistryKey("startinwindow"),
+                default     = AL.GetRegistryKey("startinwindow"),
                 callback    = function(t)
 
                     AL.SetRegistryKey("startinwindow", tonumber(t.value))
@@ -135,7 +135,7 @@ local function _GetOptionsTable()
                     "Software",
                     "Hardware"
                 },
-                default     = 0, AL.GetRegistryKey("2dacceloff"),
+                default     = AL.GetRegistryKey("2dacceloff"),
                 callback    = function(t)
 
                     local registryValues = {

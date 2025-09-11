@@ -1362,10 +1362,10 @@ _Panel_GetModalModManagerSubpanel(AppGUI *pApp, const unsigned int dModIndex)
     /* Layout: Mod Preview */
     layout_hsize(pLayoutModPreview, 0, PANEL_DEFAULT_W);
     layout_vsize(pLayoutModPreview, 0, 240);
-    layout_vsize(pLayoutModPreview, 1, 64);
-    layout_vsize(pLayoutModPreview, 2, 64);
-    layout_vsize(pLayoutModPreview, 3, 64);
-    layout_vsize(pLayoutModPreview, 4, 128);
+    layout_vsize(pLayoutModPreview, 1, 32);
+    layout_vsize(pLayoutModPreview, 2, 32);
+    layout_vsize(pLayoutModPreview, 3, 32);
+    layout_vsize(pLayoutModPreview, 4, 32);
     layout_valign(pLayoutModPreview, 0, 0, ekTOP);
     layout_valign(pLayoutModPreview, 0, 1, ekTOP);
     layout_valign(pLayoutModPreview, 0, 2, ekTOP);
