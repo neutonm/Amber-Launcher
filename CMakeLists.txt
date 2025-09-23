@@ -79,13 +79,6 @@ endif()
 # ------------------------------------------------------------------------------
 # Find Required Packages
 # ------------------------------------------------------------------------------
-# Find libcurl
-find_package(CURL REQUIRED)
-if(NOT CURL_FOUND)
-    message(FATAL_ERROR 
-    "libcurl not found. \
-    Please install libcurl and ensure CMake can locate it.")
-endif()
 
 # Find Lua
 find_package(Lua REQUIRED)
@@ -130,7 +123,6 @@ nap_link_inet(AmberLauncherGUI)
 # ------------------------------------------------------------------------------
 target_include_directories(AmberLauncher PRIVATE
     ${PROJECT_SOURCE_DIR}/include
-    ${CURL_INCLUDE_DIRS}
     ${LUA_INCLUDE_DIR}
     ${NAPPGUI_INCLUDE_PATH}
 )
@@ -139,7 +131,6 @@ target_include_directories(AmberLauncher PRIVATE
 # Link Libraries
 # ------------------------------------------------------------------------------
 target_link_libraries(AmberLauncher PRIVATE 
-    ${CURL_LIBRARIES} 
     ${LUA_LIBRARIES}
 )
 
