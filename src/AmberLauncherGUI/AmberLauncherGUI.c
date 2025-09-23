@@ -140,7 +140,7 @@ static Panel*
 _Panel_TweakerButtons(AppGUI *pApp);
 
 static void
-_LocalisationFillPopup(AppGUI *pApp, PopUp *pPop, LocTier eTier);
+_LocalisationFillPopup(AppGUI *pApp, PopUp *pPop, ELocTier eTier);
 
 static uint32_t
 _GUIThread_Main_Null(GUIAsyncTaskData *pThreadData);
@@ -212,9 +212,9 @@ Panel_Set(AppGUI *pApp, const EPanelType eType, FPanelFlags dFlags)
 
     pApp->eCurrentPanel = eType;
 
-    if (IS_VALID(pApp->pLayoutWindow))
+    if (IS_VALID(pApp->pWindows->pLayoutWindow))
     {
-        layout_show_col(pApp->pLayoutWindow, 0, TRUE);
+        layout_show_col(pApp->pWindows->pLayoutWindow, 0, TRUE);
     }
 
     switch (eType)
@@ -224,9 +224,9 @@ Panel_Set(AppGUI *pApp, const EPanelType eType, FPanelFlags dFlags)
         break;
 
     case CPANEL_AUTOCONFIG:
-        if (IS_VALID(pApp->pLayoutWindow))
+        if (IS_VALID(pApp->pWindows->pLayoutWindow))
         {
-            layout_show_col(pApp->pLayoutWindow, 0, FALSE);
+            layout_show_col(pApp->pWindows->pLayoutWindow, 0, FALSE);
         }
         pPanel = Panel_GetAutoConfigure(pApp,dFlags);
         break;
@@ -244,8 +244,8 @@ Panel_Set(AppGUI *pApp, const EPanelType eType, FPanelFlags dFlags)
         break;
     }
 
-    pApp->pPanelMain = pPanel;
-    layout_panel_replace(pApp->pLayoutMain, pPanel, 0, 1);
+    pApp->pWindows->pPanelMain = pPanel;
+    layout_panel_replace(pApp->pWindows->pLayoutMain, pPanel, 0, 1);
 
     return pPanel;
 }
@@ -290,14 +290,14 @@ Panel_GetAutoConfigure(AppGUI* pApp, FPanelFlags dFlags)
 
     if (bIsStateEnd)
     {
-        if (IS_VALID(pApp->pTextView))
+        if (IS_VALID(pApp->pWidgets->pTextView))
         {
-            const char_t *sPreviousLog = textview_get_text(pApp->pTextView);
+            const char_t *sPreviousLog = textview_get_text(pApp->pWidgets->pTextView);
             textview_printf(pConsole, "%s", sPreviousLog);
         }
     }
     
-    pApp->pTextView = pConsole;
+    pApp->pWidgets->pTextView = pConsole;
 
     /* Label: Greetings Text */
     label_text(pLabelGreet, bIsStateEnd ? TXT_CONFIGSUCCESS : TXT_CONFIGINTRO);
@@ -345,7 +345,7 @@ Panel_GetMain(AppGUI* pApp)
     Button  *pButtonPlay = button_push();
     Font    *pFontPlay   = font_system(24, ekFNORMAL | ekFPIXELS);
 
-    pApp->pTextView = NULL;
+    pApp->pWidgets->pTextView = NULL;
 
     /* Label: Temp */
     label_text(pLabelTemp, TXT_MAININTRO);
@@ -392,9 +392,9 @@ Panel_GetImageDemo(AppGUI *pApp)
     ferror_t    eError;
 
     /* Image */
-    if (IS_VALID(pApp->pString))
+    if (IS_VALID(pApp->pWidgets->pString))
     {
-        pImage = image_from_file(tc(pApp->pString), &eError);
+        pImage = image_from_file(tc(pApp->pWidgets->pString), &eError);
         assert(eError == ekFOK);
     }
 
@@ -466,14 +466,14 @@ _Callback_OnButtonModalModManager(AppGUI *pApp, Event *e)
     /* Gather all data from ui widgets */
     if (dButtonTag == MODAL_ACCEPT)
     {
-        const ListBox *pListbox = (const ListBox*)pApp->pListBox;
+        const ListBox *pListbox = (const ListBox*)pApp->pWidgets->pListBox;
         unsigned int i;
 
         for(i = 0; i < MAX_MOD_ELEMS; i++)
         {
-            GUIModElement *pElem = &pApp->pModElementArray[i];
+            GUIModElement *pElem = &pApp->pElementSets->pModElementArray[i];
 
-            if (str_empty(pElem->pID))
+            if (str_empty(pElem->sID))
             {
                 continue;
             }
@@ -482,9 +482,9 @@ _Callback_OnButtonModalModManager(AppGUI *pApp, Event *e)
         }
     }
 
-    pApp->pLayoutExtra  = NULL;
-    pApp->pListBox      = NULL;
-    window_stop_modal(pApp->pWindowModal, dButtonTag);
+    pApp->pWindows->pLayoutExtra  = NULL;
+    pApp->pWidgets->pListBox      = NULL;
+    window_stop_modal(pApp->pWindows->pWindowModal, dButtonTag);
 }
 
 Panel*
@@ -501,9 +501,9 @@ Panel_GetModalMessage(AppGUI* pApp)
     label_multiline(pLabelMessage, TRUE);
     if (pApp)
     {
-        if (pApp->pString)
+        if (pApp->pWidgets->pString)
         {
-            label_text(pLabelMessage, tc(pApp->pString));
+            label_text(pLabelMessage, tc(pApp->pWidgets->pString));
         }
     }
 
@@ -547,9 +547,9 @@ Panel_GetModalQuestion(AppGUI* pApp)
     label_multiline(pLabelMessage, TRUE);
     if (pApp)
     {
-        if (pApp->pString)
+        if (pApp->pWidgets->pString)
         {
-            label_text(pLabelMessage, tc(pApp->pString));
+            label_text(pLabelMessage, tc(pApp->pWidgets->pString));
         }
     }
 
@@ -615,7 +615,7 @@ Panel_GetModalGameNotFound(AppGUI* pApp)
     label_font(pLabelInfo, pFontInfo);
 
     /* Edit: Game Path */
-    pApp->pEdit = pEditPath;
+    pApp->pWidgets->pEdit = pEditPath;
 
     /* Button: Submit */
     button_text(pButtonSubmit, TXT_BTN_SUBMIT);
@@ -677,9 +677,9 @@ Panel_GetModalGameNotFound(AppGUI* pApp)
     /* Panel: Main */
     panel_layout(pPanelMain, pLayoutMain);
 
-    if (pApp->pWindowModal != NULL)
+    if (pApp->pWindows->pWindowModal != NULL)
     {
-        window_defbutton(pApp->pWindowModal, pButtonSubmit);
+        window_defbutton(pApp->pWindows->pWindowModal, pButtonSubmit);
     }
 
     /* Cleanup */
@@ -702,7 +702,7 @@ _Panel_TweakerDescription(AppGUI *pApp)
 
     /* Label: Feature Description */
     label_multiline(pLabelDescription, TRUE);
-    label_text(pLabelDescription, tc(pTweaker->pStringTweakerInfo));
+    label_text(pLabelDescription, tc(pTweaker->sTweakerInfo));
 
     /* Layout: Main */
     layout_vexpand(pLayoutMain, 0);
@@ -738,21 +738,21 @@ _Panel_TweakerOptionsSelector(AppGUI *pApp)
     /* Buttons: Tweak Options */
     for (i = 0; i < pTweaker->dMaxOptions; i++)
     {
-        if (!str_empty(pTweaker->pStringImageTitle[i]))
+        if (!str_empty(pTweaker->sImageTitle[i]))
         {
             pButtonOpt[i] = button_radio();
-            button_text(pButtonOpt[i], tc(pTweaker->pStringImageTitle[i]));
+            button_text(pButtonOpt[i], tc(pTweaker->sImageTitle[i]));
             button_tag(pButtonOpt[i], (MODAL_OPT_A + i) );
             button_OnClick(pButtonOpt[i], listener(pApp, Callback_OnButtonModalTweaker, AppGUI));
         }
     }
 
     /* Set active button */
-    if (pTweaker->pStringImageTitle[pTweaker->dSelectedOption])
+    if (pTweaker->sImageTitle[pTweaker->dSelectedOption])
     {
         button_state(pButtonOpt[pTweaker->dSelectedOption], ekGUI_ON);
     }
-    else if (pTweaker->pStringImageTitle[0])
+    else if (pTweaker->sImageTitle[0])
     {
         button_state(pButtonOpt[0], ekGUI_ON);
     }
@@ -760,7 +760,7 @@ _Panel_TweakerOptionsSelector(AppGUI *pApp)
     /* Layout: Selector */
     for (i = 0; i < pTweaker->dMaxOptions; i++)
     {
-        if (!str_empty(pTweaker->pStringImageTitle[i]))
+        if (!str_empty(pTweaker->sImageTitle[i]))
         {
             layout_button(pLayoutMain, pButtonOpt[i], i,0);
             layout_hsize(pLayoutMain, i, 150);
@@ -772,7 +772,7 @@ _Panel_TweakerOptionsSelector(AppGUI *pApp)
     layout_skcolor(pLayoutMain, gui_line_color());
 
     /* Label: Error about option absence */
-    if (str_empty(pTweaker->pStringImageTitle[0]))
+    if (str_empty(pTweaker->sImageTitle[0]))
     {
         pLabelError = label_create();
         label_text(pLabelError, "Error: No options provided!");
@@ -815,7 +815,7 @@ _Panel_TweakerButtons(AppGUI *pApp)
     const int dRowForPage = _RowForPage(pApp->dPage, pApp->dPageMax);
     int dRow;
 
-    pApp->pLayoutExtra  = pLayoutDynamicButtons;
+    pApp->pWindows->pLayoutExtra  = pLayoutDynamicButtons;
 
     /* Button: Cancel */
     button_text(pButtonCancel, TXT_BTN_CANCEL);
@@ -888,7 +888,7 @@ _Panel_TweakerButtons(AppGUI *pApp)
     /* Show appropriate button layout */
     for (dRow = 0; dRow < 4; ++dRow)
     {
-        layout_show_row(pApp->pLayoutExtra, dRow, dRow == dRowForPage);
+        layout_show_row(pApp->pWindows->pLayoutExtra, dRow, dRow == dRowForPage);
     }
 
     return pPanelMain;
@@ -904,7 +904,7 @@ Panel_GetModalTweaker(AppGUI *pApp)
     Panel       *pPanelButtons      = _Panel_TweakerButtons(pApp);
     Layout      *pLayoutMain        = layout_create(1,5);
 
-    pApp->pLayoutModalMain = pLayoutMain;
+    pApp->pWindows->pLayoutModalMain = pLayoutMain;
 
     /* Layout: Main */
     /* layout_hsize(pLayoutMain, 0, TITLE_PNG_W);
@@ -931,10 +931,10 @@ static void
 _Callback_LocalisationPopupSelector(AppGUI *pApp, Event *e)
 {
     /* Since there's no way to "tag" popups, just acquire data from all widgets */
-    pApp->dLocaleSelected[LOC_CORE] = popup_get_selected(pApp->pPopupCore);
-    pApp->dLocaleSelected[LOC_MOD]  = popup_get_selected(pApp->pPopupMod);
+    pApp->pLocalizations->dLocaleSelected[LOC_CORE] = popup_get_selected(pApp->pWidgets->pPopupCore);
+    pApp->pLocalizations->dLocaleSelected[LOC_MOD]  = popup_get_selected(pApp->pWidgets->pPopupMod);
 
-    view_update(pApp->pLocaleView);
+    view_update(pApp->pWidgets->pLocaleView);
 
     unref(e);
 
@@ -942,14 +942,14 @@ _Callback_LocalisationPopupSelector(AppGUI *pApp, Event *e)
 }
 
 static void 
-_LocalisationFillPopup(AppGUI *pApp, PopUp *pPop, LocTier eTier)
+_LocalisationFillPopup(AppGUI *pApp, PopUp *pPop, ELocTier eTier)
 {
     size_t i;
 
     popup_clear(pPop);
-    for (i = 0; i < pApp->dLocaleCount; ++i)
+    for (i = 0; i < pApp->pLocalizations->dLocaleCount; ++i)
     {
-        const LangInfo *li = &pApp->tLocale[i];
+        const LangInfo *li = &pApp->pLocalizations->tLocale[i];
         bool_t bOk = (eTier == LOC_CORE  && li->bCore ) ||
                  (eTier == LOC_MOD   && li->bMod  );
 
@@ -979,9 +979,9 @@ Panel_GetModalLocalisation(AppGUI *pApp)
     PopUp       *pPopUpCore         = popup_create();
     PopUp       *pPopUpMod          = popup_create();
 
-    pApp->pPopupCore    = pPopUpCore;
-    pApp->pPopupMod     = pPopUpMod;
-    pApp->pLocaleView   = pViewPreview;
+    pApp->pWidgets->pPopupCore      = pPopUpCore;
+    pApp->pWidgets->pPopupMod       = pPopUpMod;
+    pApp->pWidgets->pLocaleView     = pViewPreview;
 
     /* Label: Description */
     label_multiline(pLabelDescription, TRUE);
@@ -1080,7 +1080,7 @@ _Panel_GetModalOptionSubpanel(AppGUI *pApp)
 
     GUIOptElement *pElem;
 
-    cassert_no_null(pApp->pOptElementArray);
+    cassert_no_null(pApp->pElementSets->pOptElementArray);
 
     /* Layout: Main */
     layout_skcolor(pLayoutMain, gui_line_color());
@@ -1092,12 +1092,12 @@ _Panel_GetModalOptionSubpanel(AppGUI *pApp)
         Layout *pLayoutLabelRow = layout_create(2, 1);
         int dCurRow             = dRow;
 
-        pElem = &pApp->pOptElementArray[i];
+        pElem = &pApp->pElementSets->pOptElementArray[i];
         assert(IS_VALID(pElem));
 
         /* Default row widgets */
         label_font(pLabel, pFontBold);
-        label_text(pLabel, tc(pElem->pTitle));
+        label_text(pLabel, tc(pElem->sTitle));
 
         layout_halign(pLayoutLabelRow, 0, 0, ekLEFT);
         layout_hexpand(pLayoutLabelRow, 0);
@@ -1124,7 +1124,7 @@ _Panel_GetModalOptionSubpanel(AppGUI *pApp)
                         Button *pButton     = button_radio();
                         unsigned int pos    = j * 2;
 
-                        label_text(pLabelOpt, tc(pElem->pOptTitle[j]));
+                        label_text(pLabelOpt, tc(pElem->sOptTitle[j]));
                         label_align(pLabelOpt, ekLEFT);
 
                         button_tag(pButton, (MODAL_OPT_A + i) );
@@ -1161,7 +1161,7 @@ _Panel_GetModalOptionSubpanel(AppGUI *pApp)
 
                     pElem->pElement    = pCheckbox;
 
-                    button_text(pCheckbox, tc(pElem->pOptTitle[0]));
+                    button_text(pCheckbox, tc(pElem->sOptTitle[0]));
 
                     layout_halign(pLayoutLabelRow, 1, 0, ekRIGHT);
                     layout_button(pLayoutLabelRow, pCheckbox, 1, 0);
@@ -1182,7 +1182,7 @@ _Panel_GetModalOptionSubpanel(AppGUI *pApp)
 
                     for(j = 0; j < pElem->dNumOfOptions; j++)
                     {
-                        popup_add_elem(pPopup, tc(pElem->pOptTitle[j]), NULL);
+                        popup_add_elem(pPopup, tc(pElem->sOptTitle[j]), NULL);
                     }
 
                     popup_selected(pPopup, pElem->dChoice);
@@ -1198,7 +1198,7 @@ _Panel_GetModalOptionSubpanel(AppGUI *pApp)
 
                     pElem->pElement = pEdit;
 
-                    edit_text(pEdit, tc(pElem->pOptTitle[0]));
+                    edit_text(pEdit, tc(pElem->sOptTitle[0]));
 
                     layout_edit(pLayoutLabelRow, pEdit, 1, 0);
                     layout_hsize(pLayoutLabelRow, 1, 192.f);
@@ -1218,7 +1218,7 @@ _Panel_GetModalOptionSubpanel(AppGUI *pApp)
                     {
                         const bool_t bCheckbox = (pElem->dChoice & (1U << j)) != 0;
 
-                        listbox_add_elem(pListbox, tc(pElem->pOptTitle[j]), NULL);
+                        listbox_add_elem(pListbox, tc(pElem->sOptTitle[j]), NULL);
                         listbox_check(pListbox, j, bCheckbox);
                     }
 
@@ -1324,26 +1324,26 @@ _Panel_GetModalModManagerSubpanel(AppGUI *pApp, const unsigned int dModIndex)
 
     GUIModElement *pElem;
 
-    cassert_no_null(pApp->pModElementArray);
-    pElem = &pApp->pModElementArray[dModIndex];
+    cassert_no_null(pApp->pElementSets->pModElementArray);
+    pElem = &pApp->pElementSets->pModElementArray[dModIndex];
     cassert_no_null(pElem);
 
     /* Labels: Mod credentials */
-    label_text(pLabelModTitle, tc(pElem->pName));
+    label_text(pLabelModTitle, tc(pElem->sName));
     label_font(pLabelModTitle, pFontBold);
-    label_text(pLabelModAuthor, tc(pElem->pAuthor));
+    label_text(pLabelModAuthor, tc(pElem->sAuthor));
     label_font(pLabelModAuthor, pFontItalic);
-    label_text(pLabelModDesc, tc(pElem->pDescription));
-    label_text(pLabelModVersion, tc(pElem->pVersion));
+    label_text(pLabelModDesc, tc(pElem->sDescription));
+    label_text(pLabelModVersion, tc(pElem->sVersion));
     label_font(pLabelModVersion, pFontItalic);
-    label_text(pLabelModWebsite, tc(pElem->pWebsite));
+    label_text(pLabelModWebsite, tc(pElem->sWebsite));
     label_multiline(pLabelModWebsite, TRUE);
     label_multiline(pLabelModDesc, TRUE);
     label_style_over(pLabelModWebsite, ekFUNDERLINE);
-    label_OnClick(pLabelModWebsite, listener(pElem->pWebsite, _Callback_OnLabelModManagerSubpanel, String));
+    label_OnClick(pLabelModWebsite, listener(pElem->sWebsite, _Callback_OnLabelModManagerSubpanel, String));
 
     /* Image View: Mod Preview */
-    pImage = image_from_file(tc(pElem->pScreenshot), &eError);
+    pImage = image_from_file(tc(pElem->sScreenshot), &eError);
     imageview_image(pImageViewScreen, eError == ekFOK ? pImage : (const Image*)TITLE_JPG);
     imageview_size(pImageViewScreen, s2df(PANEL_DEFAULT_W / 2.f, 240));
     imageview_scale(pImageViewScreen, ekGUI_SCALE_ADJUST);
@@ -1416,13 +1416,13 @@ _Callback_OnModManagerListbox(AppGUI *pApp, Event *e)
         return;
     }
 
-    if (str_empty(pApp->pModElementArray[p->index].pID))
+    if (str_empty(pApp->pElementSets->pModElementArray[p->index].sID))
     {
         return;
     }
 
     layout_panel_replace(
-        pApp->pLayoutExtra,
+        pApp->pWindows->pLayoutExtra,
         _Panel_GetModalModManagerSubpanel(pApp,p->index),
         1, 0);
     unref(e);
@@ -1443,8 +1443,8 @@ Panel_GetModalModManager(AppGUI* pApp)
 
     unsigned int i;
 
-    pApp->pLayoutExtra  = pLayoutCore;
-    pApp->pListBox      = pListboxMods;
+    pApp->pWindows->pLayoutExtra    = pLayoutCore;
+    pApp->pWidgets->pListBox        = pListboxMods;
 
     /* Button: Cancel */
     button_text(pButtonCancel, TXT_BTN_CANCEL);
@@ -1464,14 +1464,14 @@ Panel_GetModalModManager(AppGUI* pApp)
     listbox_OnSelect(pListboxMods, listener(pApp, _Callback_OnModManagerListbox, AppGUI));
     for(i = 0; i < MAX_MOD_ELEMS;i++)
     {
-        const GUIModElement *pElem = &pApp->pModElementArray[i];
+        const GUIModElement *pElem = &pApp->pElementSets->pModElementArray[i];
 
-        if (str_empty(pElem->pID))
+        if (str_empty(pElem->sID))
         {
             continue;
         }
 
-        listbox_add_elem(pListboxMods, tc(pElem->pName), NULL);
+        listbox_add_elem(pListboxMods, tc(pElem->sName), NULL);
         listbox_check(pListboxMods, i, pElem->bActive);
     }
 
@@ -1535,7 +1535,7 @@ _Panel_GetModalToolsSubpanel(AppGUI *pApp)
     unsigned int i = 0;
 
     GUIToolElement *pElem;
-    cassert_no_null(pApp->pToolElementArray);
+    cassert_no_null(pApp->pElementSets->pToolElementArray);
 
     for(i = 0; i < MAX_TOOL_ELEMS; i ++)
     {
@@ -1550,7 +1550,7 @@ _Panel_GetModalToolsSubpanel(AppGUI *pApp)
         Layout      *pLayoutLabels;
         ferror_t    eError;
 
-        pElem = &pApp->pToolElementArray[i];
+        pElem = &pApp->pElementSets->pToolElementArray[i];
         assert(IS_VALID(pElem));
 
         if (pElem->dID <= 0)
@@ -1569,9 +1569,9 @@ _Panel_GetModalToolsSubpanel(AppGUI *pApp)
         pLayoutLabels       = layout_create(1, 2);
 
         /* Image */
-        pImageIco = image_from_file(tc(pElem->pIcon), &eError);
+        pImageIco = image_from_file(tc(pElem->sIcon), &eError);
         assert(eError == ekFOK);
-        pImageIcoDark = image_from_file(tc(pElem->pIconDark), &eError);
+        pImageIcoDark = image_from_file(tc(pElem->sIconDark), &eError);
 
         /* Setup widgets */
         imageview_image(pImageViewIco, gui_dark_mode() ?
@@ -1589,10 +1589,10 @@ _Panel_GetModalToolsSubpanel(AppGUI *pApp)
             )
         );
 
-        label_text(pLabelTitle, tc(pElem->pTitle));
+        label_text(pLabelTitle, tc(pElem->sTitle));
         label_font(pLabelTitle, pFontBold);
 
-        label_text(pLabelDescription, tc(pElem->pDescription));
+        label_text(pLabelDescription, tc(pElem->sDescription));
         label_multiline(pLabelDescription, TRUE);
 
         /* Layout: Image */
@@ -1681,14 +1681,14 @@ _Panel_GetModalUpdaterSubpanel(AppGUI *pApp)
     TextView *pTextView            = textview_create();
     Progress *pProgressbar         = progress_create();
 
-    pApp->pProgressbar = pProgressbar;
+    pApp->pWidgets->pProgressbar   = pProgressbar;
 
     /* Labels */
     label_text(pLabelTitle, TXT_LABEL_UPDATER_TITLE);
     label_text(pLabelInfo, TXT_UPDATERINFO);
 
     /* Text View: Log */
-    pApp->pTextView = pTextView;
+    pApp->pWidgets->pTextView = pTextView;
     textview_size(pTextView, s2df(480, 128));
 
     /* Progress: Download */
@@ -1824,10 +1824,10 @@ AutoUpdate_CheckForUpdates(AppGUI *pApp)
             "\n\tdResult: %d\n\teInetError: %d\n",
             dResult,
             eInetError);
-        if (pApp->pTextView)
+        if (pApp->pWidgets->pTextView)
         {
             textview_printf(
-                pApp->pTextView,
+                pApp->pWidgets->pTextView,
                 "[Auto Updater] Couldn't fetch manifest.json"
                 "\n\tdResult: %d\n\teInetError: %d\n",
                 dResult,
@@ -1853,22 +1853,22 @@ AutoUpdate_CheckForUpdates(AppGUI *pApp)
     bstd_printf(sAppBuildFmt, dLauncherBuild);
     bstd_printf(sNetBuildFmt, pJson->launcher->build);
 
-    if (pApp->pTextView)
+    if (pApp->pWidgets->pTextView)
     {
         textview_printf(
-            pApp->pTextView,
+            pApp->pWidgets->pTextView,
             "[Auto Updater] Manifest retrieved successfuly:\n"
             "• dResult: \t\t%d\n• eInetError: \t\t%d\n• Update required: \t\t%s\n",
             dResult,
             eInetError,
             bUpdateRequired ? "true" : "false"
         );
-        textview_printf(pApp->pTextView, sSchemaFmt, tc(pJson->schema));
-        textview_printf(pApp->pTextView, sGeneratedFmt, tc(pJson->generated));
-        textview_printf(pApp->pTextView, sAppVersionFmt, dLauncherVersion);
-        textview_printf(pApp->pTextView, sNetVersionFmt, pJson->launcher->version);
-        textview_printf(pApp->pTextView, sAppBuildFmt, dLauncherBuild);
-        textview_printf(pApp->pTextView, sNetBuildFmt, pJson->launcher->build);
+        textview_printf(pApp->pWidgets->pTextView, sSchemaFmt, tc(pJson->schema));
+        textview_printf(pApp->pWidgets->pTextView, sGeneratedFmt, tc(pJson->generated));
+        textview_printf(pApp->pWidgets->pTextView, sAppVersionFmt, dLauncherVersion);
+        textview_printf(pApp->pWidgets->pTextView, sNetVersionFmt, pJson->launcher->version);
+        textview_printf(pApp->pWidgets->pTextView, sAppBuildFmt, dLauncherBuild);
+        textview_printf(pApp->pWidgets->pTextView, sNetBuildFmt, pJson->launcher->build);
     }
 
     stm_close(&pJsonStream);
@@ -1901,10 +1901,10 @@ AutoUpdate_Update(AppGUI *pApp)
             "\n\tdResult: %d\n\teInetError: %d\n",
             dResult,
             eInetError);
-        if (pApp->pTextView)
+        if (pApp->pWidgets->pTextView)
         {
             textview_printf(
-                pApp->pTextView,
+                pApp->pWidgets->pTextView,
                 "[Updater] Couldn't fetch manifest.json"
                 "\n\tdResult: %d\n\teInetError: %d\n",
                 dResult,
@@ -1918,10 +1918,10 @@ AutoUpdate_Update(AppGUI *pApp)
             "• dResult: \t\t%d\n• eInetError: \t\t%d\n",
             dResult,
             eInetError);
-    if (pApp->pTextView)
+    if (pApp->pWidgets->pTextView)
     {
         textview_printf(
-            pApp->pTextView,
+            pApp->pWidgets->pTextView,
             "[Updater] Manifest retrieved successfuly:\n"
             "• dResult: \t\t%d\n• eInetError: \t\t%d\n",
             dResult,
@@ -1938,20 +1938,20 @@ AutoUpdate_Update(AppGUI *pApp)
     arrst_end()
     bstd_printf("\n");
 
-    if (pApp->pTextView)
+    if (pApp->pWidgets->pTextView)
     {
         arrst_foreach(elem, pJson->files, InetUpdaterFile)
-            textview_printf(pApp->pTextView, sFileArrayFmt, tc(elem->path), tc(elem->sha256), elem->size);
+            textview_printf(pApp->pWidgets->pTextView, sFileArrayFmt, tc(elem->path), tc(elem->sha256), elem->size);
         arrst_end()
-        textview_printf(pApp->pTextView, "\n");
+        textview_printf(pApp->pWidgets->pTextView, "\n");
     }
 
     /* Download files */
     fProgressIndex  = 0.0f;
     fProgressMax    = (real32_t)arrst_size(pJson->files, InetUpdaterFile);
-    if (pApp->pProgressbar)
+    if (pApp->pWidgets->pProgressbar)
     {
-        progress_value(pApp->pProgressbar, 
+        progress_value(pApp->pWidgets->pProgressbar, 
             0.0f);
     }
     
@@ -1961,9 +1961,9 @@ AutoUpdate_Update(AppGUI *pApp)
         char *sSHA256Hash   = AmberLauncher_SHA256_HashFile(tc(elem->path));
 
         bstd_printf("[Updater] Downloading %s...\n", tc(elem->path));
-        if (pApp->pTextView)
+        if (pApp->pWidgets->pTextView)
         {
-            textview_printf(pApp->pTextView, "[Updater] Downloading %s...\n", tc(elem->path));
+            textview_printf(pApp->pWidgets->pTextView, "[Updater] Downloading %s...\n", tc(elem->path));
         }
 
         if (!bFileExists)
@@ -1972,9 +1972,9 @@ AutoUpdate_Update(AppGUI *pApp)
             String *sDownloadLink   = str_printf("%s%s", _sAutoUpdateRemoteRootURL, tc(elem->path));
 
             bstd_printf("[Updater] Local file doesn't exist!\n");
-            if (pApp->pTextView)
+            if (pApp->pWidgets->pTextView)
             {
-                textview_printf(pApp->pTextView, "[Updater] Local file doesn't exist!\n");
+                textview_printf(pApp->pWidgets->pTextView, "[Updater] Local file doesn't exist!\n");
             }
             pFile = http_dget(tc(sDownloadLink), NULL, NULL);
             if (pFile)
@@ -1990,9 +1990,9 @@ AutoUpdate_Update(AppGUI *pApp)
         else if (sSHA256Hash)
         {
             bstd_printf("[Updater] sha256 dummy.lua:\n\t%s\n", sSHA256Hash);
-            if (pApp->pTextView)
+            if (pApp->pWidgets->pTextView)
             {
-                textview_printf(pApp->pTextView, "[Updater] sha256 dummy.lua:\n\t%s\n", sSHA256Hash);
+                textview_printf(pApp->pWidgets->pTextView, "[Updater] sha256 dummy.lua:\n\t%s\n", sSHA256Hash);
             }
 
             if (str_cmp(elem->sha256, sSHA256Hash) != 0)
@@ -2001,9 +2001,9 @@ AutoUpdate_Update(AppGUI *pApp)
                 String *sDownloadLink = str_printf("%s%s", _sAutoUpdateRemoteRootURL, tc(elem->path));
 
                 bstd_printf("[Updater] Remote file is different!\n");
-                if (pApp->pTextView)
+                if (pApp->pWidgets->pTextView)
                 {
-                    textview_printf(pApp->pTextView, "[Updater] Remote file is different!\n");
+                    textview_printf(pApp->pWidgets->pTextView, "[Updater] Remote file is different!\n");
                 }
                 pFile = http_dget(tc(sDownloadLink), NULL, NULL);
                 if (pFile)
@@ -2023,9 +2023,9 @@ AutoUpdate_Update(AppGUI *pApp)
             }
         }
         fProgressIndex += 1.0f;
-        if (pApp->pProgressbar)
+        if (pApp->pWidgets->pProgressbar)
         {
-            progress_value(pApp->pProgressbar, 
+            progress_value(pApp->pWidgets->pProgressbar, 
                 fProgressIndex / fProgressMax);
         }
         free(sSHA256Hash);
@@ -2081,7 +2081,7 @@ Callback_OnButtonModalMessage(AppGUI *pApp, Event *e)
 {
     Button *pButton = event_sender(e, Button);
     uint32_t dButtonTag = button_get_tag(pButton);
-    window_stop_modal(pApp->pWindowModal, dButtonTag);
+    window_stop_modal(pApp->pWindows->pWindowModal, dButtonTag);
     unref(pButton);
     unref(e);
 }
@@ -2091,7 +2091,7 @@ Callback_OnButtonModalQuestion(AppGUI *pApp, Event *e)
 {
     Button *pButton = event_sender(e, Button);
     uint32_t dButtonTag = button_get_tag(pButton);
-    window_stop_modal(pApp->pWindowModal, dButtonTag);
+    window_stop_modal(pApp->pWindows->pWindowModal, dButtonTag);
     unref(pButton);
     unref(e);
 }
@@ -2108,24 +2108,24 @@ Callback_OnButtonModalGameNotFound(AppGUI *pApp, Event *e)
     /* Button clicked: Submit or Cancel */
     if (dButtonTag != MODAL_BROWSE)
     {
-        window_stop_modal(pApp->pWindowModal, dButtonTag);
+        window_stop_modal(pApp->pWindows->pWindowModal, dButtonTag);
         return;
     }
 
     /* Button clicked: Browse */
     {
-        const char *sBrowserPath = comwin_open_file(pApp->pWindowModal, sFileFormat, 1, NULL);
-        str_upd(&pApp->pString, sBrowserPath ? sBrowserPath : "");
+        const char *sBrowserPath = comwin_open_file(pApp->pWindows->pWindowModal, sFileFormat, 1, NULL);
+        str_upd(&pApp->pWidgets->pString, sBrowserPath ? sBrowserPath : "");
     }
 
-    if (pApp->pEdit)
+    if (pApp->pWidgets->pEdit)
     {
-        edit_text(pApp->pEdit, tc(pApp->pString));
+        edit_text(pApp->pWidgets->pEdit, tc(pApp->pWidgets->pString));
     }
 
-    if (pApp->pTextView)
+    if (pApp->pWidgets->pTextView)
     {
-        textview_printf(pApp->pTextView,"Game path: %s\n", tc(pApp->pString));
+        textview_printf(pApp->pWidgets->pTextView,"Game path: %s\n", tc(pApp->pWidgets->pString));
     }
 }
 
@@ -2148,7 +2148,7 @@ Callback_OnButtonModalTweaker(AppGUI *pApp, Event *e)
     {
         case MODAL_CANCEL:
         case MODAL_ACCEPT:
-            window_stop_modal(pApp->pWindowModal, dButtonTag);
+            window_stop_modal(pApp->pWindows->pWindowModal, dButtonTag);
             return;
         case MODAL_PREVIOUS:
         case MODAL_NEXT:
@@ -2169,26 +2169,26 @@ Callback_OnButtonModalTweaker(AppGUI *pApp, Event *e)
 
         pTweaker = &pApp->tGUITweaker[pApp->dPage];
         dImageIndex = pApp->tGUITweaker[pApp->dPage].dSelectedOption;
-        layout_panel_replace(pApp->pLayoutModalMain, _Panel_TweakerDescription(pApp), 0, 0);
-        layout_panel_replace(pApp->pLayoutModalMain, _Panel_TweakerOptionsSelector(pApp), 0, 1);
+        layout_panel_replace(pApp->pWindows->pLayoutModalMain, _Panel_TweakerDescription(pApp), 0, 0);
+        layout_panel_replace(pApp->pWindows->pLayoutModalMain, _Panel_TweakerOptionsSelector(pApp), 0, 1);
         /* layout_panel_replace(pApp->pLayoutModalMain, _Panel_TweakerButtons(pApp), 0, 4); */
 
         /* Show appropriate button layout */
         for (dRow = 0; dRow < 4; ++dRow)
         {
-            layout_show_row(pApp->pLayoutExtra, dRow, dRow == dRowForPage);
+            layout_show_row(pApp->pWindows->pLayoutExtra, dRow, dRow == dRowForPage);
         }
     }
 
-    str_destopt(&pApp->pString);
-    pApp->pString = NULL;
-    if (pTweaker->pStringImagePath[dImageIndex])
+    str_destopt(&pApp->pWidgets->pString);
+    pApp->pWidgets->pString = NULL;
+    if (pTweaker->sImagePath[dImageIndex])
     {
-        pApp->pString = str_copy(pTweaker->pStringImagePath[dImageIndex]);
+        pApp->pWidgets->pString = str_copy(pTweaker->sImagePath[dImageIndex]);
     }
-    layout_panel_replace(pApp->pLayoutModalMain, Panel_GetImageDemo(pApp), 0, 2);
+    layout_panel_replace(pApp->pWindows->pLayoutModalMain, Panel_GetImageDemo(pApp), 0, 2);
 
-    layout_update(pApp->pLayoutModalMain);
+    layout_update(pApp->pWindows->pLayoutModalMain);
 }
 
 void
@@ -2197,10 +2197,10 @@ Callback_OnButtonModalLocalisation(AppGUI *pApp, Event *e)
     Button *pButton     = event_sender(e, Button);
     uint32_t dButtonTag = button_get_tag(pButton);
 
-    pApp->dLocaleSelected[LOC_CORE] = popup_get_selected(pApp->pPopupCore);
-    pApp->dLocaleSelected[LOC_MOD]  = popup_get_selected(pApp->pPopupMod);
+    pApp->pLocalizations->dLocaleSelected[LOC_CORE] = popup_get_selected(pApp->pWidgets->pPopupCore);
+    pApp->pLocalizations->dLocaleSelected[LOC_MOD]  = popup_get_selected(pApp->pWidgets->pPopupMod);
 
-    window_stop_modal(pApp->pWindowModal, dButtonTag);
+    window_stop_modal(pApp->pWindows->pWindowModal, dButtonTag);
 
     unref(pButton);
     unref(e);
@@ -2220,7 +2220,7 @@ Callback_OnButtonModalOptions(AppGUI *pApp, Event *e)
             unsigned int i;
             for(i = 0; i < MAX_OPT_ELEMS; i++)
             {
-                GUIOptElement *pElem = &pApp->pOptElementArray[i];
+                GUIOptElement *pElem = &pApp->pElementSets->pOptElementArray[i];
 
                 if (pElem->eType == UI_WIDGET_NULL)
                 {
@@ -2267,7 +2267,7 @@ Callback_OnButtonModalOptions(AppGUI *pApp, Event *e)
                         {
                             const Edit *pEdit    = (const Edit*)pElem->pElement;
                             const char_t *pValue = edit_get_text(pEdit);
-                            str_upd(&pElem->pOutputString, pValue);
+                            str_upd(&pElem->sOutputString, pValue);
                         }
                         break;
                     case UI_WIDGET_LISTBOX:
@@ -2286,7 +2286,7 @@ Callback_OnButtonModalOptions(AppGUI *pApp, Event *e)
                                 {
                                     pElem->dChoice &= ~(1U << j);
                                 }
-                                /* str_upd(&pElem->pOutputString, listbox_get_text(pListbox, j)); */
+                                /* str_upd(&pElem->sOutputString, listbox_get_text(pListbox, j)); */
                             }
                         }
                         break;
@@ -2296,7 +2296,7 @@ Callback_OnButtonModalOptions(AppGUI *pApp, Event *e)
             }
         }
 
-        window_stop_modal(pApp->pWindowModal, dButtonTag);
+        window_stop_modal(pApp->pWindows->pWindowModal, dButtonTag);
         return;
     }
 }
@@ -2322,8 +2322,8 @@ Callback_OnButtonModalUpdater(AppGUI* pApp, Event *e)
             break;
 
         default:
-            pApp->pTextView = NULL;
-            window_stop_modal(pApp->pWindowModal, dButtonTag);
+            pApp->pWidgets->pTextView = NULL;
+            window_stop_modal(pApp->pWindows->pWindowModal, dButtonTag);
             break;
     }
 
@@ -2339,7 +2339,7 @@ Callback_OnButtonModalTools(AppGUI *pApp, Event *e)
 
     if (dButtonTag > MODAL_OPT_MAX)
     {
-        window_stop_modal(pApp->pWindowModal, dButtonTag);
+        window_stop_modal(pApp->pWindows->pWindowModal, dButtonTag);
         return;
     }
 }
@@ -2354,17 +2354,21 @@ Callback_OnButtonPlay(AppGUI *pApp, Event *e)
 void
 Callback_OnDrawLocalisation(AppGUI *pApp, Event *e)
 {
-    ferror_t        eError1, eError2;
-    Image           *pImageBG = NULL;
-    Image           *pImageFG = NULL;
-    const EvDraw    *pEvDraw  = event_params(e, EvDraw);
-    DCtx            *pCtx = pEvDraw ? pEvDraw->ctx : NULL;
+    ferror_t                    eError1;
+    ferror_t                    eError2;
+    Image                      *pImageBG   = NULL;
+    Image                      *pImageFG   = NULL;
+    const EvDraw               *pEvDraw    = event_params(e, EvDraw);
+    DCtx                       *pCtx       = pEvDraw ? pEvDraw->ctx : NULL;
+    const AppGUILocalization   *pLocs      = pApp->pLocalizations;
 
-    assert(pApp->tLocale[pApp->dLocaleSelected[LOC_CORE]].bCore);
-    assert(pApp->tLocale[pApp->dLocaleSelected[LOC_MOD]].bMod);
+    assert(pLocs->tLocale[pLocs->dLocaleSelected[LOC_CORE]].bCore);
+    assert(pLocs->tLocale[pLocs->dLocaleSelected[LOC_MOD]].bMod);
 
-    pImageBG = image_from_file(pApp->tLocale[pApp->dLocaleSelected[LOC_CORE]].sCorePath,&eError1);
-    pImageFG = image_from_file(pApp->tLocale[pApp->dLocaleSelected[LOC_MOD]].sModPath,&eError2);
+    pImageBG = image_from_file(
+        pLocs->tLocale[pLocs->dLocaleSelected[LOC_CORE]].sCorePath, &eError1);
+    pImageFG = image_from_file(
+        pLocs->tLocale[pLocs->dLocaleSelected[LOC_MOD]].sModPath, &eError2);
 
     assert(eError1 == ekFOK);
     assert(eError2 == ekFOK);
@@ -2460,8 +2464,8 @@ _Panel_GetRoot(AppGUI *pApp)
     static const real32_t dButtonIconWidth   = ICO_PNG_W + (ICO_PNG_W / 2);
     static const real32_t dButtonIconHeight  = ICO_PNG_H + (ICO_PNG_H / 2);
 
-    pApp->pLayoutMain   = pLayoutMain;
-    pApp->pLayoutWindow = pLayoutCore;
+    pApp->pWindows->pLayoutMain     = pLayoutMain;
+    pApp->pWindows->pLayoutWindow   = pLayoutCore;
 
     /* Buttons */
     button_image(pButtonSettings, gui_dark_mode() ?
@@ -2586,9 +2590,6 @@ _Nappgui_Start(void)
     AppGUI *pApp;
     Panel *pPanel;
 
-    gui_respack(res_app_respack);
-    gui_language("");
-
     /* Core initialization */
     pApp = heap_new0(AppGUI);
     cassert_no_null(pApp);
@@ -2598,23 +2599,45 @@ _Nappgui_Start(void)
     pApp->pAppCore->pOwner    = (void*)pApp;
     pApp->pAppCore->cbUIEvent = _Callback_UIEvent;
 
-    /* AppGUI  */
-    pApp->pDebugData          = heap_new(GUIDebugData);
+    /* Debug */
+    pApp->pDebugData     = heap_new(GUIDebugData);
     cassert_no_null(pApp->pDebugData);
-    pApp->pOptElementArray    = heap_new_n0(MAX_OPT_ELEMS, GUIOptElement);
-    cassert_no_null(pApp->pOptElementArray);
-    pApp->pToolElementArray   = heap_new_n0(MAX_TOOL_ELEMS, GUIToolElement);
-    cassert_no_null(pApp->pToolElementArray);
-    pApp->pModElementArray   = heap_new_n0(MAX_MOD_ELEMS, GUIModElement);
-    cassert_no_null(pApp->pModElementArray);
 
+    /* AppGUI ... */
+    pApp->pWindows       = heap_new0(AppGUIWindows);
+    cassert_no_null(pApp->pWindows);
+
+    pApp->pWidgets       = heap_new0(AppGUIWidgets);
+    cassert_no_null(pApp->pWidgets);
+
+    pApp->pElementSets   = heap_new0(AppGUIElementDB);
+    cassert_no_null(pApp->pElementSets);
+
+    pApp->pLocalizations = heap_new0(AppGUILocalization);
+    cassert_no_null(pApp->pLocalizations);
+
+    /* AppGUI > AppGUIElementDB */
+    pApp->pElementSets->pOptElementArray    = heap_new_n0(MAX_OPT_ELEMS, GUIOptElement);
+    cassert_no_null(pApp->pElementSets->pOptElementArray);
+
+    pApp->pElementSets->pToolElementArray   = heap_new_n0(MAX_TOOL_ELEMS, GUIToolElement);
+    cassert_no_null(pApp->pElementSets->pToolElementArray);
+
+    pApp->pElementSets->pModElementArray    = heap_new_n0(MAX_MOD_ELEMS, GUIModElement);
+    cassert_no_null(pApp->pElementSets->pModElementArray);
+
+    /* NappGUI */
     inet_start();
-    AutoUpdate_Init();
+    gui_respack(res_app_respack);
+    gui_language("");
 
+    /* AmberLauncher */
+    AutoUpdate_Init();
     AmberLauncher_Start(pApp->pAppCore);
 
-    pPanel           = _Panel_GetRoot(pApp);
-    pApp->pWindow    = window_create(
+    /* Main Window */
+    pPanel                  = _Panel_GetRoot(pApp);
+    pApp->pWindows->pWindow = window_create(
         ekWINDOW_TITLE |
         ekWINDOW_EDGE |
         ekWINDOW_CLOSE |
@@ -2622,12 +2645,14 @@ _Nappgui_Start(void)
         ekWINDOW_RETURN
     );
 
-    window_hotkey(pApp->pWindow, ekKEY_F6, 0, listener(pApp, Callback_OnWindowHotkeyF6, AppGUI));
-    window_panel(pApp->pWindow, pPanel);
-    window_title(pApp->pWindow, TXT_TITLE_LAUNCHER);
+    window_hotkey(pApp->pWindows->pWindow, ekKEY_F6, 0,
+                  listener(pApp, Callback_OnWindowHotkeyF6, AppGUI));
+    window_panel(pApp->pWindows->pWindow, pPanel);
+    window_title(pApp->pWindows->pWindow, TXT_TITLE_LAUNCHER);
     /* window_origin(pApp->pWindow, v2df(800, 400)); */
-    window_OnClose(pApp->pWindow, listener(pApp, _Callback_OnCloseMainWindow, AppGUI));
-    window_show(pApp->pWindow);
+    window_OnClose(pApp->pWindows->pWindow,
+                   listener(pApp, _Callback_OnCloseMainWindow, AppGUI));
+    window_show(pApp->pWindows->pWindow);
 
     return pApp;
 }
@@ -2638,80 +2663,110 @@ _Nappgui_End(AppGUI **pApp)
     size_t i;
     size_t j;
 
-    /* Debug Data */
-    str_destopt(&(*pApp)->pDebugData->pInputString);
-    heap_delete(&(*pApp)->pDebugData, GUIDebugData);
-    (*pApp)->pDebugData = NULL;
-
-    /* APPGUI */
+    /* AppGUI > Tweaker */
     for(i = 0; i < APP_MAX_ELEMENTS; i++)
     {
         GUITweaker *pTweaker = &(*pApp)->tGUITweaker[i];
-        str_destopt(&pTweaker->pStringTag);
-        str_destopt(&pTweaker->pStringTweakerInfo);
+        str_destopt(&pTweaker->sTag);
+        str_destopt(&pTweaker->sTweakerInfo);
 
         for(j = 0; j < APP_MAX_ELEMENTS; j++)
         {
-            str_destopt(&pTweaker->pStringImageTitle[j]);
-            str_destopt(&pTweaker->pStringImagePath[j]);
+            str_destopt(&pTweaker->sImageTitle[j]);
+            str_destopt(&pTweaker->sImagePath[j]);
         }
     }
 
-    /* Options */
-    for (i = 0; i < MAX_OPT_ELEMS; ++i)
-    {
-        GUIOptElement *pElem = &(*pApp)->pOptElementArray[i];
-
-        str_destopt(&pElem->pKeyID);
-        str_destopt(&pElem->pOutputString);
-        str_destopt(&pElem->pTitle);
-
-        for (j = 0; j < APP_MAX_ELEMENTS; ++j)
-            str_destopt(&pElem->pOptTitle[j]);
-    }
-    heap_delete_n(&(*pApp)->pOptElementArray, MAX_OPT_ELEMS, GUIOptElement);
-    (*pApp)->pOptElementArray = NULL;
-
-    /* Tools */
-    for (i = 0; i < MAX_TOOL_ELEMS; ++i)
-    {
-        GUIToolElement *pElem = &(*pApp)->pToolElementArray[i];
-
-        str_destopt(&pElem->pIcon);
-        str_destopt(&pElem->pIconDark);
-        str_destopt(&pElem->pTitle);
-        str_destopt(&pElem->pDescription);
-    }
-    heap_delete_n(&(*pApp)->pToolElementArray, MAX_TOOL_ELEMS, GUIToolElement);
-    (*pApp)->pToolElementArray = NULL;
-
-    /* Mods */
-    for (i = 0; i < MAX_MOD_ELEMS; ++i)
-    {
-        GUIModElement *pElem = &(*pApp)->pModElementArray[i];
-
-        str_destopt(&pElem->pID);
-        str_destopt(&pElem->pName);
-        str_destopt(&pElem->pAuthor);
-        str_destopt(&pElem->pDescription);
-        str_destopt(&pElem->pVersion);
-        str_destopt(&pElem->pWebsite);
-        str_destopt(&pElem->pRoot);
-        str_destopt(&pElem->pGame);
-        str_destopt(&pElem->pScreenshot);
-    }
-    heap_delete_n(&(*pApp)->pModElementArray, MAX_MOD_ELEMS, GUIModElement);
-    (*pApp)->pModElementArray = NULL;
-
-    str_destopt(&(*pApp)->pString);
-
+    /* NappGUI ... */
     inet_finish();
+
+    /* Amber Launcher ... */
     AmberLauncher_End((*pApp)->pAppCore);
-    if ((*pApp)->pWindowModal)
+
+    /* AppGUI > Localisation */
+    if (IS_VALID((*pApp)->pLocalizations))
     {
-        window_destroy(&(*pApp)->pWindowModal);
+        heap_delete(&(*pApp)->pLocalizations, AppGUILocalization);
     }
-    window_destroy(&(*pApp)->pWindow);
+
+    /* AppGUI > Element Sets */
+    if (IS_VALID((*pApp)->pElementSets))
+    {
+        /* Options */
+        for (i = 0; i < MAX_OPT_ELEMS; ++i)
+        {
+            GUIOptElement *pElem = &(*pApp)->pElementSets->pOptElementArray[i];
+
+            str_destopt(&pElem->sKeyID);
+            str_destopt(&pElem->sOutputString);
+            str_destopt(&pElem->sTitle);
+
+            for (j = 0; j < APP_MAX_ELEMENTS; ++j)
+                str_destopt(&pElem->sOptTitle[j]);
+        }
+        heap_delete_n(&(*pApp)->pElementSets->pOptElementArray, MAX_OPT_ELEMS, GUIOptElement);
+        (*pApp)->pElementSets->pOptElementArray = NULL;
+
+        /* Tools */
+        for (i = 0; i < MAX_TOOL_ELEMS; ++i)
+        {
+            GUIToolElement *pElem = &(*pApp)->pElementSets->pToolElementArray[i];
+
+            str_destopt(&pElem->sIcon);
+            str_destopt(&pElem->sIconDark);
+            str_destopt(&pElem->sTitle);
+            str_destopt(&pElem->sDescription);
+        }
+        heap_delete_n(&(*pApp)->pElementSets->pToolElementArray, MAX_TOOL_ELEMS, GUIToolElement);
+        (*pApp)->pElementSets->pToolElementArray = NULL;
+
+        /* Mods */
+        for (i = 0; i < MAX_MOD_ELEMS; ++i)
+        {
+            GUIModElement *pElem = &(*pApp)->pElementSets->pModElementArray[i];
+
+            str_destopt(&pElem->sID);
+            str_destopt(&pElem->sName);
+            str_destopt(&pElem->sAuthor);
+            str_destopt(&pElem->sDescription);
+            str_destopt(&pElem->sVersion);
+            str_destopt(&pElem->sWebsite);
+            str_destopt(&pElem->sRoot);
+            str_destopt(&pElem->sGame);
+            str_destopt(&pElem->sScreenshot);
+        }
+        heap_delete_n(&(*pApp)->pElementSets->pModElementArray, MAX_MOD_ELEMS, GUIModElement);
+        (*pApp)->pElementSets->pModElementArray = NULL;
+
+        /* DB */
+        heap_delete(&(*pApp)->pElementSets, AppGUIElementDB);
+    }
+
+    /* AppGUI > Widgets */
+    if (IS_VALID((*pApp)->pWidgets))
+    {
+        str_destopt(&(*pApp)->pWidgets->pString);
+        heap_delete(&(*pApp)->pWidgets, AppGUIWidgets);
+    }
+
+    /* AppGUI > Windows */
+    if (IS_VALID((*pApp)->pWindows))
+    {
+        if ((*pApp)->pWindows->pWindowModal)
+        {
+            window_destroy(&(*pApp)->pWindows->pWindowModal);
+        }
+        window_destroy(&(*pApp)->pWindows->pWindow);
+
+        heap_delete(&(*pApp)->pWindows, AppGUIWindows);
+    }
+
+    /* Debug Data */
+    str_destopt(&(*pApp)->pDebugData->sInputString);
+    heap_delete(&(*pApp)->pDebugData, GUIDebugData);
+    (*pApp)->pDebugData = NULL;
+
+    /* Finalize */
     AppCore_free(&(*pApp)->pAppCore);
     heap_delete(pApp, AppGUI);
 }
@@ -2721,13 +2776,16 @@ _Nappgui_ShowModal( AppGUI *pApp, Panel *pPanel, const char* sTitle)
 {
     uint32_t dRet;
 
-    pApp->pWindowModal  = window_create(ekWINDOW_STD | ekWINDOW_CLOSE | ekWINDOW_ESC | ekWINDOW_RETURN);
-    pApp->pPanelModal   = pPanel;
-    window_panel (pApp->pWindowModal, pPanel);
-    window_title (pApp->pWindowModal, sTitle);
-    window_OnClose(pApp->pWindowModal, listener(pApp, _Callback_OnCloseModalWindow, AppGUI));
-    dRet = window_modal(pApp->pWindowModal, pApp->pWindow);
-    window_destroy(&pApp->pWindowModal);
+    pApp->pWindows->pWindowModal = window_create(
+        ekWINDOW_STD | ekWINDOW_CLOSE | ekWINDOW_ESC | ekWINDOW_RETURN);
+    pApp->pWindows->pPanelModal = pPanel;
+
+    window_panel(pApp->pWindows->pWindowModal, pPanel);
+    window_title(pApp->pWindows->pWindowModal, sTitle);
+    window_OnClose(pApp->pWindows->pWindowModal,
+                   listener(pApp, _Callback_OnCloseModalWindow, AppGUI));
+    dRet = window_modal(pApp->pWindows->pWindowModal, pApp->pWindows->pWindow);
+    window_destroy(&pApp->pWindows->pWindowModal);
 
     return dRet;
 }
@@ -2743,7 +2801,7 @@ _Callback_OnButtonMainWindow(AppGUI* pApp, Event* e)
     ESidebarButton dTag = (ESidebarButton)button_get_tag(pButton);
     bool_t bVarRet;
 
-    bVarRet = AmberLauncher_ProcessUISideButton(pApp->pAppCore, dTag);
+    bVarRet = (bool_t)AmberLauncher_ProcessUISideButton(pApp->pAppCore, dTag);
     if (bVarRet == FALSE)
     {
         return;
@@ -2805,7 +2863,7 @@ _Callback_OnCloseModalWindow(AppGUI *pApp, Event *e)
 
             if (pApp->eCurrentUIEvent == UIEVENT_MODAL_UPDATER)
             {
-                pApp->pTextView = NULL;
+                pApp->pWidgets->pTextView = NULL;
             }
             break;
 
@@ -2862,15 +2920,15 @@ _Callback_UIEvent(
     assert(eEventType >= 0);
 
     #ifdef __DEBUG__
-    if (pApp->pTextView && eEventType < UIEVENT_MAX)
+    if (pApp->pWidgets->pTextView && eEventType < UIEVENT_MAX)
     {
-        textview_printf(pApp->pTextView,"UI EVENT: %s\n", EUIEventTypeStrings[eEventType]);
+        textview_printf(pApp->pWidgets->pTextView,"UI EVENT: %s\n", EUIEventTypeStrings[eEventType]);
     }
     #endif
 
-    if (pApp->pString)
+    if (pApp->pWidgets->pString)
     {
-        str_destroy(&pApp->pString);
+        str_destroy(&pApp->pWidgets->pString);
     }
 
     pApp->eCurrentUIEvent = eEventType;
@@ -2878,7 +2936,7 @@ _Callback_UIEvent(
     switch(eEventType)
     {
         case UIEVENT_MODAL_CLOSE:
-            window_stop_modal(pApp->pWindowModal, ekGUI_CLOSE_ESC);
+            window_stop_modal(pApp->pWindows->pWindowModal, ekGUI_CLOSE_ESC);
             break;
         case UIEVENT_DEBUG:
             {
@@ -2899,9 +2957,9 @@ _Callback_UIEvent(
 
                 sMessage = SVAR_GET_CONSTCHAR(pUserData[0]);
 
-                if (pApp->pTextView)
+                if (pApp->pWidgets->pTextView)
                 {
-                    textview_printf(pApp->pTextView,"%s\n", sMessage);
+                    textview_printf(pApp->pWidgets->pTextView,"%s\n", sMessage);
                     SVARKEYB_BOOL(tRetVal, sStatusKey, CTRUE);
                     break;
                 }
@@ -2936,7 +2994,7 @@ _Callback_UIEvent(
                 /* Button state - "Configure" or "Next"? */
                 if (IS_VALID(pUserData) && dNumArgs >= 1)
                 {
-                    bool_t bButtonNext = SVAR_GET_BOOL(pUserData[0]);
+                    bool_t bButtonNext = (bool_t)SVAR_GET_BOOL(pUserData[0]);
                     if (bButtonNext)
                     {
                         FLAG_SET(dFlags, FLAG_PANEL_STATE_END);
@@ -2953,7 +3011,7 @@ _Callback_UIEvent(
                 assert(pUserData);
                 assert(dNumArgs >= 1);
 
-                pApp->pString = str_c(SVAR_GET_CONSTCHAR(pUserData[0]));
+                pApp->pWidgets->pString = str_c(SVAR_GET_CONSTCHAR(pUserData[0]));
 
                 dModalRetVal = _Nappgui_ShowModal
                 (
@@ -2975,7 +3033,7 @@ _Callback_UIEvent(
                 assert(pUserData);
                 assert(dNumArgs >= 1);
 
-                pApp->pString = str_c(SVAR_GET_CONSTCHAR(pUserData[0]));
+                pApp->pWidgets->pString = str_c(SVAR_GET_CONSTCHAR(pUserData[0]));
 
                 dModalRetVal = _Nappgui_ShowModal
                 (
@@ -3017,9 +3075,9 @@ _Callback_UIEvent(
                         break;
                     default:
                         SVARKEYB_BOOL(tRetVal, sStatusKey, CTRUE);
-                        if (pApp->pString)
+                        if (pApp->pWidgets->pString)
                         {
-                            const char* pGamePath = tc(pApp->pString);
+                            const char* pGamePath = tc(pApp->pWidgets->pString);
                             SVARKEYB_CONSTCHAR(tRetVal, sPathKey, pGamePath);
                             break;
                         }
@@ -3042,9 +3100,9 @@ _Callback_UIEvent(
                 /* Idea: Process multidata lua table as argument */
                 pTable = (SVarTable *)SVAR_GET_LUATABLE(pUserData[0]);
 
-                if (pApp->pTextView)
+                if (pApp->pWidgets->pTextView)
                 {
-                    textview_printf(pApp->pTextView, "Processing %zu groups\n", pTable->dCount);
+                    textview_printf(pApp->pWidgets->pTextView, "Processing %zu groups\n", pTable->dCount);
                 }
 
                 /* Process each group */
@@ -3063,28 +3121,28 @@ _Callback_UIEvent(
                     pGroupTable = (SVarTable *)SVAR_GET_LUATABLE(pTable->pEntries[i].tValue);
 
                     /* Clear any existing data for this tweaker group */
-                    if (pApp->tGUITweaker[i].pStringTweakerInfo)
+                    if (pApp->tGUITweaker[i].sTweakerInfo)
                     {
-                        str_destroy(&pApp->tGUITweaker[i].pStringTweakerInfo);
-                        pApp->tGUITweaker[i].pStringTweakerInfo = NULL;
+                        str_destroy(&pApp->tGUITweaker[i].sTweakerInfo);
+                        pApp->tGUITweaker[i].sTweakerInfo = NULL;
                     }
-                    if (pApp->tGUITweaker[i].pStringTag)
+                    if (pApp->tGUITweaker[i].sTag)
                     {
-                        str_destroy(&pApp->tGUITweaker[i].pStringTag);
-                        pApp->tGUITweaker[i].pStringTag = NULL;
+                        str_destroy(&pApp->tGUITweaker[i].sTag);
+                        pApp->tGUITweaker[i].sTag = NULL;
                     }
 
                     for (k = 0; k < APP_MAX_ELEMENTS; ++k)
                     {
-                        if (pApp->tGUITweaker[i].pStringImageTitle[k])
+                        if (pApp->tGUITweaker[i].sImageTitle[k])
                         {
-                            str_destroy(&pApp->tGUITweaker[i].pStringImageTitle[k]);
-                            pApp->tGUITweaker[i].pStringImageTitle[k] = NULL;
+                            str_destroy(&pApp->tGUITweaker[i].sImageTitle[k]);
+                            pApp->tGUITweaker[i].sImageTitle[k] = NULL;
                         }
-                        if (pApp->tGUITweaker[i].pStringImagePath[k])
+                        if (pApp->tGUITweaker[i].sImagePath[k])
                         {
-                            str_destroy(&pApp->tGUITweaker[i].pStringImagePath[k]);
-                            pApp->tGUITweaker[i].pStringImagePath[k] = NULL;
+                            str_destroy(&pApp->tGUITweaker[i].sImagePath[k]);
+                            pApp->tGUITweaker[i].sImagePath[k] = NULL;
                         }
                     }
 
@@ -3098,12 +3156,12 @@ _Callback_UIEvent(
                             if (strcmp(sKey, "info") == 0)
                             {
                                 sGroupInfo = SVAR_GET_CONSTCHAR(pGroupTable->pEntries[k].tValue);
-                                pApp->tGUITweaker[i].pStringTweakerInfo = str_c(sGroupInfo);
+                                pApp->tGUITweaker[i].sTweakerInfo = str_c(sGroupInfo);
                             }
                             else if (strcmp(sKey, "tag") == 0)
                             {
                                 const char *sTagName = SVAR_GET_CONSTCHAR(pGroupTable->pEntries[k].tValue);
-                                pApp->tGUITweaker[i].pStringTag = str_c(sTagName);
+                                pApp->tGUITweaker[i].sTag = str_c(sTagName);
                             }
                         }
                         else if (pGroupTable->pEntries[k].tValue.eType == CTYPE_LUATABLE)
@@ -3138,16 +3196,16 @@ _Callback_UIEvent(
                             /* Store option in current group's tweaker */
                             if (sOptionName)
                             {
-                                pApp->tGUITweaker[i].pStringImageTitle[dOptionIndex] = str_c(sOptionName);
+                                pApp->tGUITweaker[i].sImageTitle[dOptionIndex] = str_c(sOptionName);
                             }
                             if (sImagePath)
                             {
-                                pApp->tGUITweaker[i].pStringImagePath[dOptionIndex] = str_c(sImagePath);
+                                pApp->tGUITweaker[i].sImagePath[dOptionIndex] = str_c(sImagePath);
                             }
 
-                            if (pApp->pTextView)
+                            if (pApp->pWidgets->pTextView)
                             {
-                                textview_printf(pApp->pTextView, "Group %zu - Option %zu: %s, Asset: %s\n",
+                                textview_printf(pApp->pWidgets->pTextView, "Group %zu - Option %zu: %s, Asset: %s\n",
                                             i + 1, dOptionIndex + 1,
                                             sOptionName ? sOptionName : "Unknown",
                                             sImagePath ? sImagePath : "No image");
@@ -3159,9 +3217,9 @@ _Callback_UIEvent(
 
                     pApp->tGUITweaker[i].dMaxOptions = (int)dOptionIndex;
 
-                    if (pApp->pTextView)
+                    if (pApp->pWidgets->pTextView)
                     {
-                        textview_printf(pApp->pTextView, "Group %zu Info: %s (%zu options)\n",
+                        textview_printf(pApp->pWidgets->pTextView, "Group %zu Info: %s (%zu options)\n",
                                     i + 1,
                                     sGroupInfo ? sGroupInfo : "No description",
                                     dOptionIndex);
@@ -3179,14 +3237,14 @@ _Callback_UIEvent(
                 }
 
                 /* Set initial image to first option of first group if available */
-                if (dGroupCount > 0 && pApp->tGUITweaker[0].pStringImagePath[0])
+                if (dGroupCount > 0 && pApp->tGUITweaker[0].sImagePath[0])
                 {
-                    str_upd(&pApp->pString, tc(pApp->tGUITweaker[0].pStringImagePath[0]));
+                    str_upd(&pApp->pWidgets->pString, tc(pApp->tGUITweaker[0].sImagePath[0]));
                 }
 
-                if (pApp->pTextView)
+                if (pApp->pWidgets->pTextView)
                 {
-                    textview_printf(pApp->pTextView, "Total groups processed: %zu\n", dGroupCount);
+                    textview_printf(pApp->pWidgets->pTextView, "Total groups processed: %zu\n", dGroupCount);
                 }
 
                 /* Show modal dialog */
@@ -3220,8 +3278,8 @@ _Callback_UIEvent(
                             SVARKEYB_BOOL(tRetVal, sStatusKey, CTRUE);
                             for(i = 0; i < pApp->dPageMax; i++)
                             {
-                                const bool_t bIsEmpty = !str_empty(pApp->tGUITweaker[i].pStringTag);
-                                SVARKEYB_INT(tRetVal, bIsEmpty ? tc(pApp->tGUITweaker[i].pStringTag) : sOptName[i], pApp->tGUITweaker[i].dSelectedOption);
+                                const bool_t bIsEmpty = !str_empty(pApp->tGUITweaker[i].sTag);
+                                SVARKEYB_INT(tRetVal, bIsEmpty ? tc(pApp->tGUITweaker[i].sTag) : sOptName[i], pApp->tGUITweaker[i].dSelectedOption);
                             }
                         }
                         break;
@@ -3241,8 +3299,8 @@ _Callback_UIEvent(
                 pTable = (SVarTable *)SVAR_GET_LUATABLE(pUserData[0]);
 
                 /* Reset */
-                pApp->dLocaleCount = 0;
-                memset(pApp->dLocaleSelected, 0, sizeof(pApp->dLocaleSelected));
+                pApp->pLocalizations->dLocaleCount = 0;
+                memset(pApp->pLocalizations->dLocaleSelected, 0, sizeof(pApp->pLocalizations->dLocaleSelected));
 
                 /* Fill pApp->tLocale[] from Lua */
                 for (i = 0; i < pTable->dCount && i < APP_MAX_LOCALES; ++i)
@@ -3276,16 +3334,18 @@ _Callback_UIEvent(
 
                     if (sCode)
                     {
-                        LangInfo *dst   = &pApp->tLocale[pApp->dLocaleCount++];
+                        LangInfo* dst = &pApp->pLocalizations
+                                             ->tLocale[pApp->pLocalizations
+                                                           ->dLocaleCount++];
                         dst->sCode      = sCode;
                         dst->sCorePath  = sCorePath;
                         dst->sModPath   = sModPath;
                         dst->bCore      = !str_empty_c(sCorePath);
                         dst->bMod       = !str_empty_c(sModPath);
 
-                        if (pApp->pTextView)
+                        if (pApp->pWidgets->pTextView)
                         {
-                            textview_printf(pApp->pTextView,
+                            textview_printf(pApp->pWidgets->pTextView,
                                 "Language detected: %s\n\tCore path: %s\n\tMod Path: %s\n",
                                 sCode,sCorePath,sModPath);
                         }
@@ -3309,11 +3369,11 @@ _Callback_UIEvent(
                     default:
                     {
                         /* gather what the user picked */
-                        uint32_t dCore  = pApp->dLocaleSelected[LOC_CORE];
-                        uint32_t dMod   = pApp->dLocaleSelected[LOC_MOD];
+                        uint32_t dCore  = pApp->pLocalizations->dLocaleSelected[LOC_CORE];
+                        uint32_t dMod   = pApp->pLocalizations->dLocaleSelected[LOC_MOD];
                         SVARKEYB_BOOL(tRetVal,sStatusKey, CTRUE);
-                        SVARKEYB_CONSTCHAR(tRetVal,"core",  pApp->tLocale[dCore].sCode);
-                        SVARKEYB_CONSTCHAR(tRetVal,"mod",   pApp->tLocale[dMod].sCode);
+                        SVARKEYB_CONSTCHAR(tRetVal,"core",  pApp->pLocalizations->tLocale[dCore].sCode);
+                        SVARKEYB_CONSTCHAR(tRetVal,"mod",   pApp->pLocalizations->tLocale[dMod].sCode);
                     }
                         break;
                 }
@@ -3344,16 +3404,16 @@ _Callback_UIEvent(
 
                 for (i = 0; i < MAX_OPT_ELEMS; ++i)
                 {
-                    GUIOptElement *pElem = &pApp->pOptElementArray[i];
+                    GUIOptElement *pElem = &pApp->pElementSets->pOptElementArray[i];
 
-                    str_destopt(&pElem->pKeyID);
-                    str_destopt(&pElem->pOutputString);
-                    str_destopt(&pElem->pTitle);
+                    str_destopt(&pElem->sKeyID);
+                    str_destopt(&pElem->sOutputString);
+                    str_destopt(&pElem->sTitle);
 
                     for (j = 0; j < APP_MAX_ELEMENTS; ++j)
-                        str_destopt(&pElem->pOptTitle[j]);
+                        str_destopt(&pElem->sOptTitle[j]);
                 }
-                memset(pApp->pOptElementArray, 0, sizeof(GUIOptElement) * MAX_OPT_ELEMS);
+                memset(pApp->pElementSets->pOptElementArray, 0, sizeof(GUIOptElement) * MAX_OPT_ELEMS);
 
                 /* root table */
                 for (dSection = 0;
@@ -3389,7 +3449,7 @@ _Callback_UIEvent(
 
                         pElem               = (SVarTable *)SVAR_GET_LUATABLE(
                                                 pSection->pEntries[dEntry].tValue);
-                        pDst                = &pApp->pOptElementArray[dElemCount];
+                        pDst                = &pApp->pElementSets->pOptElementArray[dElemCount];
 
                         memset(pDst, 0, sizeof(GUIOptElement));
                         dOptIndex   = 0U;
@@ -3404,12 +3464,12 @@ _Callback_UIEvent(
 
                             if (strcmp(sValKey, sKeyTitle) == 0)
                             {
-                                pDst->pTitle =
+                                pDst->sTitle =
                                     str_c(SVAR_GET_CONSTCHAR(pElem->pEntries[iField].tValue));
                             }
                             else if (strcmp(sValKey, sKeyID) == 0)
                             {
-                                pDst->pKeyID =
+                                pDst->sKeyID =
                                     str_c(SVAR_GET_CONSTCHAR(pElem->pEntries[iField].tValue));
                             }
                             else if (strcmp(sValKey, sKeyType) == 0)
@@ -3424,13 +3484,13 @@ _Callback_UIEvent(
                                 switch (pElem->pEntries[iField].tValue.eType)
                                 {
                                     case CTYPE_CONST_CHAR:
-                                        pDst->pOptTitle[dOptIndex++] =
+                                        pDst->sOptTitle[dOptIndex++] =
                                             str_c(SVAR_GET_CONSTCHAR(
                                                     pElem->pEntries[iField].tValue));
                                         break;
 
                                     case CTYPE_DOUBLE:
-                                        pDst->pOptTitle[dOptIndex++] =
+                                        pDst->sOptTitle[dOptIndex++] =
                                             str_printf("%.4g",
                                                     SVAR_GET_DOUBLE(
                                                         pElem->pEntries[iField].tValue));
@@ -3451,7 +3511,7 @@ _Callback_UIEvent(
                                         {
                                             if (pOpts->pEntries[q].tValue.eType == CTYPE_CONST_CHAR)
                                             {
-                                                pDst->pOptTitle[dOptIndex++] =
+                                                pDst->sOptTitle[dOptIndex++] =
                                                     str_c(SVAR_GET_CONSTCHAR(
                                                             pOpts->pEntries[q].tValue));
                                             }
@@ -3475,7 +3535,7 @@ _Callback_UIEvent(
                                 }
                                 else if (SVAR_IS_CONSTCHAR(*pVar))
                                 {
-                                    pDst->pOptTitle[0] =
+                                    pDst->sOptTitle[0] =
                                         str_c(SVAR_GET_CONSTCHAR(*pVar));
                                     dOptIndex = 1U;
                                 }
@@ -3489,12 +3549,12 @@ _Callback_UIEvent(
                         }
 
 #ifdef __DEBUG__
-                        if (pApp->pTextView)
+                        if (pApp->pWidgets->pTextView)
                         {
-                            textview_printf(pApp->pTextView,
+                            textview_printf(pApp->pWidgets->pTextView,
                                             "Elem %zu: title='%s' type=%d opts=%u\n",
                                             dElemCount,
-                                            (pDst->pTitle ? tc(pDst->pTitle) : "(null)"),
+                                            (pDst->sTitle ? tc(pDst->sTitle) : "(null)"),
                                             (int)pDst->eType,
                                             pDst->dNumOfOptions);
                         }
@@ -3526,17 +3586,17 @@ _Callback_UIEvent(
 
                         for (u = 0; u < dElemCount; ++u)
                         {
-                            const GUIOptElement *pElem   = &pApp->pOptElementArray[u];
+                            const GUIOptElement *pElem   = &pApp->pElementSets->pOptElementArray[u];
                             const char          *sOutKey =
-                                (pElem->pKeyID != NULL) ? tc(pElem->pKeyID) : tc(pElem->pTitle);
+                                (pElem->sKeyID != NULL) ? tc(pElem->sKeyID) : tc(pElem->sTitle);
 
                             switch (pElem->eType)
                             {
                                 case UI_WIDGET_EDIT:
                                 {
                                     const char *sVal =
-                                        (pElem->pOutputString != NULL) ? tc(pElem->pOutputString) :
-                                        (pElem->pOptTitle[0]  != NULL) ? tc(pElem->pOptTitle[0]) : "";
+                                        (pElem->sOutputString != NULL) ? tc(pElem->sOutputString) :
+                                        (pElem->sOptTitle[0]  != NULL) ? tc(pElem->sOptTitle[0]) : "";
                                     SVARKEYB_CONSTCHAR(tRetVal, sOutKey, sVal);
                                 }
                                 break;
@@ -3588,19 +3648,19 @@ _Callback_UIEvent(
 
                 for (i = 0; i < MAX_MOD_ELEMS; ++i)
                 {
-                    GUIModElement *pElem = &pApp->pModElementArray[i];
+                    GUIModElement *pElem = &pApp->pElementSets->pModElementArray[i];
 
-                    str_destopt(&pElem->pID);
-                    str_destopt(&pElem->pName);
-                    str_destopt(&pElem->pAuthor);
-                    str_destopt(&pElem->pDescription);
-                    str_destopt(&pElem->pVersion);
-                    str_destopt(&pElem->pWebsite);
-                    str_destopt(&pElem->pRoot);
-                    str_destopt(&pElem->pGame);
-                    str_destopt(&pElem->pScreenshot);
+                    str_destopt(&pElem->sID);
+                    str_destopt(&pElem->sName);
+                    str_destopt(&pElem->sAuthor);
+                    str_destopt(&pElem->sDescription);
+                    str_destopt(&pElem->sVersion);
+                    str_destopt(&pElem->sWebsite);
+                    str_destopt(&pElem->sRoot);
+                    str_destopt(&pElem->sGame);
+                    str_destopt(&pElem->sScreenshot);
                 }
-                memset(pApp->pModElementArray, 0, sizeof(GUIModElement) * MAX_MOD_ELEMS);
+                memset(pApp->pElementSets->pModElementArray, 0, sizeof(GUIModElement) * MAX_MOD_ELEMS);
 
                 /* locate active list first */
                 for (i = 0; i < pRoot->dCount; ++i)
@@ -3631,7 +3691,7 @@ _Callback_UIEvent(
 
                             {
                                 SVarTable      *pMod = (SVarTable *)SVAR_GET_LUATABLE(pAvail->pEntries[m].tValue);
-                                GUIModElement  *pDst = &pApp->pModElementArray[dModCount];
+                                GUIModElement  *pDst = &pApp->pElementSets->pModElementArray[dModCount];
                                 size_t          k;
 
                                 memset(pDst, 0, sizeof(GUIModElement));
@@ -3641,42 +3701,42 @@ _Callback_UIEvent(
                                     const char *sKey = SVAR_GET_CONSTCHAR(pMod->pEntries[k].tKey);
 
                                     if (strcmp(sKey, sKeyID) == 0)
-                                        pDst->pID = str_c(SVAR_GET_CONSTCHAR(pMod->pEntries[k].tValue));
+                                        pDst->sID = str_c(SVAR_GET_CONSTCHAR(pMod->pEntries[k].tValue));
                                     else if (strcmp(sKey, sKeyName) == 0)
-                                        pDst->pName = str_c(SVAR_GET_CONSTCHAR(pMod->pEntries[k].tValue));
+                                        pDst->sName = str_c(SVAR_GET_CONSTCHAR(pMod->pEntries[k].tValue));
                                     else if (strcmp(sKey, sKeyAuthor) == 0)
-                                        pDst->pAuthor = str_c(SVAR_GET_CONSTCHAR(pMod->pEntries[k].tValue));
+                                        pDst->sAuthor = str_c(SVAR_GET_CONSTCHAR(pMod->pEntries[k].tValue));
                                     else if (strcmp(sKey, sKeyDesc) == 0)
-                                        pDst->pDescription = str_c(SVAR_GET_CONSTCHAR(pMod->pEntries[k].tValue));
+                                        pDst->sDescription = str_c(SVAR_GET_CONSTCHAR(pMod->pEntries[k].tValue));
                                     else if (strcmp(sKey, sKeyVersion) == 0)
-                                        pDst->pVersion = str_c(SVAR_GET_CONSTCHAR(pMod->pEntries[k].tValue));
+                                        pDst->sVersion = str_c(SVAR_GET_CONSTCHAR(pMod->pEntries[k].tValue));
                                     else if (strcmp(sKey, sKeyWebsite) == 0)
-                                        pDst->pWebsite = str_c(SVAR_GET_CONSTCHAR(pMod->pEntries[k].tValue));
+                                        pDst->sWebsite = str_c(SVAR_GET_CONSTCHAR(pMod->pEntries[k].tValue));
                                     else if (strcmp(sKey, sKeyRoot) == 0)
-                                        pDst->pRoot = str_c(SVAR_GET_CONSTCHAR(pMod->pEntries[k].tValue));
+                                        pDst->sRoot = str_c(SVAR_GET_CONSTCHAR(pMod->pEntries[k].tValue));
                                     else if (strcmp(sKey, sKeyGame) == 0)
-                                        pDst->pGame = str_c(SVAR_GET_CONSTCHAR(pMod->pEntries[k].tValue));
+                                        pDst->sGame = str_c(SVAR_GET_CONSTCHAR(pMod->pEntries[k].tValue));
                                     else if (strcmp(sKey, sKeyScreenshot) == 0)
-                                        pDst->pScreenshot = str_c(SVAR_GET_CONSTCHAR(pMod->pEntries[k].tValue));
+                                        pDst->sScreenshot = str_c(SVAR_GET_CONSTCHAR(pMod->pEntries[k].tValue));
                                     else if (strcmp(sKey, sKeyOnInst) == 0 &&
                                             pMod->pEntries[k].tValue.eType == CTYPE_LUAREF)
-                                        pDst->pOnInstall = &pMod->pEntries[k].tValue;
+                                        pDst->pOnInstallCb = &pMod->pEntries[k].tValue;
                                     else if (strcmp(sKey, sKeyOnUninst) == 0 &&
                                             pMod->pEntries[k].tValue.eType == CTYPE_LUAREF)
-                                        pDst->pOnUninstall = &pMod->pEntries[k].tValue;
+                                        pDst->pOnUninstallCb = &pMod->pEntries[k].tValue;
                                     else if (strcmp(sKey, sKeyOptions) == 0 &&
                                             pMod->pEntries[k].tValue.eType == CTYPE_LUATABLE)
-                                        pDst->pOptions = (SVarTable *)SVAR_GET_LUATABLE(pMod->pEntries[k].tValue);
+                                        pDst->pOptionsTable = (SVarTable *)SVAR_GET_LUATABLE(pMod->pEntries[k].tValue);
                                 }
 
                                 /* mark active */
-                                if (pActive && pDst->pID)
+                                if (pActive && pDst->sID)
                                 {
                                     size_t a;
                                     for (a = 0; a < pActive->dCount; ++a)
                                     {
                                         if (pActive->pEntries[a].tValue.eType == CTYPE_CONST_CHAR &&
-                                            strcmp(tc(pDst->pID),
+                                            strcmp(tc(pDst->sID),
                                                 SVAR_GET_CONSTCHAR(pActive->pEntries[a].tValue)) == 0)
                                         {
                                             pDst->bActive = TRUE;
@@ -3685,11 +3745,11 @@ _Callback_UIEvent(
                                     }
                                 }
 #ifdef __DEBUG__
-                                if (pApp->pTextView)
-                                    textview_printf(pApp->pTextView,
+                                if (pApp->pWidgets->pTextView)
+                                    textview_printf(pApp->pWidgets->pTextView,
                                         "Mod %zu: id='%s' active=%d\n",
                                         dModCount,
-                                        pDst->pID ? tc(pDst->pID) : "(null)",
+                                        pDst->sID ? tc(pDst->sID) : "(null)",
                                         (int)pDst->bActive);
 #endif
                                 ++dModCount;
@@ -3725,40 +3785,40 @@ _Callback_UIEvent(
                         /* populate temporary tables */
                         for (u = 0; u < dModCount; ++u)
                         {
-                            GUIModElement *pMod = &pApp->pModElementArray[u];
-                            if (!pMod->pID)
+                            GUIModElement *pMod = &pApp->pElementSets->pModElementArray[u];
+                            if (!pMod->sID)
                                 continue;
 
                             /* active[{id}] = bool */
                             {
                                 SVar vBool;
                                 SVAR_BOOL(vBool, pMod->bActive);
-                                _SVar_TableAdd(pActiveTbl, tc(pMod->pID), &vBool);
+                                _SVar_TableAdd(pActiveTbl, tc(pMod->sID), &vBool);
                             }
 
                             /* options[{id}] = <options table> */
-                            if (pMod->pOptions)
+                            if (pMod->pOptionsTable)
                             {
-                                const char *sid = tc(pMod->pID);
+                                const char *sid = tc(pMod->sID);
                                 SVar vTbl;
 
                                 /*--- new collapse logic ---*/
-                                if (   pMod->pOptions->dCount == 1
-                                    && pMod->pOptions->pEntries[0].tKey.eType == CTYPE_CONST_CHAR
+                                if (   pMod->pOptionsTable->dCount == 1
+                                    && pMod->pOptionsTable->pEntries[0].tKey.eType == CTYPE_CONST_CHAR
                                     && strcmp(SVAR_GET_CONSTCHAR(
-                                                pMod->pOptions->pEntries[0].tKey), sid) == 0
-                                    && pMod->pOptions->pEntries[0].tValue.eType == CTYPE_LUATABLE )
+                                                pMod->pOptionsTable->pEntries[0].tKey), sid) == 0
+                                    && pMod->pOptionsTable->pEntries[0].tValue.eType == CTYPE_LUATABLE )
                                 {
                                     /* use the inner table directly */
                                     SVarTable *inner =
                                         (SVarTable *)SVAR_GET_LUATABLE(
-                                            pMod->pOptions->pEntries[0].tValue);
+                                            pMod->pOptionsTable->pEntries[0].tValue);
                                     SVAR_LUATABLE(vTbl, inner);
                                 }
                                 else
                                 {
                                     /* keep original structure (multi-group case) */
-                                    SVAR_LUATABLE(vTbl, pMod->pOptions);
+                                    SVAR_LUATABLE(vTbl, pMod->pOptionsTable);
                                 }
 
                                 _SVar_TableAdd(pOptionsTbl, sid, &vTbl);
@@ -3795,14 +3855,14 @@ _Callback_UIEvent(
 
                 for (m = 0; m < MAX_TOOL_ELEMS; ++m)
                 {
-                    GUIToolElement *pElem = &pApp->pToolElementArray[m];
+                    GUIToolElement *pElem = &pApp->pElementSets->pToolElementArray[m];
 
-                    str_destopt(&pElem->pIcon);
-                    str_destopt(&pElem->pIconDark);
-                    str_destopt(&pElem->pTitle);
-                    str_destopt(&pElem->pDescription);
+                    str_destopt(&pElem->sIcon);
+                    str_destopt(&pElem->sIconDark);
+                    str_destopt(&pElem->sTitle);
+                    str_destopt(&pElem->sDescription);
                 }
-                memset(pApp->pToolElementArray, 0, sizeof(GUIToolElement) * MAX_TOOL_ELEMS);
+                memset(pApp->pElementSets->pToolElementArray, 0, sizeof(GUIToolElement) * MAX_TOOL_ELEMS);
 
                 /* parse Lua table */
                 {
@@ -3819,7 +3879,7 @@ _Callback_UIEvent(
                             size_t           k;
 
                             pEntry = (SVarTable *)SVAR_GET_LUATABLE(pRoot->pEntries[i].tValue);
-                            pDst   = &pApp->pToolElementArray[dToolCount];
+                            pDst   = &pApp->pElementSets->pToolElementArray[dToolCount];
                             memset(pDst, 0, sizeof(GUIToolElement));
 
                             for (k = 0; k < pEntry->dCount; ++k)
@@ -3833,22 +3893,22 @@ _Callback_UIEvent(
                                 }
                                 else if (strcmp(sKey, sKeyIcon) == 0)
                                 {
-                                    pDst->pIcon =
+                                    pDst->sIcon =
                                         str_c(SVAR_GET_CONSTCHAR(pEntry->pEntries[k].tValue));
                                 }
                                 else if (strcmp(sKey, sKeyIconDark) == 0)
                                 {
-                                    pDst->pIconDark =
+                                    pDst->sIconDark =
                                         str_c(SVAR_GET_CONSTCHAR(pEntry->pEntries[k].tValue));
                                 }
                                 else if (strcmp(sKey, sKeyTitle) == 0)
                                 {
-                                    pDst->pTitle =
+                                    pDst->sTitle =
                                         str_c(SVAR_GET_CONSTCHAR(pEntry->pEntries[k].tValue));
                                 }
                                 else if (strcmp(sKey, sKeyDesc) == 0)
                                 {
-                                    pDst->pDescription =
+                                    pDst->sDescription =
                                         str_c(SVAR_GET_CONSTCHAR(pEntry->pEntries[k].tValue));
                                 }
                                 else if (strcmp(sKey, sKeyOnClick) == 0)
@@ -3861,15 +3921,15 @@ _Callback_UIEvent(
                             }
 
 #ifdef __DEBUG__
-                            if (pApp->pTextView)
+                            if (pApp->pWidgets->pTextView)
                             {
-                                textview_printf(pApp->pTextView,
+                                textview_printf(pApp->pWidgets->pTextView,
                                     "Tool %zu: id=%u title='%s' icon='%s' iconDark='%s' onClick='%d'\n",
                                     dToolCount,
                                     (unsigned)pDst->dID,
-                                    pDst->pTitle    ? tc(pDst->pTitle) : "(null)",
-                                    pDst->pIcon     ? tc(pDst->pIcon)  : "(null)",
-                                    pDst->pIconDark ? tc(pDst->pIconDark)  : "(null)",
+                                    pDst->sTitle    ? tc(pDst->sTitle) : "(null)",
+                                    pDst->sIcon     ? tc(pDst->sIcon)  : "(null)",
+                                    pDst->sIconDark ? tc(pDst->sIconDark)  : "(null)",
                                     SVAR_GET_LUAREF(pDst->tLuaRef));
                             }
 #endif
@@ -3903,10 +3963,10 @@ _Callback_UIEvent(
         default:
             SVARKEYB_NULL(tRetVal, sStatusKey);
 
-            if (pApp->pTextView)
+            if (pApp->pWidgets->pTextView)
             {
                 textview_printf(
-                    pApp->pTextView,
+                    pApp->pWidgets->pTextView,
                     "Behavior for %s (%d) is not defined!\n",
                     eEventType < UIEVENT_MAX ? EUIEventTypeStrings[eEventType] : "?", eEventType);
             }

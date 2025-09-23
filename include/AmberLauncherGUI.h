@@ -19,11 +19,11 @@ struct SObserver;
  * MACROS
  ******************************************************************************/
 
-#define APP_MAX_ELEMENTS    8
-#define APP_MAX_LOCALES     8
-#define MAX_OPT_ELEMS       32
-#define MAX_TOOL_ELEMS      16
-#define MAX_MOD_ELEMS       32
+#define APP_MAX_ELEMENTS 8
+#define APP_MAX_LOCALES  8
+#define MAX_OPT_ELEMS    32
+#define MAX_TOOL_ELEMS   16
+#define MAX_MOD_ELEMS    32
 
 /******************************************************************************
  * ENUMS
@@ -49,8 +49,9 @@ typedef enum
     CPANEL_MAX
 } EPanelType;
 
-typedef enum {
-    CSIDEBUTTON_NULL        = 0,
+typedef enum
+{
+    CSIDEBUTTON_NULL,
     CSIDEBUTTON_MAIN,
     CSIDEBUTTON_SETTINGS,
     CSIDEBUTTON_MODS,
@@ -64,13 +65,13 @@ typedef enum {
 typedef uint32_t FPanelFlags;
 enum
 {
-    FLAG_PANEL_NONE         = 0U,
-    FLAG_PANEL_STATE_END    = 1U << 0
+    FLAG_PANEL_NONE      = 0U,
+    FLAG_PANEL_STATE_END = 1U << 0
 };
 
 typedef enum
 {
-    UIEVENT_NULL = 0,
+    UIEVENT_NULL,
     UIEVENT_DEBUG,
     UIEVENT_PRINT,
     UIEVENT_MAIN,
@@ -90,151 +91,184 @@ typedef enum
     UIEVENT_MAX
 } EUIEventType;
 
-typedef enum { LOC_CORE, LOC_MOD } LocTier;
+typedef enum
+{
+    LOC_CORE,
+    LOC_MOD,
+    LOC_MAX
+} ELocTier;
 
-extern const char* EUserEventTypeStrings[];
+/******************************************************************************
+ * VARIABLES
+ ******************************************************************************/
+
+extern const char *EUserEventTypeStrings[];
 
 /******************************************************************************
  * STRUCTS
  ******************************************************************************/
 
-typedef struct GUIDebugData
+typedef struct _GUIDebugData
 {
-    String          *pInputString;
-    TextView        *pConsoleTextView;
-    Edit            *pConsoleInput;
+    String             *sInputString;
+    TextView           *pConsoleTextView;
+    Edit               *pConsoleInput;
 } GUIDebugData;
 
-typedef struct GUIOptElement
+typedef struct _GUIOptElement
 {
-    void            *pElement;
-    String          *pKeyID;
-    String          *pOutputString;
-    String          *pTitle;
-    String          *pOptTitle[APP_MAX_ELEMENTS];
-    EUIWidgetType   eType;
-    unsigned int    dNumOfOptions;
-    unsigned int    dChoice;
+    String             *sOptTitle[APP_MAX_ELEMENTS];
+    String             *sKeyID;
+    String             *sOutputString;
+    String             *sTitle;
+    void               *pElement;
+
+    EUIWidgetType       eType;
+    unsigned int        dNumOfOptions;
+    unsigned int        dChoice;
 } GUIOptElement;
 
-typedef struct
+typedef struct _GUIToolElement
 {
-    uint32_t dID;
-    SVar    tLuaRef;
-    String  *pIcon;
-    String  *pIconDark;
-    String  *pTitle;
-    String  *pDescription;
-    AppCore *pAppCore;
+    SVar                tLuaRef;
+
+    String             *sIcon;
+    String             *sIconDark;
+    String             *sTitle;
+    String             *sDescription;
+    AppCore            *pAppCore;
+
+    uint32_t            dID;
 } GUIToolElement;
 
-typedef struct
+typedef struct _GUIModElement
 {
-    String  *pID;
-    String  *pName;
-    String  *pAuthor;
-    String  *pDescription;
-    String  *pVersion;
-    String  *pWebsite;
-    String  *pRoot;
-    String  *pGame;
-    String  *pScreenshot;
-    bool_t   bActive;
-    const SVar *pOnInstall;
-    const SVar *pOnUninstall;
-    SVarTable *pOptions;
+    String             *sID;
+    String             *sName;
+    String             *sAuthor;
+    String             *sDescription;
+    String             *sVersion;
+    String             *sWebsite;
+    String             *sRoot;
+    String             *sGame;
+    String             *sScreenshot;
+    const SVar         *pOnInstallCb;
+    const SVar         *pOnUninstallCb;
+    SVarTable          *pOptionsTable;
+
+    bool_t              bActive;
 } GUIModElement;
 
-typedef struct
+typedef struct _GUITweaker
 {
-    String          *pStringTweakerInfo;
-    String          *pStringTag;
-    String          *pStringImageTitle[APP_MAX_ELEMENTS];
-    String          *pStringImagePath[APP_MAX_ELEMENTS];
-    int             dSelectedOption;
-    int             dMaxOptions;
+    String             *sImageTitle[APP_MAX_ELEMENTS];
+    String             *sImagePath[APP_MAX_ELEMENTS];
+    String             *sTweakerInfo;
+    String             *sTag;
+
+    int                 dSelectedOption;
+    int                 dMaxOptions;
 } GUITweaker;
 
-typedef struct
+typedef struct _LangInfo
 {
-    const char_t *sCode;
-    const char_t *sDisplay;
+    const char_t       *sCode;
+    const char_t       *sDisplay;
+    const char_t       *sCorePath;
+    const char_t       *sModPath;
 
-    const char_t *sCorePath;
-    const char_t *sModPath;
-
-    bool_t bCore;
-    bool_t bMod;
+    bool_t              bCore;
+    bool_t              bMod;
 } LangInfo;
 
-typedef struct
+typedef struct _AppGUIWindows
 {
-    struct AppCore  *pAppCore;
-    GUIDebugData    *pDebugData;
+    Window             *pWindow;
+    Window             *pWindowModal;
+    Panel              *pPanelMain;
+    Panel              *pPanelModal;
+    Layout             *pLayoutWindow;
+    Layout             *pLayoutModalMain;
+    Layout             *pLayoutMain;
+    Layout             *pLayoutExtra;
+} AppGUIWindows;
 
-    Window          *pWindow;
-    Window          *pWindowModal;
-    Panel           *pPanelMain;
-    Panel           *pPanelModal;
+typedef struct _AppGUIWidgets
+{
+    Edit               *pEdit;
+    TextView           *pTextView;
+    ImageView          *pImageView;
+    ListBox            *pListBox;
+    Progress           *pProgressbar;
+    String             *pString;
+    PopUp              *pPopupCore;
+    PopUp              *pPopupMod;
+    View               *pLocaleView;
+} AppGUIWidgets;
 
-    /* GUI elements used either in main or modal window */
-    Edit            *pEdit;
-    TextView        *pTextView;
-    ImageView       *pImageView;
-    ListBox         *pListBox;
-    Layout          *pLayoutMain;
-    Layout          *pLayoutWindow;
-    Layout          *pLayoutModalMain;
-    Layout          *pLayoutExtra;
-    String          *pString;
-    Progress        *pProgressbar;
+typedef struct _AppGUIElementDB
+{
+    GUIOptElement      *pOptElementArray;
+    GUIToolElement     *pToolElementArray;
+    GUIModElement      *pModElementArray;
+} AppGUIElementDB;
 
-    GUITweaker      tGUITweaker[APP_MAX_ELEMENTS];
-    unsigned int    dPage;
-    unsigned int    dPageMax;
+typedef struct _AppGUILocalization
+{
+    LangInfo            tLocale[APP_MAX_LOCALES];
+    unsigned int        dLocaleCount;
+    unsigned int        dLocaleSelected[LOC_MAX];
+} AppGUILocalization;
 
-    GUIOptElement   *pOptElementArray;
-    GUIToolElement  *pToolElementArray;
-    GUIModElement   *pModElementArray;
+typedef struct _AppGUI
+{
+    struct AppCore*     pAppCore;
+    GUIDebugData       *pDebugData;
 
-    LangInfo        tLocale[APP_MAX_LOCALES];
-    unsigned int    dLocaleCount;
-    unsigned int    dLocaleSelected[2];
-    PopUp           *pPopupCore;
-    PopUp           *pPopupMod;
-    View            *pLocaleView;
+    AppGUIWindows      *pWindows;
+    AppGUIWidgets      *pWidgets;
+    AppGUIElementDB    *pElementSets;
+    AppGUILocalization *pLocalizations;
 
-    EPanelType      eCurrentPanel;
-    EUIEventType    eCurrentUIEvent;
+    GUITweaker          tGUITweaker[APP_MAX_ELEMENTS];
+    unsigned int        dPage;
+    unsigned int        dPageMax;
+
+    EPanelType          eCurrentPanel;
+    EUIEventType        eCurrentUIEvent;
 } AppGUI;
 
-typedef struct GUIAsyncTaskData
+typedef struct _GUIAsyncTaskData
 {
-    AppGUI      *pApp;
-    EPanelType  ePanelType;
-    FPanelFlags dPanelFlags;
+    AppGUI             *pApp;
+    EPanelType          ePanelType;
+    FPanelFlags         dPanelFlags;
 } GUIAsyncTaskData;
 
+/******************************************************************************
+ * STRUCTS (JSON)
+ ******************************************************************************/
 /* Json names must coincide with names of C struct */
+
 typedef struct _InetUpdaterLauncherData
 {
-    int32_t version;
-    int32_t build;
+    int32_t             version;
+    int32_t             build;
 } InetUpdaterLauncherData;
 
 typedef struct _InetUpdaterFile
 {
-    String *path;
-    String *sha256;
-    uint32_t size;
+    String             *path;
+    String             *sha256;
+    uint32_t            size;
 } InetUpdaterFile;
 
 typedef struct _InetUpdaterJSONData
 {
-    String *schema;
-    String *generated;
+    String                  *schema;
+    String                  *generated;
     InetUpdaterLauncherData *launcher;
-    ArrSt(InetUpdaterFile) *files;
+    ArrSt(InetUpdaterFile)  *files;
 } InetUpdaterJSONData;
 
 DeclSt(InetUpdaterFile);
@@ -248,46 +282,47 @@ __EXTERN_C
 /**
  * @relatedalso Panel
  * @brief       Sets subpanel for core panel
- * 
- * @param       pApp 
- * @param       eType 
- * @return      Panel* 
+ *
+ * @param       pApp
+ * @param       eType
+ * @return      Panel*
  */
-extern Panel*
-Panel_Set(AppGUI* pApp, const EPanelType eType, FPanelFlags dFlags);
+extern Panel *
+Panel_Set(AppGUI *pApp, const EPanelType eType,
+          FPanelFlags dFlags);
 
 /*---------------------------------------------------------------------------*/
 
 /**
  * @relatedalso Panel
  * @brief       Returns predefined panel with zero elements (for testing)
- * 
- * @param       pApp 
- * @return      Panel* 
+ *
+ * @param       pApp
+ * @return      Panel*
  */
-extern Panel* 
-Panel_GetNull(AppGUI* pApp);
+extern Panel *
+Panel_GetNull(AppGUI *pApp);
 
 /**
  * @relatedalso Panel
  * @brief       Returns predefined panel responsible for game auto configuration
- * 
+ *
  * @param       pApp
  * @param       dFlags (FPanelFlags)
  * @return      Panel*
  */
-extern Panel* 
-Panel_GetAutoConfigure(AppGUI* pApp, FPanelFlags dFlags);
+extern Panel *
+Panel_GetAutoConfigure(AppGUI *pApp, FPanelFlags dFlags);
 
 /**
  * @relatedalso Panel
  * @brief       Returns predefined panel responsible for core launcher options
- * 
- * @param       pApp 
- * @return      Panel* 
+ *
+ * @param       pApp
+ * @return      Panel*
  */
-extern Panel*
-Panel_GetMain(AppGUI* pApp);
+extern Panel *
+Panel_GetMain(AppGUI *pApp);
 
 /**
  * @relatedalso Panel
@@ -296,8 +331,8 @@ Panel_GetMain(AppGUI* pApp);
  * @param       pApp
  * @return      Panel*
  */
-extern Panel*
-Panel_GetImageDemo(AppGUI* pApp);
+extern Panel *
+Panel_GetImageDemo(AppGUI *pApp);
 
 /**
  * @relatedalso Panel
@@ -306,8 +341,8 @@ Panel_GetImageDemo(AppGUI* pApp);
  * @param       pApp
  * @return      Panel*
  */
-extern Panel*
-Panel_GetModalDebug(AppGUI* pApp);
+extern Panel *
+Panel_GetModalDebug(AppGUI *pApp);
 
 /**
  * @relatedalso Panel
@@ -316,8 +351,8 @@ Panel_GetModalDebug(AppGUI* pApp);
  * @param       pApp
  * @return      Panel*
  */
-extern Panel*
-Panel_GetModalMessage(AppGUI* pApp);
+extern Panel *
+Panel_GetModalMessage(AppGUI *pApp);
 
 /**
  * @relatedalso Panel
@@ -326,8 +361,8 @@ Panel_GetModalMessage(AppGUI* pApp);
  * @param       pApp
  * @return      Panel*
  */
-extern Panel*
-Panel_GetModalQuestion(AppGUI* pApp);
+extern Panel *
+Panel_GetModalQuestion(AppGUI *pApp);
 
 /**
  * @relatedalso Panel
@@ -336,8 +371,8 @@ Panel_GetModalQuestion(AppGUI* pApp);
  * @param       pApp
  * @return      Panel*
  */
-extern Panel*
-Panel_GetModalGameNotFound(AppGUI* pApp);
+extern Panel *
+Panel_GetModalGameNotFound(AppGUI *pApp);
 
 /**
  * @relatedalso Panel
@@ -346,17 +381,17 @@ Panel_GetModalGameNotFound(AppGUI* pApp);
  * @param       pApp
  * @return      Panel*
  */
-extern Panel*
+extern Panel *
 Panel_GetModalTweaker(AppGUI *pApp);
 
 /**
  * @relatedalso Panel
- * @brief       Returns predefined panel for Modal Window related to game/mod Localisation tweaks 
+ * @brief       Returns predefined panel for Modal Window related to game/mod Localisation tweaks
  *
  * @param       pApp
  * @return      Panel*
  */
-extern Panel*
+extern Panel *
 Panel_GetModalLocalisation(AppGUI *pApp);
 
 /**
@@ -366,8 +401,8 @@ Panel_GetModalLocalisation(AppGUI *pApp);
  * @param       pApp
  * @return      Panel*
  */
-extern Panel*
-Panel_GetModalOptions(AppGUI* pApp);
+extern Panel *
+Panel_GetModalOptions(AppGUI *pApp);
 
 /**
  * @relatedalso Panel
@@ -376,8 +411,8 @@ Panel_GetModalOptions(AppGUI* pApp);
  * @param       pApp
  * @return      Panel*
  */
-extern Panel*
-Panel_GetModalModManager(AppGUI* pApp);
+extern Panel *
+Panel_GetModalModManager(AppGUI *pApp);
 
 /**
  * @relatedalso Panel
@@ -386,8 +421,8 @@ Panel_GetModalModManager(AppGUI* pApp);
  * @param       pApp
  * @return      Panel*
  */
-extern Panel*
-Panel_GetModalTools(AppGUI* pApp);
+extern Panel *
+Panel_GetModalTools(AppGUI *pApp);
 
 /**
  * @relatedalso Panel
@@ -396,8 +431,8 @@ Panel_GetModalTools(AppGUI* pApp);
  * @param       pApp
  * @return      Panel*
  */
-extern Panel*
-Panel_GetModalUpdater(AppGUI* pApp);
+extern Panel *
+Panel_GetModalUpdater(AppGUI *pApp);
 
 /**
  * @relatedalso Internet
@@ -436,27 +471,27 @@ AutoUpdate_Update(AppGUI *pApp);
  * @param       e
  */
 extern void
-Callback_OnWindowHotkeyF6(AppGUI* pApp, Event *e);
+Callback_OnWindowHotkeyF6(AppGUI *pApp, Event *e);
 
 /**
  * @relatedalso Callback
  * @brief       Invokes full reconfiguration for the game
- * 
+ *
  * @param       pApp
  * @param       e
  */
 extern void
-Callback_OnButtonConfigure(AppGUI* pApp, Event *e);
+Callback_OnButtonConfigure(AppGUI *pApp, Event *e);
 
 /**
  * @relatedalso Callback
  * @brief       Launches the game and closes AmberLauncher
- * 
+ *
  * @param       pApp
  * @param       e
  */
 extern void
-Callback_OnButtonPlay(AppGUI* pApp, Event *e);
+Callback_OnButtonPlay(AppGUI *pApp, Event *e);
 
 /**
  * @relatedalso Callback
@@ -466,7 +501,7 @@ Callback_OnButtonPlay(AppGUI* pApp, Event *e);
  * @param       e
  */
 extern void
-Callback_OnButtonModalDebug(AppGUI* pApp, Event *e);
+Callback_OnButtonModalDebug(AppGUI *pApp, Event *e);
 
 /**
  * @relatedalso Callback
@@ -476,7 +511,7 @@ Callback_OnButtonModalDebug(AppGUI* pApp, Event *e);
  * @param       e
  */
 extern void
-Callback_OnButtonModalMessage(AppGUI* pApp, Event *e);
+Callback_OnButtonModalMessage(AppGUI *pApp, Event *e);
 
 /**
  * @relatedalso Callback
@@ -486,7 +521,7 @@ Callback_OnButtonModalMessage(AppGUI* pApp, Event *e);
  * @param       e
  */
 extern void
-Callback_OnButtonModalQuestion(AppGUI* pApp, Event *e);
+Callback_OnButtonModalQuestion(AppGUI *pApp, Event *e);
 
 /**
  * @relatedalso Callback
@@ -496,7 +531,7 @@ Callback_OnButtonModalQuestion(AppGUI* pApp, Event *e);
  * @param       e
  */
 extern void
-Callback_OnButtonModalGameNotFound(AppGUI* pApp, Event *e);
+Callback_OnButtonModalGameNotFound(AppGUI *pApp, Event *e);
 
 /**
  * @relatedalso Callback
@@ -506,7 +541,7 @@ Callback_OnButtonModalGameNotFound(AppGUI* pApp, Event *e);
  * @param       e
  */
 extern void
-Callback_OnButtonModalTweaker(AppGUI* pApp, Event *e);
+Callback_OnButtonModalTweaker(AppGUI *pApp, Event *e);
 
 /**
  * @relatedalso Callback
@@ -516,7 +551,7 @@ Callback_OnButtonModalTweaker(AppGUI* pApp, Event *e);
  * @param       e
  */
 extern void
-Callback_OnButtonModalLocalisation(AppGUI* pApp, Event *e);
+Callback_OnButtonModalLocalisation(AppGUI *pApp, Event *e);
 
 /**
  * @relatedalso Callback
@@ -526,7 +561,7 @@ Callback_OnButtonModalLocalisation(AppGUI* pApp, Event *e);
  * @param       e
  */
 extern void
-Callback_OnDrawLocalisation(AppGUI* pApp, Event *e);
+Callback_OnDrawLocalisation(AppGUI *pApp, Event *e);
 
 /**
  * @relatedalso Callback
@@ -536,7 +571,7 @@ Callback_OnDrawLocalisation(AppGUI* pApp, Event *e);
  * @param       e
  */
 extern void
-Callback_OnButtonModalOptions(AppGUI* pApp, Event *e);
+Callback_OnButtonModalOptions(AppGUI *pApp, Event *e);
 
 /**
  * @relatedalso Callback
@@ -546,7 +581,7 @@ Callback_OnButtonModalOptions(AppGUI* pApp, Event *e);
  * @param       e
  */
 extern void
-Callback_OnButtonModalTools(AppGUI* pApp, Event *e);
+Callback_OnButtonModalTools(AppGUI *pApp, Event *e);
 
 /**
  * @relatedalso Callback
@@ -556,7 +591,7 @@ Callback_OnButtonModalTools(AppGUI* pApp, Event *e);
  * @param       e
  */
 extern void
-Callback_OnButtonModalUpdater(AppGUI* pApp, Event *e);
+Callback_OnButtonModalUpdater(AppGUI *pApp, Event *e);
 
 /**
  * @relatedalso Async
@@ -567,7 +602,8 @@ Callback_OnButtonModalUpdater(AppGUI* pApp, Event *e);
  * @param       dFlags (FPanelFlags)
  */
 extern bool_t
-GUIThread_SchedulePanelSet(AppGUI *pApp, EPanelType eType, FPanelFlags dFlags);
+GUIThread_SchedulePanelSet(AppGUI *pApp, EPanelType eType,
+                           FPanelFlags dFlags);
 
 __END_C
 
