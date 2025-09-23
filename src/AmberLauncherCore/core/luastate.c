@@ -1,12 +1,9 @@
 #include "core/common.h"
-#include <core/luastate.h>
 
+#include <core/luainc.h>
+#include <core/luastate.h>
 #include <core/luacommon.h>
 #include <core/command.h>
-
-#include <lua.h>
-#include <lauxlib.h>
-#include <lualib.h>
 
 #include <assert.h>
 #include <stdio.h>

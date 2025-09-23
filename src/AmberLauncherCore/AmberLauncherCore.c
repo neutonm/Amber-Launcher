@@ -13,6 +13,7 @@
 #include <core/vector.h>
 #include <core/appcore.h>
 #include <core/command.h>
+#include <core/luainc.h>
 #include <core/luastate.h>
 #include <core/opsys.h>
 
@@ -22,9 +23,6 @@
 #include <commands/music.h>
 
 #include <ext/sha256.h>
-
-#include <lua.h>
-#include <lauxlib.h>
 
 static const char* STR_AL_GLOBAL    = "AL";
 static const char* STR_AL_APPCORE   = "AL.AppCore";

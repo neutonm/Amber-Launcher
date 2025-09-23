@@ -63,9 +63,13 @@ end
 -------------------------------------------------------------------------------
 
 function fs.CurrentDir()
-    return (fs.OS_NAME == "Windows")
-           and io.popen("cd"):read("*l")
-           or  io.popen("pwd"):read("*l")
+    local p = (fs.OS_NAME == "Windows") and io.popen("cd") or io.popen("pwd")
+    if not p then
+        return ""
+    end
+    local line = p:read("*l")
+    p:close()
+    return line
 end
 
 function fs.DirectoryList(dir)
@@ -78,21 +82,24 @@ function fs.DirectoryList(dir)
         cmd = ('ls -1A "%s"'):format(target)
     else
         io.stderr:write("Unsupported operating system.\n")
-        return nil
+        return {}
     end
 
-    local p = io.popen(cmd)
-    if not p then
-        io.stderr:write("Failed to open directory.\n")
-        return nil
-    end
-    for f in p:lines() do listing[#listing+1] = f end
+    local p   = io.popen(cmd)
+    if not p then return {} end
+    local out = p:read('*a')
     p:close()
+    local listing = {}
+    for line in out:gmatch("[^\r\n]+") do
+        listing[#listing+1] = line
+    end
     return listing
 end
 
 function fs.DirectoryFindCaseInsensitive(dir, name)
-    for _, file in ipairs(fs.DirectoryList(dir)) do
+    local dirList = {}
+    dirList = fs.DirectoryList(dir)
+    for _, file in ipairs(dirList) do
         if file:lower() == name:lower() then
             return file
         end
@@ -190,12 +197,21 @@ end
 -- Checks
 -------------------------------------------------------------------------------
 
-function fs.IsFileExecutable(path)
-    if fs.OS_NAME == "Windows" then
-        return os.execute('where "'..path..'" >nul 2>&1') == 0
+local function os_ok(cmd)
+    local ok, why, code = os.execute(cmd)
+    if type(ok) == "number" then
+        -- lua 5.1
+        return ok == 0
     else
-        return os.execute('test -x "'..path..'"') == true
+        -- lua 5.2+
+        return ok and code == 0
     end
+end
+
+function fs.IsFileExecutable(path)
+    return fs.OS_NAME == "Windows"
+           and os_ok(('where "%s" >nul 2>&1'):format(path))
+           or  os_ok(('test -x "%s"'):format(path))
 end
 
 function fs.IsFilePresent(path)

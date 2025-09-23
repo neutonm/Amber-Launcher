@@ -11,9 +11,9 @@ project(AmberLauncher
 # ------------------------------------------------------------------------------
 # Options
 # ------------------------------------------------------------------------------
-option(OPTION_STATIC_LINKING    "Link libraries statically"                 OFF)
-option(OPTION_BUILD_DOCS        "Build documentation with Doxygen"          OFF)
-option(OPTION_BUILD_TESTS       "Build tests with CTest"                    OFF)
+option(AL_STATIC_LINKING    "Link libraries statically"                 OFF)
+option(AL_BUILD_DOCS        "Build documentation with Doxygen"          OFF)
+option(AL_BUILD_TESTS       "Build tests with CTest"                    OFF)
 
 # ------------------------------------------------------------------------------
 # C Standard Configuration
@@ -62,7 +62,7 @@ endif()
 # MSVC
 # ------------------------------------------------------------------------------
 # Static Linking Configuration for MSVC
-if(OPTION_STATIC_LINKING AND MSVC)
+if(AL_STATIC_LINKING AND MSVC)
     # Set the runtime library to static
     set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 endif()
@@ -79,13 +79,14 @@ endif()
 # ------------------------------------------------------------------------------
 # Find Required Packages
 # ------------------------------------------------------------------------------
+add_subdirectory(deps)
 
 # Find Lua
-find_package(Lua REQUIRED)
-if(NOT Lua_FOUND)
-    message(FATAL_ERROR 
-    "Lua not found. Please install Lua and ensure CMake can locate it.")
-endif()
+# find_package(Lua REQUIRED)
+# if(NOT Lua_FOUND)
+#     message(FATAL_ERROR 
+#     "Lua not found. Please install Lua and ensure CMake can locate it.")
+# endif()
 
 find_package(nappgui)
 if(nappgui_FOUND)
@@ -93,7 +94,7 @@ if(nappgui_FOUND)
 else()
     message(FATAL_ERROR 
     "nappgui not found. \
-    Please install nappgui or enable OPTION_USE_NAPPGUI_AUTOMATICALLY.")
+    Please install nappgui or enable AL_USE_NAPPGUI_AUTOMATICALLY.")
 endif()
 
 # ------------------------------------------------------------------------------
@@ -117,7 +118,7 @@ file(GLOB_RECURSE SRC_FILES "${CMAKE_SOURCE_DIR}/src/AmberLauncherCore/*.c")
 add_library(AmberLauncher ${SRC_FILES})
 nap_project_desktop_app(AmberLauncherGUI src/AmberLauncherGUI)
 nap_target_c_standard(AmberLauncherGUI 90)
-nap_target_cxx_standard(AmberLauncherGUI 11)
+#nap_target_cxx_standard(AmberLauncherGUI 11)
 nap_link_inet(AmberLauncherGUI)
 
 # ------------------------------------------------------------------------------
@@ -199,7 +200,7 @@ endif()
 # ------------------------------------------------------------------------------
 # Doxygen Documentation Generation
 # ------------------------------------------------------------------------------
-if(OPTION_BUILD_DOCS)
+if(AL_BUILD_DOCS)
     find_package(Doxygen REQUIRED)
     if(DOXYGEN_FOUND)
         # Configure Doxygen
@@ -234,7 +235,7 @@ endif()
 # ------------------------------------------------------------------------------
 # Testing with CTest
 # ------------------------------------------------------------------------------
-if(OPTION_BUILD_TESTS)
+if(AL_BUILD_TESTS)
     # @todo
     enable_testing()
     add_subdirectory(tests)
