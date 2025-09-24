@@ -96,8 +96,11 @@ include("${NAPPGUI_ROOT_PATH}/prj/NAppProject.cmake")
 include("${NAPPGUI_ROOT_PATH}/prj/NAppCompilers.cmake")
 nap_config_compiler()
 
-Message("NAPPGUI INC: ${NAPPGUI_INCLUDE_PATH}")
-Message("NAPPGUI LIB: ${NAPPGUI_LIBRARIES}")
+Message(STATUS "[AL] NAPPGUI INC:  ${NAPPGUI_INCLUDE_PATH}")
+Message(STATUS "[AL] NAPPGUI LIB:  ${NAPPGUI_LIBRARIES}")
+Message(STATUS "[AL] NAPPGUI ROOT: ${NAPPGUI_ROOT_PATH}")
+Message(STATUS "[AL] NAPPGUI NRC:  ${NAPPGUI_NRC}")
+Message(STATUS "[AL] NAPPGUI PRJ:  ${NAPPGUI_PRJ_PATH}")
 
 # ------------------------------------------------------------------------------
 # Source Files

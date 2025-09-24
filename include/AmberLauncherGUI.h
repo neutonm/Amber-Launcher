@@ -58,7 +58,7 @@ typedef enum
     CSIDEBUTTON_UPDATE,
     CSIDEBUTTON_WEB_HOMEPAGE,
     CSIDEBUTTON_WEB_DISCORD,
-    CBUTTON_MAX
+    CSIDEBUTTON_MAX
 } ESidebarButton;
 
 typedef uint32_t FPanelFlags;

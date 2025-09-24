@@ -175,7 +175,12 @@ _ConvertMP3ToWAV(const char *file_name)
         mp3dec_init(&mp3d);
 
         /* Construct WAV file name with directory path */
-        snprintf(wav_name, MAX_PATH_LENGTH, "%s%s.wav", dir_name, base_name);
+        if (snprintf(wav_name, MAX_PATH_LENGTH, "%s%s.wav", dir_name, base_name) > (int)sizeof(wav_name))
+        {
+            fprintf(stderr, "wav_name sprintf path buffer overflow %s\n", wav_name);
+            free(mp3_data);
+            return CFALSE;
+        }
         wav_file = fopen(wav_name, "wb");
         if (!wav_file)
         {
@@ -247,7 +252,11 @@ _ConvertMP3ToWAV(const char *file_name)
         free(mp3_data);
 
         /* Rename MP3 file to .bak.mp3 in the same directory */
-        snprintf(bak_name, MAX_PATH_LENGTH, "%s%s.bak.mp3", dir_name, base_name);
+        if (snprintf(bak_name, MAX_PATH_LENGTH, "%s%s.bak.mp3", dir_name, base_name) > (int)sizeof(bak_name))
+        {
+            fprintf(stderr, "bak_name sprintf path buffer overflow %s\n", bak_name);
+            return CFALSE;
+        }
         if (rename(file_name, bak_name) != 0)
         {
             fprintf(stderr, "Failed to rename %s to %s\n", file_name, bak_name);
@@ -289,7 +298,11 @@ static int _test(void)
         if (len > 4 && strcmp(file_name + len - 4, ".mp3") == 0) {
             /* Construct the full path to the file */
             char full_path[MAX_PATH_LENGTH];
-            snprintf(full_path, MAX_PATH_LENGTH, "\\Music\\%s", file_name);
+            if (snprintf(full_path, MAX_PATH_LENGTH, "\\Music\\%s", file_name) > (int)sizeof(full_path))
+            {
+                fprintf(stderr, "full_path sprintf path buffer overflow %s\n", full_path);
+                return 1;
+            }
             _ConvertMP3ToWAV(full_path);
         }
     } while (FindNextFileA(hFind, &find_data) != 0);
@@ -317,7 +330,11 @@ static int _test(void)
             {
                 /* Construct the full path to the file */
                 char full_path[MAX_PATH_LENGTH];
-                snprintf(full_path, MAX_PATH_LENGTH, "%s%s", dir_path, file_name);
+                if (snprintf(full_path, MAX_PATH_LENGTH, "%s%s", dir_path, file_name) > (int)sizeof(full_path))
+                {
+                    fprintf(stderr, "full_path sprintf path buffer overflow %s\n", full_path);
+                    return 1;
+                }
                 printf("Processing: %s\n", full_path);
                 _ConvertMP3ToWAV(full_path);
             }

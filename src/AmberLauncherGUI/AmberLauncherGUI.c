@@ -264,6 +264,7 @@ Panel_Set(AppGUI *pApp, const EPanelType eType, FPanelFlags dFlags)
         pPanel = Panel_GetNull(pApp);
         break;
 
+    case CPANEL_MAX:
     default:
         pPanel = Panel_GetNull(pApp);
         break;
@@ -1256,6 +1257,8 @@ _Panel_GetModalOptionSubpanel(AppGUI *pApp)
                     dRow += 2;
                 }
                 break;
+            case UI_WIDGET_NULL:
+            case UI_WIDGET_MAX:
             default:
                 dCurRow = -1; /* wrong/corrupted widget */
                 break;
@@ -2315,6 +2318,8 @@ Callback_OnButtonModalOptions(AppGUI *pApp, Event *e)
                             }
                         }
                         break;
+                    case UI_WIDGET_NULL:
+                    case UI_WIDGET_MAX:
                     default:
                         break;
                 }
@@ -2841,13 +2846,22 @@ _Callback_OnButtonMainWindow(AppGUI* pApp, Event* e)
         case CSIDEBUTTON_MAIN:
             Panel_Set(pApp, CPANEL_MAIN, FLAG_PANEL_NONE);
             break;
-    
+        case CSIDEBUTTON_MODS:
+            break;
+        case CSIDEBUTTON_SETTINGS:
+            break;
+        case CSIDEBUTTON_TOOLS:
+            break;
+        case CSIDEBUTTON_UPDATE:
+            break;
         case CSIDEBUTTON_WEB_HOMEPAGE:
             osapp_open_url("https://mightandmagicmod.com");
             break;
         case CSIDEBUTTON_WEB_DISCORD:
             osapp_open_url("https://discord.gg/MhmZGrGxV4");
             break;
+        case CSIDEBUTTON_NULL:
+        case CSIDEBUTTON_MAX:
         default:
             break;
     }
@@ -2861,6 +2875,10 @@ _Callback_OnCloseMainWindow(AppGUI *pApp, Event *e)
 
     switch (p->origin)
     {
+        case ekGUI_CLOSE_ESC:
+        case ekGUI_CLOSE_INTRO:
+        case ekGUI_CLOSE_BUTTON:
+        case ekGUI_CLOSE_DEACT:
         default:
             osapp_finish();
             break;
@@ -2876,6 +2894,15 @@ _Callback_OnCloseModalWindow(AppGUI *pApp, Event *e)
 
     switch (p->origin)
     {
+        case ekGUI_CLOSE_ESC:
+        case ekGUI_CLOSE_BUTTON:
+
+            if (pApp->eCurrentUIEvent == UIEVENT_MODAL_UPDATER)
+            {
+                pApp->pWidgets->pTextView = NULL;
+            }
+            break;
+
         case ekGUI_CLOSE_INTRO:
 
             if (pApp->eCurrentUIEvent == UIEVENT_DEBUG)
@@ -2886,16 +2913,8 @@ _Callback_OnCloseModalWindow(AppGUI *pApp, Event *e)
                 return;
             }
             break;
-
-        case ekGUI_CLOSE_ESC:
-        case ekGUI_CLOSE_BUTTON:
-
-            if (pApp->eCurrentUIEvent == UIEVENT_MODAL_UPDATER)
-            {
-                pApp->pWidgets->pTextView = NULL;
-            }
-            break;
-
+            
+        case ekGUI_CLOSE_DEACT:
         default:
             *pResult = FALSE; /* prevents from closing window */
             break;
@@ -2964,6 +2983,8 @@ _Callback_UIEvent(
 
     switch(eEventType)
     {
+        case UIEVENT_NULL:
+            break;
         case UIEVENT_MODAL_CLOSE:
             window_stop_modal(pApp->pWindows->pWindowModal, ekGUI_CLOSE_ESC);
             break;
@@ -3549,6 +3570,23 @@ _Callback_UIEvent(
                                     }
                                     break;
 
+                                    case CTYPE_NULL:
+                                    case CTYPE_CHAR:
+                                    case CTYPE_UNSIGNED_CHAR:
+                                    case CTYPE_SHORT:
+                                    case CTYPE_UNSIGNED_SHORT:
+                                    case CTYPE_BOOL:
+                                    case CTYPE_INT:
+                                    case CTYPE_UNSIGNED_INT:
+                                    case CTYPE_LONG:
+                                    case CTYPE_FLOAT:
+                                    case CTYPE_LONG_DOUBLE:
+                                    case CTYPE_UNSIGNED_LONG:
+                                    case CTYPE_LONG_LONG:
+                                    case CTYPE_UNSIGNED_LONG_LONG:
+                                    case CTYPE_VOID:
+                                    case CTYPE_LUAREF:
+                                    case CTYPE_MAX:
                                     default:
                                         /* ignore unsupported types */
                                         break;
@@ -3638,6 +3676,8 @@ _Callback_UIEvent(
                                     SVARKEYB_INT(tRetVal, sOutKey, (int)pElem->dChoice);
                                     break;
 
+                                case UI_WIDGET_NULL:
+                                case UI_WIDGET_MAX:
                                 default:
                                     break;
                             }
@@ -3990,6 +4030,7 @@ _Callback_UIEvent(
             }
             break;
 
+        case UIEVENT_MAX:
         default:
             SVARKEYB_NULL(tRetVal, sStatusKey);
 
