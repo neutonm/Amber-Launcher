@@ -78,6 +78,17 @@ if(LUA_VERSION_NUM EQUAL 502 OR LUA_VERSION_NUM EQUAL 503)
     )
 endif()
 
+if(MSVC)
+    foreach(flag_var
+        CMAKE_C_FLAGS_RELEASE
+        CMAKE_C_FLAGS_DEBUG
+        CMAKE_C_FLAGS_RELWITHDEBINFO
+        CMAKE_C_FLAGS_MINSIZEREL
+    )
+        string(REPLACE "/MD" "/MT" ${flag_var} "${${flag_var}}")
+    endforeach()
+endif()
+
 add_library(lua_static STATIC ${LUA_SOURCES})
 
 # Compiler flags
@@ -99,8 +110,8 @@ target_compile_definitions(lua_static PRIVATE LUA_USE_C89)
 # Adjust compiler flags as specified in the Lua makefile
 if(MSVC)
     target_compile_options(lua_static PRIVATE
-        /O2
-        /W3
+        $<$<CONFIG:Debug>:/W3>
+        $<$<CONFIG:Release>:/O2 /W3>
     )
 else()
     target_compile_options(lua_static PRIVATE

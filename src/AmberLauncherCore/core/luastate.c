@@ -734,14 +734,14 @@ _LoadAllLuaScripts(lua_State* L, const char* folder_path)
 {
 #ifdef _WIN32
 
-    WIN32_FIND_DATA find_data;
+    WIN32_FIND_DATAA find_data;
     HANDLE hFind = INVALID_HANDLE_VALUE;
     char search_path[MAX_PATH];
     char script_path[MAX_PATH];
 
     snprintf(search_path, sizeof(search_path), "%s\\*.lua", folder_path);
 
-    hFind = FindFirstFile(search_path, &find_data);
+    hFind = FindFirstFileA(search_path, &find_data);
 
     if (hFind == INVALID_HANDLE_VALUE) 
     {
@@ -765,7 +765,7 @@ _LoadAllLuaScripts(lua_State* L, const char* folder_path)
             lua_pop(L, 1);
         }
 
-    } while (FindNextFile(hFind, &find_data) != 0);
+    } while (FindNextFileA(hFind, &find_data) != 0);
 
     FindClose(hFind);
 

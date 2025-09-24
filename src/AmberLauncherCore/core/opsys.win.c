@@ -15,7 +15,7 @@
 CAPI void 
 AmberLauncher_GetApplicationPath(char *pOutPath, size_t dSize)
 {
-    if (GetModuleFileName(NULL, pOutPath, (DWORD)dSize) == 0) 
+    if (GetModuleFileNameA(NULL, pOutPath, (DWORD)dSize) == 0) 
     {
         fprintf(
             stderr,    
@@ -78,7 +78,7 @@ CAPI CBOOL
 AmberLauncher_IsRunningUnderWine(void)
 {
     HKEY hKey;
-    LONG result = RegOpenKeyEx(HKEY_CURRENT_USER, "Software\\Wine", 0, KEY_READ, &hKey);
+    LONG result = RegOpenKeyEx(HKEY_CURRENT_USER, L"Software\\Wine", 0, KEY_READ, &hKey);
     if (result == ERROR_SUCCESS) 
     {
         RegCloseKey(hKey);
@@ -97,16 +97,16 @@ AmberLauncher_GetThreadID(void)
 CAPI void
 AmberLauncher_PrintDefaultSystemInformation(void)
 {
-    OSVERSIONINFO osvi;
+    LPOSVERSIONINFO osvi;
     SYSTEM_INFO si;
     DWORD size;
     char computerName[MAX_COMPUTERNAME_LENGTH + 1];
     char versionStr[128];
     char architecture[32];
 
-    ZeroMemory(&osvi, sizeof(OSVERSIONINFO));
-    osvi.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
-    if (!GetVersionEx(&osvi)) 
+    ZeroMemory(&osvi, sizeof(LPOSVERSIONINFO));
+    osvi->dwOSVersionInfoSize = sizeof(LPOSVERSIONINFO);
+    if (!GetVersionEx(osvi)) 
     {
         fprintf(stderr, "Failed to retrieve OS version information");
         return;
@@ -116,7 +116,7 @@ AmberLauncher_PrintDefaultSystemInformation(void)
     GetSystemInfo(&si);
 
     size = sizeof(computerName) / sizeof(computerName[0]);
-    if (!GetComputerName(computerName, &size)) 
+    if (!GetComputerNameA(computerName, &size)) 
     {
         fprintf(stderr, "Failed to retrieve computer name");
         return;
@@ -130,7 +130,7 @@ AmberLauncher_PrintDefaultSystemInformation(void)
     fprintf(stderr, "\tMachine: \t\t%s",   "-");
 
     /** Construct version string */
-    sprintf(versionStr, "Version %ld.%ld (Build %ld)", osvi.dwMajorVersion, osvi.dwMinorVersion, osvi.dwBuildNumber);
+    sprintf(versionStr, "Version %ld.%ld (Build %ld)", osvi->dwMajorVersion, osvi->dwMinorVersion, osvi->dwBuildNumber);
     fprintf(stderr, "\tOS Version: \t%s", versionStr);
 
     /** Determine architecture */
@@ -168,7 +168,7 @@ AmberLauncher_ProcessLaunch(const char* sAppPath, int argc, char **argv, CBOOL b
     UNUSED(argc);
     UNUSED(bCloseOnLaunch);
 
-    if (CreateProcess(NULL, (LPSTR)sAppPath, NULL, NULL, FALSE, 0, NULL, NULL, &tStartupInfo, &tProcessInfo)) 
+    if (CreateProcess(NULL, (LPWSTR)sAppPath, NULL, NULL, FALSE, 0, NULL, NULL, &tStartupInfo, &tProcessInfo)) 
     {
         WaitForSingleObject(tProcessInfo.hProcess, INFINITE);
         CloseHandle(tProcessInfo.hProcess);
@@ -187,7 +187,7 @@ AmberLauncher_SetRegistryKey(const char* sValueName, uint32 dValueData)
     const char* subKey = "Software\\New World Computing\\Might and Magic VII\\1.0";
     LONG result;
 
-    result = RegOpenKeyEx(
+    result = RegOpenKeyExA(
         HKEY_LOCAL_MACHINE,
         subKey, 
         0, 
@@ -204,7 +204,7 @@ AmberLauncher_SetRegistryKey(const char* sValueName, uint32 dValueData)
         );
         
         /* Try opening the 32-bit view if 64-bit access fails */
-        result = RegOpenKeyEx(
+        result = RegOpenKeyExA(
             HKEY_LOCAL_MACHINE,
             subKey,
             0,
@@ -214,14 +214,14 @@ AmberLauncher_SetRegistryKey(const char* sValueName, uint32 dValueData)
 
         if (result != ERROR_SUCCESS) 
         {
-            fprintf(stder, "Error opening 32-bit registry key: %ld\n", result);
+            fprintf(stderr, "Error opening 32-bit registry key: %ld\n", result);
             return 1; 
         }
     }
 
-    result = RegSetValueEx(
+    result = RegSetValueExA(
         hKey,
-        sValueName
+        sValueName,
         0,
         REG_DWORD,
         (const BYTE*)&dValueData,
@@ -254,7 +254,7 @@ AmberLauncher_GetRegistryKey(const char* sValueName, uint32* pValueData)
     const char* subKey = "Software\\New World Computing\\Might and Magic VII\\1.0";
     LONG result;
 
-    result = RegOpenKeyEx(
+    result = RegOpenKeyExA(
         HKEY_LOCAL_MACHINE,
         subKey,
         0,
@@ -267,7 +267,7 @@ AmberLauncher_GetRegistryKey(const char* sValueName, uint32* pValueData)
         fprintf(stderr, "Failed to open 64-bit registry key, trying 32-bit view: %ld\n", result);
         
         /* Try opening the 32-bit view if 64-bit access fails */
-        result = RegOpenKeyEx(
+        result = RegOpenKeyExA(
             HKEY_LOCAL_MACHINE,
             subKey,
             0,
@@ -286,7 +286,7 @@ AmberLauncher_GetRegistryKey(const char* sValueName, uint32* pValueData)
     DWORD dataSize = sizeof(DWORD);
     DWORD valueData = 0;
 
-    result = RegQueryValueEx(
+    result = RegQueryValueExA(
         hKey,
         sValueName,
         NULL,

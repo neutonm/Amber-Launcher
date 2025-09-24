@@ -8,9 +8,21 @@
 #include <lua.h>
 #include <lauxlib.h>
 
-#include <sys/stat.h>
 #include <stdlib.h>
 #include <errno.h>
+
+#ifdef _WIN32
+#include <direct.h>
+#else
+#include <sys/stat.h>
+#include <unistd.h>
+#endif
+
+#ifdef _WIN32
+#define MKDIR(path, mode) _mkdir(path)
+#else
+#define MKDIR(path, mode) mkdir(path, mode)
+#endif
 
 /* Define the maximum path length */
 #define MAX_PATH_LEN 1024
@@ -35,7 +47,7 @@ _CreateDirectories(const char *path)
         if (temp[i] == '/') {
             temp[i] = '\0';
             /* Check if the directory exists */
-            if (mkdir(temp, 0755) != 0) {
+            if (MKDIR(temp, 0755) != 0) {
                 if (errno != EEXIST) {
                     perror("mkdir");
                     return -1;
@@ -46,7 +58,7 @@ _CreateDirectories(const char *path)
     }
 
     /* Create the final directory */
-    if (mkdir(temp, 0755) != 0) {
+    if (MKDIR(temp, 0755) != 0) {
         if (errno != EEXIST) {
             perror("mkdir");
             return -1;

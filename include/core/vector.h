@@ -198,11 +198,12 @@ SVector_GetSize(const SVector* pVec);
  * 
  * @param       pVec SVector
  */
-#define SVector_ForEach(pVec)   \
-    for ((pVec)->dIndex = 0;    \
-         (pVec)->pData != NULL && (pVec)->dIndex < (pVec)->dSize && \
-         (((pVec)->pIterator = (void*)((char*)(pVec)->pData + (pVec)->dIndex * (pVec)->dElemSize))); \
-         ++(pVec)->dIndex)
+#define SVector_ForEach(pVec)                                               \
+    for ((pVec)->dIndex = 0;                                                \
+         (pVec)->pData != NULL && (pVec)->dIndex < (pVec)->dSize;           \
+         ++(pVec)->dIndex)                                                  \
+        if (((pVec)->pIterator = (void*)((char*)(pVec)->pData +             \
+                                         (pVec)->dIndex * (pVec)->dElemSize)), 1)
 
 /**
  * @relatedalso SVector

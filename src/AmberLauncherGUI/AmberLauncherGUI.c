@@ -11,12 +11,9 @@
 #include <AmberLauncherGUI.h>
 #include <AmberLauncherCore.h>
 
-#include <bits/stdint-intn.h>
 #include <inet/inet.h>
-#include <inet/json.h>
 #include <inet/httpreq.h>
-#include <bits/stdint-uintn.h>
-#include <bits/types/error_t.h>
+#include <encode/json.h>
 #include <core/common.h>
 #include <core/appcore.h>
 
@@ -28,6 +25,30 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+/******************************************************************************
+ * WINDOWS
+ ******************************************************************************/
+
+#ifdef _WIN32
+#include <windows.h>
+#include <fcntl.h>
+#include <io.h>
+
+static void
+_Win32_SetupConsole(void)
+{
+    if (AttachConsole(ATTACH_PARENT_PROCESS)) 
+    {
+        freopen("CONOUT$", "w", stdout);
+        freopen("CONOUT$", "w", stderr);
+        freopen("CONIN$", "r", stdin);
+
+        setvbuf(stdout, NULL, _IONBF, 0);
+    }
+}
+
+#endif
 
 /******************************************************************************
  * CONSTANTS
@@ -59,18 +80,18 @@ const char* EUIEventTypeStrings[] = {
     NULL
 };
 
-static const real32_t PANEL_DEFAULT_W       = 640.f;
-static const real32_t PANEL_DEFAULT_H       = 480.f;
-static const real32_t LAYOUT_DEFAULT_MARGIN = 4.f;
-static const real32_t TITLE_PNG_W           = 672.f;
-static const real32_t TITLE_PNG_H           = 200.f;
-static const real32_t ICO_PNG_W             = 32.f;
-static const real32_t ICO_PNG_H             = 32.f;
-static const real32_t IMAGE_DEFAULT_W       = 480.f;
-static const real32_t IMAGE_DEFAULT_H       = 320.f;
+#define PANEL_DEFAULT_W                     640.f
+#define PANEL_DEFAULT_H                     480.f
+#define LAYOUT_DEFAULT_MARGIN               4.f
+#define TITLE_PNG_W                         672.f
+#define TITLE_PNG_H                         200.f
+#define ICO_PNG_W                           32.f
+#define ICO_PNG_H                           32.f
+#define IMAGE_DEFAULT_W                     480.f
+#define IMAGE_DEFAULT_H                     320.f
 
 /* shortcut */
-static const real32_t _fDefMarg             = LAYOUT_DEFAULT_MARGIN;
+static const real32_t _fDefMarg             = 4.0f;
 static const real32_t _fMinBtnWidth         = 128.f;
 
 #define MODAL_OPT_NULL                      1000
@@ -239,6 +260,10 @@ Panel_Set(AppGUI *pApp, const EPanelType eType, FPanelFlags dFlags)
         pPanel = Panel_GetImageDemo(pApp);
         break;
 
+    case CPANEL_MODAL:
+        pPanel = Panel_GetNull(pApp);
+        break;
+
     default:
         pPanel = Panel_GetNull(pApp);
         break;
@@ -389,7 +414,7 @@ Panel_GetImageDemo(AppGUI *pApp)
     Layout      *pLayoutMain    = layout_create(1, 1);
     ImageView   *pImageView     = imageview_create();
     Image       *pImage         = NULL;
-    ferror_t    eError;
+    ferror_t    eError          = 0;
 
     /* Image */
     if (IS_VALID(pApp->pWidgets->pString))
@@ -2114,7 +2139,7 @@ Callback_OnButtonModalGameNotFound(AppGUI *pApp, Event *e)
 
     /* Button clicked: Browse */
     {
-        const char *sBrowserPath = comwin_open_file(pApp->pWindows->pWindowModal, sFileFormat, 1, NULL);
+        const char *sBrowserPath = comwin_open_file(pApp->pWindows->pWindowModal, NULL, sFileFormat, 1, NULL);
         str_upd(&pApp->pWidgets->pString, sBrowserPath ? sBrowserPath : "");
     }
 
@@ -2590,6 +2615,10 @@ _Nappgui_Start(void)
     AppGUI *pApp;
     Panel *pPanel;
 
+#ifdef _WIN32
+    _Win32_SetupConsole();
+#endif
+
     /* Core initialization */
     pApp = heap_new0(AppGUI);
     cassert_no_null(pApp);
@@ -2600,7 +2629,7 @@ _Nappgui_Start(void)
     pApp->pAppCore->cbUIEvent = _Callback_UIEvent;
 
     /* Debug */
-    pApp->pDebugData     = heap_new(GUIDebugData);
+    pApp->pDebugData     = heap_new0(GUIDebugData);
     cassert_no_null(pApp->pDebugData);
 
     /* AppGUI ... */
@@ -2957,6 +2986,7 @@ _Callback_UIEvent(
 
                 sMessage = SVAR_GET_CONSTCHAR(pUserData[0]);
 
+                bstd_printf("%s\n", sMessage);
                 if (pApp->pWidgets->pTextView)
                 {
                     textview_printf(pApp->pWidgets->pTextView,"%s\n", sMessage);

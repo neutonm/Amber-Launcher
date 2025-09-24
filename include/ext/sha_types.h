@@ -292,10 +292,10 @@ sha_u64_sizet_plus(sha_u64 x,
     sha_u64 r;
     sha_u32 b[2];
 
-    b[0] = SHA_T32(y);
+    b[0] = (sha_u32)SHA_T32(y);
     y >>= 16;
     y >>= 16;
-    b[1] = SHA_T32(y);
+    b[1] = (sha_u32)SHA_T32(y);
     y >>= 16;
     y >>= 16;
 

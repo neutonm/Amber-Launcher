@@ -88,18 +88,10 @@ add_subdirectory(deps)
 #     "Lua not found. Please install Lua and ensure CMake can locate it.")
 # endif()
 
-find_package(nappgui)
-if(nappgui_FOUND)
-    message(STATUS "Found pre-installed nappgui.")
-else()
-    message(FATAL_ERROR 
-    "nappgui not found. \
-    Please install nappgui or enable AL_USE_NAPPGUI_AUTOMATICALLY.")
-endif()
-
 # ------------------------------------------------------------------------------
 # Integrate nappgui
 # ------------------------------------------------------------------------------
+find_package(nappgui REQUIRED)
 include("${NAPPGUI_ROOT_PATH}/prj/NAppProject.cmake")
 include("${NAPPGUI_ROOT_PATH}/prj/NAppCompilers.cmake")
 nap_config_compiler()
@@ -138,11 +130,30 @@ target_link_libraries(AmberLauncher PRIVATE
 )
 
 # ------------------------------------------------------------------------------
+# Compiler Properties
+# ------------------------------------------------------------------------------
+set_target_properties(AmberLauncherGUI PROPERTIES
+    OUTPUT_NAME "Amber Launcher"
+)
+
+if(MSVC)
+    set_target_properties(AmberLauncherGUI PROPERTIES
+        VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+    )
+endif()
+# Set working directory to source dir for debugging in MSVC
+
+# ------------------------------------------------------------------------------
 # Compiler Flags
 # ------------------------------------------------------------------------------
 # Set default compiler flags based on compiler type
 if(MSVC)
-    set(CMAKE_C_FLAGS "/W4 /WX /permissive- /std:c99")
+    set(CMAKE_C_FLAGS "/W3 /WX /permissive- /std:c99")
+	add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+	target_compile_options(AmberLauncherGUI PRIVATE
+        /wd4061
+		/wd4127
+    )
 else()
     # Base flags for all build types
     set(CMAKE_C_FLAGS "-Wall -Wextra -Wpedantic -Werror -std=c99")

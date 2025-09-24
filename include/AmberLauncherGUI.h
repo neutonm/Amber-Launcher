@@ -4,7 +4,6 @@
 #include "core/appcore.h"
 #include "core/common.h"
 #include "gui/gui.hxx"
-#include <bits/stdint-intn.h>
 #include <core/core.hxx>
 #include <nappgui.h>
 

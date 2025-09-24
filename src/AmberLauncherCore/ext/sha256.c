@@ -205,8 +205,8 @@ sha256_add_bytes(SHA256_Context * context,
         /* Increment bit count, abort on input of 2^64 or more bits */
 
         context->count = sha_u64_plus(context->count,
-                                      sha_u64_set(0, 8 * len));
-        if (sha_u64_lt(context->count, sha_u64_set(0, 8 * len)))
+                                      sha_u64_set(0, 8 * (sha_u32)len));
+        if (sha_u64_lt(context->count, sha_u64_set(0, 8 * (sha_u32)len)))
             return context->error = SHA_DIGEST_INPUT_TOO_LONG;
 
         data       = (unsigned char *) data + len;

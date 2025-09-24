@@ -24,8 +24,7 @@
 
 #define MINIMP3_MAX_SAMPLES_PER_FRAME (1152*2)
 
-#define MAX_BUFFER_SIZE 4096
-#define MAX_PATH_LENGTH 260  /* Maximum path length */
+#define MAX_PATH_LENGTH 260
 #define MAX_FILENAME_LENGTH 80
 #define MAX_DIRPATH_LENGTH 160
 
@@ -176,7 +175,7 @@ _ConvertMP3ToWAV(const char *file_name)
         mp3dec_init(&mp3d);
 
         /* Construct WAV file name with directory path */
-        snprintf(wav_name, MAX_BUFFER_SIZE, "%s%s.wav", dir_name, base_name);
+        snprintf(wav_name, MAX_PATH_LENGTH, "%s%s.wav", dir_name, base_name);
         wav_file = fopen(wav_name, "wb");
         if (!wav_file)
         {
@@ -225,7 +224,7 @@ _ConvertMP3ToWAV(const char *file_name)
                 }
 
                 /* Write PCM data to WAV file */
-                fwrite(pcm, sizeof(short), samples * info.channels, wav_file);
+                fwrite(pcm, sizeof(short), (size_t)samples* (size_t)info.channels, wav_file);
                 total_samples += samples;
             }
             else if (info.frame_bytes == 0)
@@ -248,7 +247,7 @@ _ConvertMP3ToWAV(const char *file_name)
         free(mp3_data);
 
         /* Rename MP3 file to .bak.mp3 in the same directory */
-        snprintf(bak_name, MAX_BUFFER_SIZE, "%s%s.bak.mp3", dir_name, base_name);
+        snprintf(bak_name, MAX_PATH_LENGTH, "%s%s.bak.mp3", dir_name, base_name);
         if (rename(file_name, bak_name) != 0)
         {
             fprintf(stderr, "Failed to rename %s to %s\n", file_name, bak_name);
@@ -268,7 +267,7 @@ static int _test(void)
 {
 #ifdef _WIN32
     /* Windows-specific directory traversal */
-    WIN32_FIND_DATA find_data;
+    WIN32_FIND_DATAA find_data;
     HANDLE hFind = INVALID_HANDLE_VALUE;
     char dir_search[MAX_PATH_LENGTH];
     const char *file_name;
@@ -277,7 +276,7 @@ static int _test(void)
     /* Change the directory search path to include the "Music" directory */
     snprintf(dir_search, MAX_PATH_LENGTH, "\\Music\\*.mp3");
 
-    hFind = FindFirstFile(dir_search, &find_data);
+    hFind = FindFirstFileA(dir_search, &find_data);
 
     if (hFind == INVALID_HANDLE_VALUE) {
         fprintf(stderr, "No mp3 files found in 'Music'.\n");
@@ -293,7 +292,7 @@ static int _test(void)
             snprintf(full_path, MAX_PATH_LENGTH, "\\Music\\%s", file_name);
             _ConvertMP3ToWAV(full_path);
         }
-    } while (FindNextFile(hFind, &find_data) != 0);
+    } while (FindNextFileA(hFind, &find_data) != 0);
 
     FindClose(hFind);
 
@@ -318,7 +317,7 @@ static int _test(void)
             {
                 /* Construct the full path to the file */
                 char full_path[MAX_PATH_LENGTH];
-                snprintf(full_path, MAX_BUFFER_SIZE, "%s%s", dir_path, file_name);
+                snprintf(full_path, MAX_PATH_LENGTH, "%s%s", dir_path, file_name);
                 printf("Processing: %s\n", full_path);
                 _ConvertMP3ToWAV(full_path);
             }
