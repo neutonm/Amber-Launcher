@@ -197,3 +197,6 @@ AmberLauncherGUI
 
 # cmake cache
 .cache/
+
+# Special Exceptions
+Data/Launcher/Mods/_active.lua
