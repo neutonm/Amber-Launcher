@@ -116,6 +116,37 @@ nap_target_c_standard(AmberLauncherGUI 90)
 #nap_target_cxx_standard(AmberLauncherGUI 11)
 nap_link_inet(AmberLauncherGUI)
 
+# nappgui / cmake msvc manifest hack
+if(MSVC)
+    set(MANIFEST_FILE "${CMAKE_SOURCE_DIR}/src/AmberLauncherGUI/res/Amber.manifest")
+    set(RES_FILE "${CMAKE_CURRENT_BINARY_DIR}/src/AmberLauncherGUI/res.rc")
+
+    file(READ "${RES_FILE}" file_contents)
+    string(REPLACE "\r\n" "\n" file_contents "${file_contents}")
+    string(REPLACE "\r" "\n" file_contents "${file_contents}")
+    string(REGEX REPLACE "\n$" "" file_contents "${file_contents}")
+
+    string(REPLACE "\n" ";" file_lines "${file_contents}")
+
+    list(LENGTH file_lines line_count)
+    if(line_count GREATER 1)
+        set(file_lines0 "${file_lines}")
+        list(GET file_lines 0 line1)
+        set(new_line "1 24 \"${MANIFEST_FILE}\"")
+        
+        list(REMOVE_AT file_lines 1)
+        list(INSERT file_lines 1 "${new_line}")
+    else()
+        message(FATAL_ERROR "[AL] res.rc must have at least 2 lines.")
+    endif()
+
+    string(REPLACE ";" "\n" modified_content "${file_lines}")
+    file(WRITE "${RES_FILE}" "${modified_content}")
+
+    message(STATUS "[AL] Replaced line 2 in: ${RES_FILE}")
+    message(STATUS "[AL] Manifest used: ${MANIFEST_FILE}")
+endif()
+
 # ------------------------------------------------------------------------------
 # Include Directories
 # ------------------------------------------------------------------------------
@@ -143,6 +174,9 @@ if(MSVC)
     set_target_properties(AmberLauncherGUI PROPERTIES
         VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
     )
+	set_target_properties(AmberLauncherGUI PROPERTIES
+		LINK_FLAGS "/MANIFESTUAC:\"level='requireAdministrator' uiAccess='false'\""
+	)
 endif()
 # Set working directory to source dir for debugging in MSVC
 
