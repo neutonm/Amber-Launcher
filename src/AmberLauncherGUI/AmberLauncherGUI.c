@@ -2436,6 +2436,7 @@ _al_printf(AppGUI *pApp, const char* fmt, ...)
     if (pApp->pWidgets->pTextView)
     {
         textview_printf(pApp->pWidgets->pTextView, "%s\n", buffer);
+        textview_scroll_caret(pApp->pWidgets->pTextView);
     }
 }
 
