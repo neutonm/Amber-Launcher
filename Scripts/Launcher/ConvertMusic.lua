@@ -13,15 +13,15 @@ local function _ConvertMusic()
     end
 
     for _, fileName in ipairs(files) do
-        if #fileName > 4 and fileName:sub(-4):lower() == ".mp3" then
-            local fullPath = FS.PathJoin(musicDir, fileName)
-            print("Track: " .. fullPath)
-            if not AL.ConvertMP3ToWAV(fullPath) then
-                AL_print("Failed to convert " .. fileName)
-                return false
-            end
-        end
-    end
+		if fileName:match("^%d+%.mp3$") then
+			local fullPath = FS.PathJoin(musicDir, fileName)
+			print("Track: " .. fullPath)
+			if not AL.ConvertMP3ToWAV(fullPath) then
+				AL_print("Failed to convert " .. fileName)
+				return false
+			end
+		end
+	end
 
     AL_print("Converting done!")
     return true

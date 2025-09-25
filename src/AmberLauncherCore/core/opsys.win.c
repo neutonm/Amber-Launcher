@@ -158,25 +158,30 @@ AmberLauncher_PrintDefaultSystemInformation(void)
 CAPI int
 AmberLauncher_ProcessLaunch(const char* sAppPath, int argc, char **argv, CBOOL bCloseOnLaunch)
 {
-    STARTUPINFO tStartupInfo;
-    PROCESS_INFORMATION tProcessInfo;
+    STARTUPINFOA si;
+    PROCESS_INFORMATION pi;
+    char cmdLine[MAX_PATH];
 
-    ZeroMemory(&tStartupInfo, sizeof(tStartupInfo));
-    tStartupInfo.cb = sizeof(tStartupInfo);
+    ZeroMemory(&si, sizeof(si));
+    si.cb = sizeof(si);
+    ZeroMemory(&pi, sizeof(pi));
 
-    UNUSED(argv);
-    UNUSED(argc);
-    UNUSED(bCloseOnLaunch);
+    snprintf(cmdLine, sizeof(cmdLine), "\"%s\"", sAppPath);
 
-    if (CreateProcess(NULL, (LPWSTR)sAppPath, NULL, NULL, FALSE, 0, NULL, NULL, &tStartupInfo, &tProcessInfo)) 
+    if (CreateProcessA(
+        NULL,
+        cmdLine,
+        NULL, NULL,
+        FALSE, 0,
+        NULL, NULL,
+        &si, &pi))
     {
-        WaitForSingleObject(tProcessInfo.hProcess, INFINITE);
-        CloseHandle(tProcessInfo.hProcess);
-        CloseHandle(tProcessInfo.hThread);
-        return (int)tProcessInfo.dwProcessId;
-    } 
+        CloseHandle(pi.hThread);
+        CloseHandle(pi.hProcess);
+        return 1;
+    }
 
-    fprintf(stderr, "CreateProcess failed: %s -> %d.", sAppPath, GetLastError());
+    fprintf(stderr, "CreateProcess failed (%d): %s\n", GetLastError(), sAppPath);
     return 0;
 }
 
@@ -191,7 +196,7 @@ AmberLauncher_SetRegistryKey(const char* sValueName, uint32 dValueData)
         HKEY_LOCAL_MACHINE,
         subKey, 
         0, 
-        KEY_SET_VALUE | KEY_WOW64_64KEY, 
+        KEY_SET_VALUE, 
         &hKey
     );
 
@@ -258,7 +263,7 @@ AmberLauncher_GetRegistryKey(const char* sValueName, uint32* pValueData)
         HKEY_LOCAL_MACHINE,
         subKey,
         0,
-        KEY_QUERY_VALUE | KEY_WOW64_64KEY,
+        KEY_QUERY_VALUE,
         &hKey
     );
 

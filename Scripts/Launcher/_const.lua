@@ -1,18 +1,7 @@
 
 -- Figure out OS through lua
-local BinaryFormat = package.cpath:match("%p[\\|/]?%p(%a+)")
-if BinaryFormat == "dll" then
-    function os.name()
-        return "Windows"
-    end
-elseif BinaryFormat == "so" then
-    function os.name()
-        return "Linux"
-    end
-else
-    function os.name()
-        return "Unknown"
-    end
+function os.name()
+	return _OS_NAME
 end
 
 -- enums
@@ -82,7 +71,7 @@ MODID_TITLE = {
 }
 
 -- Variables
-OS_NAME                 = OS_NAME or "Unknown"
+OS_NAME                 = OS_NAME or os.name()
 GAME_FOLDER_NAME        = GAME_FOLDER_NAME or {
     "Might and Magic 7",
     "Might and Magic VII"
@@ -94,13 +83,11 @@ GAME_MOD_ID             = GAME_MOD_ID or MODID.AMBER
 GAME_MOD_ID_NAME        = MODID_NAMES[GAME_MOD_ID]
 GAME_MOD_ID_TITLE       = MODID_TITLE[GAME_MOD_ID]
 
-LAUNCHER_NAME           = LAUNCHER_NAME or "AmberLauncherGUI"
+LAUNCHER_NAME           = LAUNCHER_NAME or "Amber Launcher"
 LAUNCHER_BUILD          = LAUNCHER_BUILD or _BUILD_NUMBER
 LAUNCHER_VERSION        = LAUNCHER_VERSION or 100
 
-
--- OS Specific variables
-OS_NAME = os.name()
+-- OS Separator
 if OS_NAME == "Windows" then 
     OS_FILE_SEPARATOR = '\\'
 else

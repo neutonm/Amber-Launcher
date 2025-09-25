@@ -80,7 +80,8 @@ local function _DetectAndInstallMod()
     print("Detecting mod...")
 
     if IsAmberIslandMod(GAME_DESTINATION_PATH) then
-        return true
+        -- return true
+		-- autoconfig should reinstall it
     end
 
     AL_print("Amber Island mod is not detected. Installing it now...")

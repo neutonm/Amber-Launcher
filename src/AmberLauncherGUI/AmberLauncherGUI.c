@@ -110,6 +110,15 @@ static const real32_t _fMinBtnWidth         = 128.f;
  ******************************************************************************/
 
 /**
+ * @relatedalso Window
+ * @brief       Centers window on screen
+ *
+ * @param       pWindow
+ */
+static void
+_window_center(Window* pWindow);
+
+/**
  * @relatedalso Panel
  * @brief       Returns root panel of the launcher
  * 
@@ -2469,6 +2478,28 @@ GUIThread_SchedulePanelSet(AppGUI *pApp, EPanelType eType, FPanelFlags dFlags)
  * STATIC DEFINITIONS
  ******************************************************************************/
 
+static void
+_window_center(Window *pWindow)
+{
+    S2Df tScreenSize;
+    S2Df tWindowSize;
+    V2Df tScreenPos;
+    V2Df tWindowPos;
+    V2Df tCenterPos;
+
+    tScreenSize = gui_resolution();
+    tWindowSize = window_get_size(pWindow);
+
+    tScreenPos = v2df(tScreenSize.width, tScreenSize.height);
+    tWindowPos = v2df(tWindowSize.width, tWindowSize.height);
+
+    tScreenPos = v2d_mulf(&tScreenPos, 0.5f);
+    tWindowPos = v2d_mulf(&tWindowPos, 0.5f);
+    tCenterPos = v2d_subf(&tScreenPos, &tWindowPos);
+
+    window_origin(pWindow, tCenterPos);
+}
+
 static Panel*
 _Panel_GetRoot(AppGUI *pApp)
 {
@@ -2687,6 +2718,7 @@ _Nappgui_Start(void)
     window_OnClose(pApp->pWindows->pWindow,
                    listener(pApp, _Callback_OnCloseMainWindow, AppGUI));
     window_show(pApp->pWindows->pWindow);
+    _window_center(pApp->pWindows->pWindow);
 
     return pApp;
 }
@@ -2818,6 +2850,7 @@ _Nappgui_ShowModal( AppGUI *pApp, Panel *pPanel, const char* sTitle)
     window_title(pApp->pWindows->pWindowModal, sTitle);
     window_OnClose(pApp->pWindows->pWindowModal,
                    listener(pApp, _Callback_OnCloseModalWindow, AppGUI));
+    _window_center(pApp->pWindows->pWindowModal);
     dRet = window_modal(pApp->pWindows->pWindowModal, pApp->pWindows->pWindow);
     window_destroy(&pApp->pWindows->pWindowModal);
 
@@ -3006,16 +3039,18 @@ _Callback_UIEvent(
                 assert(dNumArgs >= 1);
 
                 sMessage = SVAR_GET_CONSTCHAR(pUserData[0]);
+                if (str_empty_c(sMessage))
+                {
+                    SVARKEYB_BOOL(tRetVal, sStatusKey, CFALSE);
+                    break;
+                }
 
                 bstd_printf("%s\n", sMessage);
                 if (pApp->pWidgets->pTextView)
                 {
                     textview_printf(pApp->pWidgets->pTextView,"%s\n", sMessage);
-                    SVARKEYB_BOOL(tRetVal, sStatusKey, CTRUE);
-                    break;
                 }
-
-                SVARKEYB_BOOL(tRetVal, sStatusKey, CFALSE);
+                SVARKEYB_BOOL(tRetVal, sStatusKey, CTRUE);
             }
             break;
 

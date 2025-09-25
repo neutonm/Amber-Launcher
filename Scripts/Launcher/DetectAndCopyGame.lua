@@ -98,9 +98,15 @@ function AL_DetectGame(searchFolder, bIgnoreWav)
     local listOfFilesToCheck = bIgnoreWav   and MM7_COPY_FILES or MM7_DETECT_FILES
     print("Search path: "..dump(searchFolders))
 
+	-- Normalize path (os separator)
+	for i, path in ipairs(listOfFilesToCheck) do
+		listOfFilesToCheck[i] = FS.PathNormalize(path)
+	end
+
     -- 1) Already in launcher folder?
     local localExe = FS.PathResolveCaseInsensitive(GAME_DESTINATION_PATH, GAME_EXECUTABLE_NAME)
     if localExe then
+
         print("Game executable present in destination folder.")
         if FS.FilesCheck(GAME_DESTINATION_PATH, listOfFilesToCheck) then
             return GAME_DESTINATION_PATH, "local"
@@ -119,7 +125,7 @@ function AL_DetectGame(searchFolder, bIgnoreWav)
                 print("Found valid installation at "..root)
                 return root, "external"
             else
-                print("Found executable at "..root.." but data files are incomplete.")
+                print("Found executable at \""..root.."\" but data files are incomplete.")
             end
         end
     end
@@ -129,7 +135,7 @@ end
 
 -- Static functions
 local function _CopyGameFiles(src, dst)
-    AL_print("Copying game from '"..src.."' -> '"..dst.."' …")
+    AL_print("Copying game from '"..src.."…")
     FS.DirectoryEnsure(dst)
     FS.FilesCopy(src, dst, MM7_COPY_FILES)
 

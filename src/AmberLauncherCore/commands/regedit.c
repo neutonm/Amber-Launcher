@@ -36,7 +36,9 @@ LUA_SetRegistryKey(lua_State *L)
     bResult = AmberLauncher_SetRegistryKey(sKey, dValue) == 0;
     if (!bResult)
     {
-        return luaL_error(L, "AmberLauncher_SetRegistryKey failed to execute properly");
+        return luaL_error(L, 
+            "AmberLauncher_SetRegistryKey:%s,%d failed to execute properly",
+            sKey, dValue);
     }
 
     lua_pushboolean(L, (CBOOL)bResult);

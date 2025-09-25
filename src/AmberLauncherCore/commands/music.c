@@ -257,6 +257,9 @@ _ConvertMP3ToWAV(const char *file_name)
             fprintf(stderr, "bak_name sprintf path buffer overflow %s\n", bak_name);
             return CFALSE;
         }
+#ifdef _WIN32
+        remove(bak_name);
+#endif
         if (rename(file_name, bak_name) != 0)
         {
             fprintf(stderr, "Failed to rename %s to %s\n", file_name, bak_name);

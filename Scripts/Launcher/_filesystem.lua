@@ -57,6 +57,29 @@ function fs.PathDelete(path)
     return os.execute(cmd) == 0
 end
 
+function fs.PathNormalize(path)
+    if fs.OS_NAME == "Windows" then
+        return path:gsub("/", "\\")
+    else
+        return path
+    end
+end
+
+function fs.PathClean(path)
+    local sep 	= fs.OS_FILE_SEPARATOR
+    local parts = {}
+    
+    for part in path:gmatch("[^"..sep.."]+") do
+        if part == ".." then
+            table.remove(parts)
+        elseif part ~= "." then
+            table.insert(parts, part)
+        end
+    end
+    
+    local root = path:sub(1,1) == sep and sep or ""
+    return root .. table.concat(parts, sep)
+end
 
 -------------------------------------------------------------------------------
 -- Directory functions
@@ -76,7 +99,7 @@ function fs.DirectoryList(dir)
     local listing, cmd = {}, ""
     if fs.OS_NAME == "Windows" then
         local target = (dir == "" or dir == nil) and "." or dir
-        cmd = ('dir "%s" /b /a-d'):format(target)
+        cmd = ('dir "%s" /b'):format(target)
     elseif fs.OS_NAME == "Linux" then
         local target = (dir == "" or dir == nil) and "." or dir
         cmd = ('ls -1A "%s"'):format(target)
@@ -215,12 +238,21 @@ function fs.IsFileExecutable(path)
 end
 
 function fs.IsFilePresent(path)
-    local dirname, filename = path:match("(.*/)(.*)")
-    dirname  = dirname or "."
+    local sep 		= OS_FILE_SEPARATOR
+    local pattern 	= "^(.*" .. sep .. ")([^" .. sep .. "]+)$"
+    local dirname, filename = path:match(pattern)
+
+    if not filename then
+        dirname = "."
+        filename = path
+    end
+	
     filename = filename:lower()
+	
+	----------------
     local cmd
 
-    if fs.OS_FILE_SEPARATOR == '\\' then
+    if OS_NAME == "Windows" then
         cmd = 'dir /b /a "'..dirname..'" 2> nul'
     else
         cmd = 'ls -a "'..dirname..'" 2> /dev/null'
@@ -267,14 +299,32 @@ function fs.CreateDesktopLink(name, target, icon)
     -- Windows: generate <name>.lnk with PowerShell & WSH
     if fs.OS_NAME == "Windows" then
         local lnkPath = fs.PathJoin(desktop, name .. ".lnk")
-        icon         = icon or target     -- .lnk accepts “file,iconindex”
-        local psCmd  = ([[
-            $s=(New-Object -ComObject WScript.Shell).CreateShortcut('%s');
-            $s.TargetPath='%s';
-            $s.WorkingDirectory='%s';
-            $s.IconLocation='%s,0';
-            $s.Save()]]):format(lnkPath, target, fs.PathGetDirectory(target), icon)
-        local ok = os.execute(("powershell -NoProfile -Command \"%s\""):format(psCmd))
+        icon = icon or target  -- .lnk accepts “file,iconindex”
+
+        -- Escape single quotes in paths for embedding in PowerShell string
+        local function psEscape(s)
+            -- For single-quoted PowerShell string: double any single quotes
+            return s:gsub("'", "''")
+        end
+
+        local tPathEsc = psEscape(target)
+        local workingDir = psEscape(fs.PathGetDirectory(target))
+        local iconEsc = psEscape(icon)
+        local lnkEsc = psEscape(lnkPath)
+
+        -- Using single-quoted PowerShell Here-String may simplify quoting
+        local psCmd = ([[
+    $s=(New-Object -ComObject WScript.Shell).CreateShortcut('%s');$s.TargetPath='%s';$s.WorkingDirectory='%s';$s.IconLocation='%s,0';$s.Save()
+]]):format(lnkEsc, tPathEsc, workingDir, iconEsc)
+
+        -- Wrap with -Command parameter, ensure escaping
+        local fullCmd = ("powershell -NoProfile -ExecutionPolicy Bypass -Command \"%s\""):format(psCmd)
+
+        -- Optionally, log the command for debugging
+        print("[DEBUG] CreateDesktopLink PS cmd:", fullCmd)
+
+        local ok = os.execute(fullCmd)
+		print("OK: "..tostring(ok))
         return ok == 0
 
     -- Linux: generate <name>.desktop

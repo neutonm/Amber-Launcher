@@ -81,7 +81,7 @@ function OnPostAppInit()
 
     print("Post App Init")
 
-    local src, how = AL_DetectGame(nil, false)
+    local src, how = AL_DetectGame(nil, false) -- "."
     if not src then
         AL.UICall(UIEVENT.AUTOCONFIG)
     end
@@ -156,8 +156,9 @@ function OnPlay()
     end
     AL.INIClose(ini)
 
-    local fullExePath  = FS.PathJoin(destDir, GAME_EXECUTABLE_NAME)
-    local cmd          = sLaunchCmd or AL.GetLaunchCommand()
+    local rawPath 			= FS.PathJoin(FS.CurrentDir(), destDir, GAME_EXECUTABLE_NAME)
+	local fullExePath 		= FS.PathClean(FS.PathNormalize(rawPath))
+    local cmd          		= sLaunchCmd or AL.GetLaunchCommand()
     if cmd:find(fullExePath, 1, true) then
         return
     end
@@ -175,6 +176,8 @@ function OnPlay()
     if n > 0 then
         AL.SetLaunchCommand(newCmd)
     end
+	
+	print("Full exe path: "..fullExePath)
 
     -- Permission for exe on Linux
     if OS_NAME ~= "Windows" and not FS.IsFileExecutable(fullExePath) then

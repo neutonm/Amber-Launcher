@@ -554,6 +554,16 @@ AmberLauncher_Start(AppCore* pAppCore)
     lua_pushstring(pAppCore->pLuaState->pState, BUILD_NUMBER);
     lua_setglobal(pAppCore->pLuaState->pState, "_BUILD_NUMBER");
 
+    /* OS */
+#if defined(_WIN32) || defined(_WIN64)
+    lua_pushstring(pAppCore->pLuaState->pState, "Windows");
+#elif defined(__linux__)
+    lua_pushstring(pAppCore->pLuaState->pState, "Linux");
+#else
+    lua_pushstring(pAppCore->pLuaState->pState, "Unknown");
+#endif
+    lua_setglobal(pAppCore->pLuaState->pState, "_OS_NAME");
+
     /* Register pAppCore */
     lua_pushlightuserdata(pAppCore->pLuaState->pState, (void*)pAppCore);
     lua_setfield(pAppCore->pLuaState->pState, LUA_REGISTRYINDEX, STR_AL_APPCORE);
