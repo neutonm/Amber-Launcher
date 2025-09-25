@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 3.17)
 
 # ------------------------------------------------------------------------------
 # Project Definition
@@ -7,6 +7,10 @@ project(AmberLauncher
     VERSION 1.0
     DESCRIPTION "Amber Island Launcher"
 )
+set(PROJECT_TITLE_SAFE 		"AmberIsland")
+set(PROJECT_TITLE_FOLDER 	"Amber Island")
+set(PROJECT_TITLE 			"Might and Magic 7: Amber Island")
+set(PROJECT_EXE_NAME		"Amber Launcher")
 
 # ------------------------------------------------------------------------------
 # Options
@@ -294,8 +298,15 @@ endif()
 # ------------------------------------------------------------------------------
 include(GNUInstallDirs)
 
-install(TARGETS AmberLauncher
-        RUNTIME DESTINATION .)
+install(TARGETS AmberLauncherGUI
+    RUNTIME DESTINATION .)
+
+install(FILES
+    ${CMAKE_SOURCE_DIR}/icon.ico
+    ${CMAKE_SOURCE_DIR}/LICENSE
+    ${CMAKE_SOURCE_DIR}/README.md
+    ${CMAKE_SOURCE_DIR}/manifest.json
+    DESTINATION .)
 
 # Extra folders
 install(DIRECTORY ${CMAKE_SOURCE_DIR}/Data     DESTINATION .)
@@ -342,23 +353,29 @@ add_custom_command(TARGET AmberLauncher
 # ------------------------------------------------------------------------------
 # Packaging with CPack
 # ------------------------------------------------------------------------------
-set(CPACK_ARCHIVE_ZIP_FILE_NAME      "AmberLauncher_${PROJECT_VERSION}_win64")
-set(CPACK_ARCHIVE_TGZ_FILE_NAME      "AmberLauncher_${PROJECT_VERSION}_linux")
-set(CPACK_NSIS_PACKAGE_NAME          "AmberLauncher-Setup")
-set(CPACK_PACKAGE_NAME               "${PROJECT_NAME}")
-set(CPACK_PACKAGE_VERSION            "${PROJECT_VERSION}")
-set(CPACK_PACKAGE_VENDOR             "Henrik Chukhran")
-set(CPACK_PACKAGE_CONTACT            "dev@mightandmagicmod.com")
+set(CPACK_ARCHIVE_ZIP_FILE_NAME      	"${PROJECT_TITLE_SAFE}_${PROJECT_VERSION}_win64")
+set(CPACK_ARCHIVE_TGZ_FILE_NAME      	"${PROJECT_TITLE_SAFE}_${PROJECT_VERSION}_linux")
+set(CPACK_NSIS_PACKAGE_NAME          	"${PROJECT_TITLE}")
+set(CPACK_NSIS_EXECUTABLES_DIRECTORY 	".")
+set(CPACK_NSIS_EXECUTABLES			 	"${PROJECT_EXE_NAME}.exe")
+set(CPACK_NSIS_MUI_FINISHPAGE_RUN 	 	"${PROJECT_EXE_NAME}.exe")
+set(CPACK_PACKAGE_NAME               	"${PROJECT_NAME}")
+set(CPACK_PACKAGE_VERSION            	"${PROJECT_VERSION}")
+set(CPACK_PACKAGE_VENDOR             	"Henrik Chukhran")
+set(CPACK_PACKAGE_CONTACT            	"dev@mightandmagicmod.com")
+
+#set(CPACK_NSIS_MUI_HEADERIMAGE 			"${PROJECT_SOURCE_DIR}/Data/Launcher/nsis_header.bmp")
+#set(CPACK_NSIS_MUI_WELCOMEFINISHPAGE_BITMAP "${PROJECT_SOURCE_DIR}/Data/Launcher/nsis_welcome.bmp")
 
 # generators per-platform
 if(WIN32)
     set(CPACK_GENERATOR "ZIP;NSIS")
-    set(CPACK_PACKAGE_INSTALL_DIRECTORY "${PROJECT_NAME} ${PROJECT_VERSION}")
+    set(CPACK_PACKAGE_INSTALL_DIRECTORY "${PROJECT_TITLE_FOLDER}")
 else()
     set(CPACK_GENERATOR "TGZ")
 endif()
 
-set(CPACK_RESOURCE_FILE_LICENSE      "${CMAKE_SOURCE_DIR}/LICENSE")
-set(CPACK_RESOURCE_FILE_README       "${CMAKE_SOURCE_DIR}/README.md")
+set(CPACK_RESOURCE_FILE_LICENSE      	"${PROJECT_SOURCE_DIR}/LICENSE")
+set(CPACK_RESOURCE_FILE_README       	"${PROJECT_SOURCE_DIR}/README.md")
 
 include(CPack)
