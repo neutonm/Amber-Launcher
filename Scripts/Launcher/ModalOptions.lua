@@ -234,7 +234,7 @@ local function _GetOptionsTable()
                 id          = "strafe",
                 type        = UIWIDGET.RADIO,
                 optTitle    = {
-                    "Turn ",
+                    "Turn",
                     "Move (strafe)"
                 },
                 default     = 1,

@@ -25,6 +25,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdarg.h>
 
 /******************************************************************************
  * WINDOWS
@@ -80,6 +81,8 @@ const char* EUIEventTypeStrings[] = {
     NULL
 };
 
+#define AL_PRINTF_BUFFER_SIZE               2048
+
 #define PANEL_DEFAULT_W                     640.f
 #define PANEL_DEFAULT_H                     480.f
 #define LAYOUT_DEFAULT_MARGIN               4.f
@@ -108,6 +111,16 @@ static const real32_t _fMinBtnWidth         = 128.f;
 /******************************************************************************
  * STATIC DECLARATIONS
  ******************************************************************************/
+
+ /**
+  * @relatedalso GUI
+  * @brief       Prints text to stdout and to currently active textview widget
+  *
+  * @param       fmt
+  * @param       ...
+  */
+static void
+_al_printf(AppGUI *pApp, const char* fmt, ...);
 
 /**
  * @relatedalso Window
@@ -1856,20 +1869,11 @@ AutoUpdate_CheckForUpdates(AppGUI *pApp)
 
     if (!pJsonStream)
     {
-        bstd_printf(
+        _al_printf(pApp,
             "[Auto Updater] Couldn't fetch manifest.json"
             "\n\tdResult: %d\n\teInetError: %d\n",
             dResult,
             eInetError);
-        if (pApp->pWidgets->pTextView)
-        {
-            textview_printf(
-                pApp->pWidgets->pTextView,
-                "[Auto Updater] Couldn't fetch manifest.json"
-                "\n\tdResult: %d\n\teInetError: %d\n",
-                dResult,
-                eInetError);
-        }
         return FALSE;
     }
 
@@ -1877,36 +1881,19 @@ AutoUpdate_CheckForUpdates(AppGUI *pApp)
     bUpdateRequired = dLauncherBuild < pJson->launcher->build ||
                         dLauncherVersion < pJson->launcher->version;
 
-    bstd_printf(
-            "[Auto Updater] Manifest retrieved successfuly:\n"
-            "• dResult: \t\t%d\n• eInetError: \t\t%d\n• Update required: \t%s\n",
-            dResult,
-            eInetError,
-            bUpdateRequired ? "true" : "false");
-    bstd_printf(sSchemaFmt, tc(pJson->schema));
-    bstd_printf(sGeneratedFmt, tc(pJson->generated));
-    bstd_printf(sAppVersionFmt, dLauncherVersion);
-    bstd_printf(sNetVersionFmt, pJson->launcher->version);
-    bstd_printf(sAppBuildFmt, dLauncherBuild);
-    bstd_printf(sNetBuildFmt, pJson->launcher->build);
-
-    if (pApp->pWidgets->pTextView)
-    {
-        textview_printf(
-            pApp->pWidgets->pTextView,
-            "[Auto Updater] Manifest retrieved successfuly:\n"
-            "• dResult: \t\t%d\n• eInetError: \t\t%d\n• Update required: \t\t%s\n",
-            dResult,
-            eInetError,
-            bUpdateRequired ? "true" : "false"
-        );
-        textview_printf(pApp->pWidgets->pTextView, sSchemaFmt, tc(pJson->schema));
-        textview_printf(pApp->pWidgets->pTextView, sGeneratedFmt, tc(pJson->generated));
-        textview_printf(pApp->pWidgets->pTextView, sAppVersionFmt, dLauncherVersion);
-        textview_printf(pApp->pWidgets->pTextView, sNetVersionFmt, pJson->launcher->version);
-        textview_printf(pApp->pWidgets->pTextView, sAppBuildFmt, dLauncherBuild);
-        textview_printf(pApp->pWidgets->pTextView, sNetBuildFmt, pJson->launcher->build);
-    }
+    _al_printf(pApp,
+        "[Auto Updater] Manifest retrieved successfuly:\n"
+        "• dResult: \t\t%d\n• eInetError: \t\t%d\n• Update required: \t\t%s\n",
+        dResult,
+        eInetError,
+        bUpdateRequired ? "true" : "false"
+    );
+    _al_printf(pApp, sSchemaFmt, tc(pJson->schema));
+    _al_printf(pApp, sGeneratedFmt, tc(pJson->generated));
+    _al_printf(pApp, sAppVersionFmt, dLauncherVersion);
+    _al_printf(pApp, sNetVersionFmt, pJson->launcher->version);
+    _al_printf(pApp, sAppBuildFmt, dLauncherBuild);
+    _al_printf(pApp, sNetBuildFmt, pJson->launcher->build);
 
     stm_close(&pJsonStream);
     json_destroy(&pJson, InetUpdaterJSONData);
@@ -1933,37 +1920,19 @@ AutoUpdate_Update(AppGUI *pApp)
 
     if (!pJsonStream)
     {
-        bstd_printf(
-            "[Updater] Couldn't fetch manifest.json"
-            "\n\tdResult: %d\n\teInetError: %d\n",
-            dResult,
-            eInetError);
-        if (pApp->pWidgets->pTextView)
-        {
-            textview_printf(
-                pApp->pWidgets->pTextView,
-                "[Updater] Couldn't fetch manifest.json"
-                "\n\tdResult: %d\n\teInetError: %d\n",
-                dResult,
-                eInetError);
-        }
+        _al_printf( pApp,
+                    "[Updater] Couldn't fetch manifest.json"
+                    "\n\tdResult: %d\n\teInetError: %d\n",
+                    dResult,
+                    eInetError);
         return FALSE;
     }
 
-    bstd_printf(
-            "[Updater] Manifest retrieved successfuly:\n"
-            "• dResult: \t\t%d\n• eInetError: \t\t%d\n",
-            dResult,
-            eInetError);
-    if (pApp->pWidgets->pTextView)
-    {
-        textview_printf(
-            pApp->pWidgets->pTextView,
-            "[Updater] Manifest retrieved successfuly:\n"
-            "• dResult: \t\t%d\n• eInetError: \t\t%d\n",
-            dResult,
-            eInetError);
-    }
+    _al_printf( pApp,
+                "[Updater] Manifest retrieved successfuly:\n"
+                "• dResult: \t\t%d\n• eInetError: \t\t%d\n",
+                dResult,
+                eInetError);
 
     /* Read JSON from manifest */
     pJson = json_read(pJsonStream, NULL, InetUpdaterJSONData);
@@ -1971,17 +1940,9 @@ AutoUpdate_Update(AppGUI *pApp)
 
     /* Print files */
     arrst_foreach(elem, pJson->files, InetUpdaterFile)
-        bstd_printf(sFileArrayFmt, tc(elem->path), tc(elem->sha256), elem->size);
+        _al_printf(pApp, sFileArrayFmt, tc(elem->path), tc(elem->sha256), elem->size);
     arrst_end()
-    bstd_printf("\n");
-
-    if (pApp->pWidgets->pTextView)
-    {
-        arrst_foreach(elem, pJson->files, InetUpdaterFile)
-            textview_printf(pApp->pWidgets->pTextView, sFileArrayFmt, tc(elem->path), tc(elem->sha256), elem->size);
-        arrst_end()
-        textview_printf(pApp->pWidgets->pTextView, "\n");
-    }
+    _al_printf(pApp, "\n");
 
     /* Download files */
     fProgressIndex  = 0.0f;
@@ -1992,27 +1953,19 @@ AutoUpdate_Update(AppGUI *pApp)
             0.0f);
     }
     
-    bstd_printf("[Updater] Remote Updater Server: %s\n", _sAutoUpdateRemoteRootURL);
+    _al_printf(pApp, "[Updater] Remote Updater Server: %s\n", _sAutoUpdateRemoteRootURL);
     arrst_foreach(elem, pJson->files, InetUpdaterFile)
         bool_t bFileExists  = hfile_exists(tc(elem->path),0);
         char *sSHA256Hash   = AmberLauncher_SHA256_HashFile(tc(elem->path));
 
-        bstd_printf("[Updater] Downloading %s...\n", tc(elem->path));
-        if (pApp->pWidgets->pTextView)
-        {
-            textview_printf(pApp->pWidgets->pTextView, "[Updater] Downloading %s...\n", tc(elem->path));
-        }
+        _al_printf(pApp, "[Updater] Downloading %s...\n", tc(elem->path));
 
         if (!bFileExists)
         {
             Stream *pFile           = stm_to_file(tc(elem->path), NULL);
             String *sDownloadLink   = str_printf("%s%s", _sAutoUpdateRemoteRootURL, tc(elem->path));
 
-            bstd_printf("[Updater] Local file doesn't exist!\n");
-            if (pApp->pWidgets->pTextView)
-            {
-                textview_printf(pApp->pWidgets->pTextView, "[Updater] Local file doesn't exist!\n");
-            }
+            _al_printf(pApp, "[Updater] Local file doesn't exist!\n");
             pFile = http_dget(tc(sDownloadLink), NULL, NULL);
             if (pFile)
             {
@@ -2026,22 +1979,14 @@ AutoUpdate_Update(AppGUI *pApp)
         }
         else if (sSHA256Hash)
         {
-            bstd_printf("[Updater] sha256 dummy.lua:\n\t%s\n", sSHA256Hash);
-            if (pApp->pWidgets->pTextView)
-            {
-                textview_printf(pApp->pWidgets->pTextView, "[Updater] sha256 dummy.lua:\n\t%s\n", sSHA256Hash);
-            }
+            _al_printf(pApp, "[Updater] sha256 dummy.lua:\n\t%s\n", sSHA256Hash);
 
             if (str_cmp(elem->sha256, sSHA256Hash) != 0)
             {
                 Stream *pFile;
                 String *sDownloadLink = str_printf("%s%s", _sAutoUpdateRemoteRootURL, tc(elem->path));
 
-                bstd_printf("[Updater] Remote file is different!\n");
-                if (pApp->pWidgets->pTextView)
-                {
-                    textview_printf(pApp->pWidgets->pTextView, "[Updater] Remote file is different!\n");
-                }
+                _al_printf(pApp, "[Updater] Remote file is different!\n");
                 pFile = http_dget(tc(sDownloadLink), NULL, NULL);
                 if (pFile)
                 {
@@ -2104,8 +2049,7 @@ Callback_OnButtonModalDebug(AppGUI *pApp, Event *e)
 
     sEditText = edit_get_text(pApp->pDebugData->pConsoleInput);
 
-    textview_printf(pApp->pDebugData->pConsoleTextView,
-        "> %s\n",sEditText);
+    _al_printf(pApp, "> %s\n", sEditText);
 
     AmberLauncher_ExecuteLua(pApp->pAppCore, sEditText);
 
@@ -2160,10 +2104,7 @@ Callback_OnButtonModalGameNotFound(AppGUI *pApp, Event *e)
         edit_text(pApp->pWidgets->pEdit, tc(pApp->pWidgets->pString));
     }
 
-    if (pApp->pWidgets->pTextView)
-    {
-        textview_printf(pApp->pWidgets->pTextView,"Game path: %s\n", tc(pApp->pWidgets->pString));
-    }
+    _al_printf(pApp, "Game path: %s\n", tc(pApp->pWidgets->pString));
 }
 
 void
@@ -2477,6 +2418,26 @@ GUIThread_SchedulePanelSet(AppGUI *pApp, EPanelType eType, FPanelFlags dFlags)
 /******************************************************************************
  * STATIC DEFINITIONS
  ******************************************************************************/
+static void
+_al_printf(AppGUI *pApp, const char* fmt, ...)
+{
+    char buffer[AL_PRINTF_BUFFER_SIZE];
+    va_list args;
+
+    va_start(args, fmt);
+    bstd_vsprintf(buffer, sizeof(buffer), fmt, args);
+    va_end(args);
+
+    bstd_printf("%s", buffer);
+
+    cassert_no_null(pApp);
+    cassert_no_null(pApp->pWidgets);
+
+    if (pApp->pWidgets->pTextView)
+    {
+        textview_printf(pApp->pWidgets->pTextView, "%s\n", buffer);
+    }
+}
 
 static void
 _window_center(Window *pWindow)
@@ -3001,9 +2962,9 @@ _Callback_UIEvent(
     assert(eEventType >= 0);
 
     #ifdef __DEBUG__
-    if (pApp->pWidgets->pTextView && eEventType < UIEVENT_MAX)
+    if (eEventType < UIEVENT_MAX)
     {
-        textview_printf(pApp->pWidgets->pTextView,"UI EVENT: %s\n", EUIEventTypeStrings[eEventType]);
+        _al_printf(pApp,"UI EVENT: %s\n", EUIEventTypeStrings[eEventType]);
     }
     #endif
 
@@ -3045,11 +3006,7 @@ _Callback_UIEvent(
                     break;
                 }
 
-                bstd_printf("%s\n", sMessage);
-                if (pApp->pWidgets->pTextView)
-                {
-                    textview_printf(pApp->pWidgets->pTextView,"%s\n", sMessage);
-                }
+                _al_printf(pApp,"%s\n", sMessage);
                 SVARKEYB_BOOL(tRetVal, sStatusKey, CTRUE);
             }
             break;
@@ -3186,10 +3143,7 @@ _Callback_UIEvent(
                 /* Idea: Process multidata lua table as argument */
                 pTable = (SVarTable *)SVAR_GET_LUATABLE(pUserData[0]);
 
-                if (pApp->pWidgets->pTextView)
-                {
-                    textview_printf(pApp->pWidgets->pTextView, "Processing %zu groups\n", pTable->dCount);
-                }
+                _al_printf(pApp, "Processing %zu groups\n", pTable->dCount);
 
                 /* Process each group */
                 for (i = 0; i < pTable->dCount && i < APP_MAX_ELEMENTS; ++i)
@@ -3289,13 +3243,10 @@ _Callback_UIEvent(
                                 pApp->tGUITweaker[i].sImagePath[dOptionIndex] = str_c(sImagePath);
                             }
 
-                            if (pApp->pWidgets->pTextView)
-                            {
-                                textview_printf(pApp->pWidgets->pTextView, "Group %zu - Option %zu: %s, Asset: %s\n",
-                                            i + 1, dOptionIndex + 1,
-                                            sOptionName ? sOptionName : "Unknown",
-                                            sImagePath ? sImagePath : "No image");
-                            }
+                            _al_printf(pApp, "Group %zu - Option %zu: %s, Asset: %s\n",
+                                        i + 1, dOptionIndex + 1,
+                                        sOptionName ? sOptionName : "Unknown",
+                                        sImagePath ? sImagePath : "No image");
 
                             dOptionIndex++;
                         }
@@ -3303,13 +3254,10 @@ _Callback_UIEvent(
 
                     pApp->tGUITweaker[i].dMaxOptions = (int)dOptionIndex;
 
-                    if (pApp->pWidgets->pTextView)
-                    {
-                        textview_printf(pApp->pWidgets->pTextView, "Group %zu Info: %s (%zu options)\n",
-                                    i + 1,
-                                    sGroupInfo ? sGroupInfo : "No description",
-                                    dOptionIndex);
-                    }
+                    _al_printf(pApp, "Group %zu Info: %s (%zu options)\n",
+                                i + 1,
+                                sGroupInfo ? sGroupInfo : "No description",
+                                dOptionIndex);
 
                     dGroupCount++;
                 }
@@ -3328,10 +3276,7 @@ _Callback_UIEvent(
                     str_upd(&pApp->pWidgets->pString, tc(pApp->tGUITweaker[0].sImagePath[0]));
                 }
 
-                if (pApp->pWidgets->pTextView)
-                {
-                    textview_printf(pApp->pWidgets->pTextView, "Total groups processed: %zu\n", dGroupCount);
-                }
+                _al_printf(pApp, "Total groups processed: %zu\n", dGroupCount);
 
                 /* Show modal dialog */
                 dModalRetVal = _Nappgui_ShowModal(
@@ -3429,12 +3374,9 @@ _Callback_UIEvent(
                         dst->bCore      = !str_empty_c(sCorePath);
                         dst->bMod       = !str_empty_c(sModPath);
 
-                        if (pApp->pWidgets->pTextView)
-                        {
-                            textview_printf(pApp->pWidgets->pTextView,
-                                "Language detected: %s\n\tCore path: %s\n\tMod Path: %s\n",
-                                sCode,sCorePath,sModPath);
-                        }
+                        _al_printf(pApp,
+                            "Language detected: %s\n\tCore path: %s\n\tMod Path: %s\n",
+                            sCode,sCorePath,sModPath);
                     }
                 }
 
@@ -3652,15 +3594,12 @@ _Callback_UIEvent(
                         }
 
 #ifdef __DEBUG__
-                        if (pApp->pWidgets->pTextView)
-                        {
-                            textview_printf(pApp->pWidgets->pTextView,
-                                            "Elem %zu: title='%s' type=%d opts=%u\n",
-                                            dElemCount,
-                                            (pDst->sTitle ? tc(pDst->sTitle) : "(null)"),
-                                            (int)pDst->eType,
-                                            pDst->dNumOfOptions);
-                        }
+                        _al_printf( pApp,
+                                    "Elem %zu: title='%s' type=%d opts=%u\n",
+                                    dElemCount,
+                                    (pDst->sTitle ? tc(pDst->sTitle) : "(null)"),
+                                    (int)pDst->eType,
+                                    pDst->dNumOfOptions);
 #endif
 
                         ++dElemCount;
@@ -3850,12 +3789,11 @@ _Callback_UIEvent(
                                     }
                                 }
 #ifdef __DEBUG__
-                                if (pApp->pWidgets->pTextView)
-                                    textview_printf(pApp->pWidgets->pTextView,
-                                        "Mod %zu: id='%s' active=%d\n",
-                                        dModCount,
-                                        pDst->sID ? tc(pDst->sID) : "(null)",
-                                        (int)pDst->bActive);
+                                _al_printf(pApp,
+                                    "Mod %zu: id='%s' active=%d\n",
+                                    dModCount,
+                                    pDst->sID ? tc(pDst->sID) : "(null)",
+                                    (int)pDst->bActive);
 #endif
                                 ++dModCount;
                             }
@@ -4026,17 +3964,14 @@ _Callback_UIEvent(
                             }
 
 #ifdef __DEBUG__
-                            if (pApp->pWidgets->pTextView)
-                            {
-                                textview_printf(pApp->pWidgets->pTextView,
-                                    "Tool %zu: id=%u title='%s' icon='%s' iconDark='%s' onClick='%d'\n",
-                                    dToolCount,
-                                    (unsigned)pDst->dID,
-                                    pDst->sTitle    ? tc(pDst->sTitle) : "(null)",
-                                    pDst->sIcon     ? tc(pDst->sIcon)  : "(null)",
-                                    pDst->sIconDark ? tc(pDst->sIconDark)  : "(null)",
-                                    SVAR_GET_LUAREF(pDst->tLuaRef));
-                            }
+                            _al_printf(pApp,
+                                "Tool %zu: id=%u title='%s' icon='%s' iconDark='%s' onClick='%d'\n",
+                                dToolCount,
+                                (unsigned)pDst->dID,
+                                pDst->sTitle    ? tc(pDst->sTitle) : "(null)",
+                                pDst->sIcon     ? tc(pDst->sIcon)  : "(null)",
+                                pDst->sIconDark ? tc(pDst->sIconDark)  : "(null)",
+                                SVAR_GET_LUAREF(pDst->tLuaRef));
 #endif
                             ++dToolCount;
                         }
@@ -4069,13 +4004,9 @@ _Callback_UIEvent(
         default:
             SVARKEYB_NULL(tRetVal, sStatusKey);
 
-            if (pApp->pWidgets->pTextView)
-            {
-                textview_printf(
-                    pApp->pWidgets->pTextView,
-                    "Behavior for %s (%d) is not defined!\n",
-                    eEventType < UIEVENT_MAX ? EUIEventTypeStrings[eEventType] : "?", eEventType);
-            }
+            _al_printf(pApp,
+                "Behavior for %s (%d) is not defined!\n",
+                eEventType < UIEVENT_MAX ? EUIEventTypeStrings[eEventType] : "?", eEventType);
             break;
     }
 
