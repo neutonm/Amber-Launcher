@@ -118,7 +118,8 @@ AL_TLocales = {
         name        = "Polish",
         code        = "pl_pl",
         core        = FS.PathJoin("Data", "Launcher", "local-pl-core.png"),
-        mod         = FS.PathJoin("Data", "Launcher", "local-pl-mod.png"),
+        mod         = "",
+        --mod         = FS.PathJoin("Data", "Launcher", "local-pl-mod.png"),
         coreCb      = _LocaliseCore,
         modCb       = _LocaliseMod,
     },
@@ -126,7 +127,8 @@ AL_TLocales = {
         name        = "Russian",
         code        = "ru_ru",
         core        = FS.PathJoin("Data", "Launcher", "local-ru-core.png"),
-        mod         = FS.PathJoin("Data", "Launcher", "local-ru-mod.png"),
+        mod         = "",
+        --mod         = FS.PathJoin("Data", "Launcher", "local-ru-mod.png"),
         coreCb      = _LocaliseCore,
         coreFreeCb  = function(t)
 

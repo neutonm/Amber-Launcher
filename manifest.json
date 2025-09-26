@@ -1,55 +1,15 @@
 {
   "schema": "com.example.launcher/manifest-v2",
-  "generated": "2025-09-05T18:56:37Z",
+  "generated": "2025-09-26T18:47:44Z",
   "launcher": {
-    "version": 105,
-    "build": 600
+    "version": 101,
+    "build": 1000
   },
   "files": [
     {
-      "path": "Data/Launcher/tweak-gui-a.jpg",
-      "sha256": "e179a39b8950ac91bf33a5f458d06c65008241d15b863b741c220a0995cc45ce",
-      "size": 66851
-    },
-    {
-      "path": "Data/Launcher/local-ru-core.png",
-      "sha256": "d3fc0cc55c9c638212294ffe7d701ef0ff8a6d3f132e964a9beecfdb767d30f5",
-      "size": 476577
-    },
-    {
-      "path": "Data/Launcher/local-en-mod.png",
-      "sha256": "0eb459319f62a92aa864d1c79c3fea5a71614f8401df844eea9c8b45e4fc91ac",
-      "size": 173645
-    },
-    {
-      "path": "Data/Launcher/tool-manual.png",
-      "sha256": "a765d8f444f6e355918ec769043cd438309e6fa85d001045d565f09e66af7778",
-      "size": 689
-    },
-    {
-      "path": "Data/Launcher/local-ru-mod.png",
-      "sha256": "a1192a9f00b0262118436d5eae48ff1a0fd2442197e8f8ea5c849bb657e64ab1",
-      "size": 169812
-    },
-    {
-      "path": "Data/Launcher/tweak-strafe-b.gif",
-      "sha256": "2923eb11a59cb79272647be9262182715f89374ae9d6996b5a8545d62361ac09",
-      "size": 1716338
-    },
-    {
-      "path": "Data/Launcher/local-pl-core.png",
-      "sha256": "bc1fa9ca32c8c69d6fddde215bd2c2e1b359311c8e99ba59276d6466483403df",
-      "size": 476600
-    },
-    {
-      "path": "Data/Launcher/tool-autoconfig.png",
-      "sha256": "c5ec5134cb0697f18834dea23a0fdf9664fa7126edccfa18e0d97b50c2e40c78",
-      "size": 1158
-    },
-    {
-      "path": "Data/Launcher/Archives/core-pl_pl.zip",
-      "sha256": "22bdce410abfb2def45a0b2144272831f9f55f762d63474b27111d7e08b11eff",
-      "size": 43458671
+      "path": "Data/Launcher/nsis_welcome.bmp",
+      "sha256": "f55a1ee02930d4befd6f81d461fad1e8d4dfa91c323f7de813f4b41bb19916ef",
+      "size": 154626
     },
     {
       "path": "Data/Launcher/Archives/mod-pl_pl.zip",
@@ -58,13 +18,18 @@
     },
     {
       "path": "Data/Launcher/Archives/_grayfacePatch257.zip",
-      "sha256": "1e3e43ef737e91b0c720cd5a1f9d50ac9545414a24dee26e622b9fdf0bf107e5",
-      "size": 7154800
+      "sha256": "815821e5cf1a3ada6829a349599aafba7022e935098f83f3baaf93e5ee12569d",
+      "size": 7154885
     },
     {
       "path": "Data/Launcher/Archives/_mod.zip",
-      "sha256": "e49a6d8a45a212cebbffda9434a3c6e77d6f1c19d22df5da044d75725cf7672a",
-      "size": 73386352
+      "sha256": "f0315efdc31ec3cde3035831bfcf8710710afb9dec0912ca61a0124c212e83a9",
+      "size": 73386620
+    },
+    {
+      "path": "Data/Launcher/Archives/core-pl_pl.zip",
+      "sha256": "22bdce410abfb2def45a0b2144272831f9f55f762d63474b27111d7e08b11eff",
+      "size": 43458671
     },
     {
       "path": "Data/Launcher/Archives/mod-en_en.zip",
@@ -82,49 +47,14 @@
       "size": 37452052
     },
     {
-      "path": "Data/Launcher/tweak-strafe-a.gif",
-      "sha256": "6faadda4b7e2eff51d22a92e29c47a4c5a131b29af4fc9d57b2ecf005da34e1a",
-      "size": 818204
+      "path": "Data/Launcher/local-pl-core.png",
+      "sha256": "bc1fa9ca32c8c69d6fddde215bd2c2e1b359311c8e99ba59276d6466483403df",
+      "size": 476600
     },
     {
-      "path": "Data/Launcher/Mods/_active.lua",
-      "sha256": "46135cf340eebe69457c1775b6e78a126bc0cd0d2d6182bf3fa1a9fdf5512e2c",
-      "size": 10
-    },
-    {
-      "path": "Data/Launcher/Mods/davidsprites/Assets/SFT.txt",
-      "sha256": "e7c66a94235884da89cee283a9a8d66058623621a99ec86c86656de43d5906e1",
-      "size": 610365
-    },
-    {
-      "path": "Data/Launcher/Mods/davidsprites/Assets/david.lua",
-      "sha256": "99d3d1a872acd28e694d83714b7cb61891eff3024bff8c5868cf96cc1be85edf",
-      "size": 163
-    },
-    {
-      "path": "Data/Launcher/Mods/davidsprites/Assets/dav.SPRITES.LOD",
-      "sha256": "b7297e659234bdc765df3309687cd0f9ded9c4ab0a45741d1fdbb52dbe726a60",
-      "size": 39594651
-    },
-    {
-      "path": "Data/Launcher/Mods/davidsprites/manifest.lua",
-      "sha256": "58acb39b2799d44c6651f95e77acbd7f178cc42eff52c6be0a4b37c426c04067",
-      "size": 1062
-    },
-    {
-      "path": "Data/Launcher/Mods/davidsprites/screenshot.jpg",
-      "sha256": "e4e871c837413b0f91fe260b75d7a3b740316e54522d9c34281fca507d2b7187",
-      "size": 157021
-    },
-    {
-      "path": "Data/Launcher/local-en-core.png",
-      "sha256": "8a20e3284fca636155f9422da23222fd9ac9e8ed1c7464e0d5d8f33580e85d2c",
-      "size": 476948
-    },
-    {
-      "path": "Data/Launcher/tweak-gui-b.jpg",
-      "sha256": "167cf679e05cd776a2557645dc623771f6a389b7998346acc535cd77cc43b989",
-      "size": 55779
+      "path": "Data/Launcher/tweak-strafe-b.gif",
+      "sha256": "2923eb11a59cb79272647be9262182715f89374ae9d6996b5a8545d62361ac09",
+      "size": 1716338
     },
     {
       "path": "Data/Launcher/local-pl-mod.png",
@@ -132,24 +62,214 @@
       "size": 170990
     },
     {
-      "path": "Scripts/Launcher/DetectAndCopyGame.lua",
-      "sha256": "596eb7966c76834d26713ffbde82e91ef60d1da6c09a04cb27a7eec4d291b769",
-      "size": 4866
+      "path": "Data/Launcher/tweak-gui-b.jpg",
+      "sha256": "167cf679e05cd776a2557645dc623771f6a389b7998346acc535cd77cc43b989",
+      "size": 55779
     },
     {
-      "path": "Scripts/Launcher/ModalOptions.lua",
-      "sha256": "469566214eaf80303304e512d1423113e7cb8cdf8eaeb7a743dd31324390dcaa",
-      "size": 10976
+      "path": "Data/Launcher/local-ru-mod.png",
+      "sha256": "a1192a9f00b0262118436d5eae48ff1a0fd2442197e8f8ea5c849bb657e64ab1",
+      "size": 169812
+    },
+    {
+      "path": "Data/Launcher/tweak-mapicons-a.jpg",
+      "sha256": "0f3e1edac49b03cdb9df209b28aa83409ee9c729cc0454a9a8c5f28496f70cf2",
+      "size": 89995
+    },
+    {
+      "path": "Data/Launcher/tool-manual.png",
+      "sha256": "a765d8f444f6e355918ec769043cd438309e6fa85d001045d565f09e66af7778",
+      "size": 689
+    },
+    {
+      "path": "Data/Launcher/nsis_header.bmp",
+      "sha256": "d7e0ad2041bf9fd72a184376d8b871451c4d676e5ebd99525f3c8401f396e387",
+      "size": 25902
+    },
+    {
+      "path": "Data/Launcher/tool-autoconfig.png",
+      "sha256": "c5ec5134cb0697f18834dea23a0fdf9664fa7126edccfa18e0d97b50c2e40c78",
+      "size": 1158
+    },
+    {
+      "path": "Data/Launcher/tool-manual_dark.png",
+      "sha256": "689c91cdbf9aaa2c7a2cba7b0eb7885369bfba7b906addf7b3b8825e0caf7e3d",
+      "size": 772
+    },
+    {
+      "path": "Data/Launcher/local-ru-core.png",
+      "sha256": "d3fc0cc55c9c638212294ffe7d701ef0ff8a6d3f132e964a9beecfdb767d30f5",
+      "size": 476577
+    },
+    {
+      "path": "Data/Launcher/tweak-mapicons-b.jpg",
+      "sha256": "b9708cd80a43dc25b2bf06ded550a49face88d9c52ec49f3a5e293c82fefc51d",
+      "size": 74975
+    },
+    {
+      "path": "Data/Launcher/tweak-daveher-b.jpg",
+      "sha256": "7d1bb19480169543a2fef2deece16419d81fdc4d513256807f1ee7831c6fb462",
+      "size": 84189
+    },
+    {
+      "path": "Data/Launcher/Mods/extramapicons/Assets/xmapicons.ICONS.LOD",
+      "sha256": "05338994763c7072574e2aa45a53a18c556058c86dd7dab6295f8d3d5727ce87",
+      "size": 121453
+    },
+    {
+      "path": "Data/Launcher/Mods/extramapicons/screenshot.jpg",
+      "sha256": "e0f2f5a3bf9310cdef6eac87436d5259267690ba4e3812ae55a2ba4b23152d13",
+      "size": 113732
+    },
+    {
+      "path": "Data/Launcher/Mods/extramapicons/manifest.lua",
+      "sha256": "f503701725069f8224b90464cd3ee6d4d7ab36f6f41c959107393a96243bf3da",
+      "size": 821
+    },
+    {
+      "path": "Data/Launcher/Mods/extramapicons/Dev/mapicons.aseprite",
+      "sha256": "bbdd20bccadbb3ca970c4afdf68830ef94f1841d2a59c77b21fa4abcc2612e04",
+      "size": 2567
+    },
+    {
+      "path": "Data/Launcher/Mods/extramapicons/Dev/amber_shops.bmp",
+      "sha256": "0fd67745208bcca9abf57ebf391e2aaaebca57b9d265cff923b032c573f0d998",
+      "size": 262198
+    },
+    {
+      "path": "Data/Launcher/Mods/extramapicons/Dev/amber.bmp",
+      "sha256": "d29d19fc1eec9d5917fbe6ef8a697fe44c8cde9c7233f35790c949db44d78a75",
+      "size": 262198
+    },
+    {
+      "path": "Data/Launcher/Mods/extramapicons/Dev/mapicons.bmp",
+      "sha256": "1c049674b7b62701bd2efd054d9e03f6763a6dd620dd636c955cd7c8b03df3f8",
+      "size": 65606
+    },
+    {
+      "path": "Data/Launcher/Mods/extramapicons/Dev/amber-east.bmp",
+      "sha256": "d2348e22102e2cd7c35538b15de283fb42fd415e87fc014ffd5a1f197bad7398",
+      "size": 262198
+    },
+    {
+      "path": "Data/Launcher/Mods/extramapicons/Dev/amber_teachers.bmp",
+      "sha256": "6b0e7b5c4b6d5bb8dd81d59ea01636d3e5386c2c0a8306081eaa05f155f0fb73",
+      "size": 262198
+    },
+    {
+      "path": "Data/Launcher/Mods/davidsprites/Assets/david.lua",
+      "sha256": "c604e118a11ed8cc388229f7fe9739007bb0d07d7744310c7335739d02db9a21",
+      "size": 164
+    },
+    {
+      "path": "Data/Launcher/Mods/davidsprites/Assets/SFT.txt",
+      "sha256": "e7c66a94235884da89cee283a9a8d66058623621a99ec86c86656de43d5906e1",
+      "size": 610365
+    },
+    {
+      "path": "Data/Launcher/Mods/davidsprites/Assets/dsft.bin",
+      "sha256": "e54ad0b81ad8acd465866ad330ac5563186816e092433aac414f9b4f52101be2",
+      "size": 582452
+    },
+    {
+      "path": "Data/Launcher/Mods/davidsprites/Assets/dav.SPRITES.LOD",
+      "sha256": "b7297e659234bdc765df3309687cd0f9ded9c4ab0a45741d1fdbb52dbe726a60",
+      "size": 39594651
+    },
+    {
+      "path": "Data/Launcher/Mods/davidsprites/screenshot.jpg",
+      "sha256": "e4e871c837413b0f91fe260b75d7a3b740316e54522d9c34281fca507d2b7187",
+      "size": 157021
+    },
+    {
+      "path": "Data/Launcher/Mods/davidsprites/manifest.lua",
+      "sha256": "c6273209717d84c4a4d7b95c34e3ca9b96314747d3f2be6780a31470f6c8d0fe",
+      "size": 1180
+    },
+    {
+      "path": "Data/Launcher/Mods/_active.lua",
+      "sha256": "46135cf340eebe69457c1775b6e78a126bc0cd0d2d6182bf3fa1a9fdf5512e2c",
+      "size": 10
+    },
+    {
+      "path": "Data/Launcher/tweak-strafe-a.gif",
+      "sha256": "6faadda4b7e2eff51d22a92e29c47a4c5a131b29af4fc9d57b2ecf005da34e1a",
+      "size": 818204
+    },
+    {
+      "path": "Data/Launcher/local-en-core.png",
+      "sha256": "6f6b975a14e407e8a6cd4781cf46c8cb18e719188d6a75ef79e95d9f01f4d59b",
+      "size": 477179
+    },
+    {
+      "path": "Data/Launcher/tweak-gui-a.jpg",
+      "sha256": "e179a39b8950ac91bf33a5f458d06c65008241d15b863b741c220a0995cc45ce",
+      "size": 66851
+    },
+    {
+      "path": "Data/Launcher/tool-autoconfig_dark.png",
+      "sha256": "329d4b6bcfdef463f05d19d663b50d640c4c354f4214d6db08bcb45d778a8ead",
+      "size": 1116
+    },
+    {
+      "path": "Data/Launcher/local-en-mod.png",
+      "sha256": "71d0585c62e295320a3160f6794a5177c9c085d184f506f332c7409c5782e7cd",
+      "size": 173871
+    },
+    {
+      "path": "Data/Launcher/tweak-daveher-a.jpg",
+      "sha256": "bb5be00f6bf846013b3289ab188b18d70d919fc965976238ff21bde61163aba8",
+      "size": 103002
+    },
+    {
+      "path": "Scripts/Launcher/ModalTools.lua",
+      "sha256": "5beedfb23c5f9cb4ca0f4848ad4791b69eb80ea5c8af4e55a912b6fb84f76695",
+      "size": 872
+    },
+    {
+      "path": "Scripts/Launcher/ModalUpdater.lua",
+      "sha256": "51d988c080f53276317112e01e130eef437bbc59a49284ee5f6571811d59d6de",
+      "size": 1340
     },
     {
       "path": "Scripts/Launcher/_filesystem.lua",
-      "sha256": "8dd1bbd193a89850a34a6c380b8e8fb5b2b0fb7fe37acf0934c962dc0f5645eb",
-      "size": 6182
+      "sha256": "5df8e1251793c152dc44e909f12e00fca859538bd1428b86caab72128098004a",
+      "size": 10552
+    },
+    {
+      "path": "Scripts/Launcher/DetectAndCopyGame.lua",
+      "sha256": "bb6a686a3724b06b19e502ffce6f27a0562e2fc2bcf6a29e9bf91cb3bbfbb58e",
+      "size": 4981
+    },
+    {
+      "path": "Scripts/Launcher/MergeAndRename.lua",
+      "sha256": "88e5e877686d0af5adecb1940a18908f824381c8c329a727c76b3ac43e56461a",
+      "size": 5228
+    },
+    {
+      "path": "Scripts/Launcher/ModalMods.lua",
+      "sha256": "0c05c2148fa4dc487aeecb5ec8ae41595233fab78f8e631a2a27673a4a6ddd47",
+      "size": 10062
     },
     {
       "path": "Scripts/Launcher/_const.lua",
-      "sha256": "441e5887fc4c2acf3557f25c0c0697fec04da705eaa8f56e7bf7eb288afc99ba",
-      "size": 4622
+      "sha256": "7b5dd15cbcb105a5fb47fe76579420a45417632c9ece720796d052693ef6bfc7",
+      "size": 4615
+    },
+    {
+      "path": "Scripts/Launcher/_main.lua",
+      "sha256": "a938fcda2829f1a447d03763eefa51450720d94601127c08fc1a840dd0357dd4",
+      "size": 5590
+    },
+    {
+      "path": "Scripts/Launcher/DetectAndInstallMod.lua",
+      "sha256": "e0e3ce28232d8a9a19793634bd213b929fa214b42998b5890a514081ba8d37f3",
+      "size": 2988
+    },
+    {
+      "path": "Scripts/Launcher/ConvertMusic.lua",
+      "sha256": "45998ddf793e6a07998c054c5be67e99f1b10634d4cd4423a9315b7fa1857195",
+      "size": 886
     },
     {
       "path": "Scripts/Launcher/CoreEvents.lua",
@@ -157,24 +277,9 @@
       "size": 385
     },
     {
-      "path": "Scripts/Launcher/ModalMods.lua",
-      "sha256": "a68fd6fbacd85edb530f2cfe3da876fe21ba040f46add5d03b32e031e255a289",
-      "size": 7383
-    },
-    {
-      "path": "Scripts/Launcher/DetectAndInstallMod.lua",
-      "sha256": "6fbefd626f80c81a86e0080812bfefccb02dcb2332ef07fbfb85537d0f024471",
-      "size": 2447
-    },
-    {
-      "path": "Scripts/Launcher/ModalTools.lua",
-      "sha256": "2ef054cc993f5911f7e34fc2a448921258ab5305e8eb07aab9b9fb0e8708a80d",
-      "size": 808
-    },
-    {
-      "path": "Scripts/Launcher/_main.lua",
-      "sha256": "c73b0f0c8e3cf59fc096850e2d02b324f580ba0e3d0849641ab8e49fe0cb36f6",
-      "size": 4972
+      "path": "Scripts/Launcher/ConfigTweaks.lua",
+      "sha256": "f7285fb74c6c78e46ff3f1ee8bfc6d9e5e69b5689ea5d7872b0a413b867620df",
+      "size": 3822
     },
     {
       "path": "Scripts/Launcher/RegistryTweaks.lua",
@@ -182,29 +287,24 @@
       "size": 899
     },
     {
+      "path": "Scripts/Launcher/ModalOptions.lua",
+      "sha256": "cbafd2aa7bb1a7bd3878142bcb53bc9653e8250f2aa701c3b5682a5661d3b893",
+      "size": 11376
+    },
+    {
       "path": "Scripts/Launcher/Localisation.lua",
-      "sha256": "17d2dca11b3f5724a9f6dbae45a42de439fd18689ab809f6df22e6e5ebaf30e3",
-      "size": 6375
+      "sha256": "e54a051ecab4a2eda45e810bb09629954a73224d20f0466a59771d27c71b195c",
+      "size": 6421
     },
     {
-      "path": "Scripts/Launcher/ConfigTweaks.lua",
-      "sha256": "4ea5043030ceb6385a43ad497e331cb0f85accab548b5192e2d064c54c71ea06",
-      "size": 2381
+      "path": "Amber Launcher",
+      "sha256": "bde729cd7f42dd4dced4f1332f4aa85cf5067480f73fd9ae7f6f0e5101835531",
+      "size": 2433280
     },
     {
-      "path": "Scripts/Launcher/ConvertMusic.lua",
-      "sha256": "9412740a2c98a163937663095826b0ddd7c63e57159c2bc0f32baa773fbbf760",
-      "size": 987
-    },
-    {
-      "path": "Scripts/Launcher/MergeAndRename.lua",
-      "sha256": "45d5d13b84abde35ca88b432aca7b5050796202978e93940cf318f8315253b1b",
-      "size": 5232
-    },
-    {
-      "path": "AmberLauncherGUI_x86",
-      "sha256": "8f831ed1e3ebc0ac71df6449245c2d93048ed43546768925c10182d288e98ae5",
-      "size": 31977384
+      "path": "Amber Launcher.exe",
+      "sha256": "3eeccd3c0793d582cab65b597ef216c6318de8e6731b7842f61071885b591f8b",
+      "size": 970752
     }
   ]
 }

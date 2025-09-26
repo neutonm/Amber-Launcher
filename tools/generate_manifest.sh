@@ -17,7 +17,7 @@ manifest=$(realpath "$1")
 root_dir=$(dirname "$manifest") # relative
 
 # Whitelisted relative paths under $root_dir
-targets=("Data" "Scripts" "AmberLauncherGUI_x86" "AmberLauncherGUI.exe")
+targets=("Data" "Scripts" "Amber Launcher" "Amber Launcher.exe")
 
 # launcher version
 current_version=$(jq '.launcher.version' "$manifest")
