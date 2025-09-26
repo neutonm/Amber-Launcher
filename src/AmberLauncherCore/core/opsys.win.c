@@ -322,4 +322,51 @@ AmberLauncher_GetRegistryKey(const char* sValueName, uint32* pValueData)
     return 0;
 }
 
+CAPI int
+AmberLauncher_RunSystemCommand(const char* sCmd)
+{
+    STARTUPINFOA        tStartupInfo;
+    PROCESS_INFORMATION tProcessInfo;
+    DWORD               dExitCode = 0;
+    char                sBuffer[SYSTEM_CMD_BUFFER_SIZE];
+
+    if (!sCmd)
+    {
+        return -1;
+    }
+
+    lstrcpynA(sBuffer, sCmd, sizeof(sBuffer));
+
+    ZeroMemory(&tStartupInfo, sizeof(tStartupInfo));
+    ZeroMemory(&tProcessInfo, sizeof(tProcessInfo));
+
+    tStartupInfo.cb             = sizeof(tStartupInfo);
+    tStartupInfo.dwFlags        = STARTF_USESHOWWINDOW;
+    tStartupInfo.wShowWindow    = SW_HIDE;
+
+    if (!CreateProcessA(
+        NULL,
+        sBuffer,
+        NULL, NULL,
+        FALSE,
+        CREATE_NO_WINDOW,
+        NULL, NULL,
+        &tStartupInfo, &tProcessInfo))
+    {
+        return -1;
+    }
+
+    WaitForSingleObject(tProcessInfo.hProcess, INFINITE);
+
+    if (!GetExitCodeProcess(tProcessInfo.hProcess, &dExitCode))
+    {
+        dExitCode = (DWORD)-1;
+    }
+
+    CloseHandle(tProcessInfo.hProcess);
+    CloseHandle(tProcessInfo.hThread);
+
+    return (int)dExitCode;
+}
+
 #endif

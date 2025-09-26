@@ -7,6 +7,21 @@ fs.OS_NAME           = fs.OS_NAME or (OS_NAME and OS_NAME or "Windows")
 fs.OS_FILE_SEPARATOR = OS_FILE_SEPARATOR
 
 -------------------------------------------------------------------------------
+-- Static Helper Functions
+-------------------------------------------------------------------------------
+
+local function os_ok(cmd)
+    local ok, why, code = AL.SystemCall(cmd)
+    if type(ok) == "number" then
+        -- lua 5.1
+        return ok == 0
+    else
+        -- lua 5.2+
+        return ok and code == 0
+    end
+end
+
+-------------------------------------------------------------------------------
 -- Path functions
 -------------------------------------------------------------------------------
 function fs.PathGetDirectory(full)
@@ -54,7 +69,7 @@ function fs.PathDelete(path)
     else
         cmd = 'rm -rf "'..path..'"'
     end
-    return os.execute(cmd) == 0
+    return AL.SystemCall(cmd) == 0
 end
 
 function fs.PathNormalize(path)
@@ -132,9 +147,9 @@ end
 
 function fs.DirectoryEnsure(path)
     if fs.OS_NAME == "Windows" then
-        os.execute('mkdir "'..path..'" >nul 2>nul')
+        AL.SystemCall('mkdir "'..path..'" >nul 2>nul')
     else
-        os.execute('mkdir -p "'..path..'"')
+        AL.SystemCall('mkdir -p "'..path..'"')
     end
 end
 
@@ -213,23 +228,12 @@ function fs.FilesMove(src_dir, dst_dir)
     else
         cmd = 'find "'..src_dir..'" -mindepth 1 -maxdepth 1 -exec mv -f {} "'..dst_dir..'/" \\; 2> /dev/null'
     end
-    return os.execute(cmd) == 0
+    return AL.SystemCall(cmd) == 0
 end
 
 -------------------------------------------------------------------------------
 -- Checks
 -------------------------------------------------------------------------------
-
-local function os_ok(cmd)
-    local ok, why, code = os.execute(cmd)
-    if type(ok) == "number" then
-        -- lua 5.1
-        return ok == 0
-    else
-        -- lua 5.2+
-        return ok and code == 0
-    end
-end
 
 function fs.IsFileExecutable(path)
     return fs.OS_NAME == "Windows"
@@ -323,7 +327,7 @@ function fs.CreateDesktopLink(name, target, icon)
         -- Optionally, log the command for debugging
         print("[DEBUG] CreateDesktopLink PS cmd:", fullCmd)
 
-        local ok = os.execute(fullCmd)
+        local ok = AL.SystemCall(fullCmd)
 		print("OK: "..tostring(ok))
         return ok == 0
 
@@ -342,7 +346,7 @@ function fs.CreateDesktopLink(name, target, icon)
         f:write("Terminal=false\n")
         f:write("Categories=Game;\n")
         f:close()
-        os.execute('chmod +x "'..file..'"')
+        AL.SystemCall('chmod +x "'..file..'"')
         return true
     end
 

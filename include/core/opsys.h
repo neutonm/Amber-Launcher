@@ -9,7 +9,8 @@
  ******************************************************************************/
 
 #define STR_DEFAULT_BUFFER_SIZE 512
-#define MAX_LINE_LENGTH 1024
+#define MAX_LINE_LENGTH         1024
+#define SYSTEM_CMD_BUFFER_SIZE  1024
 
 /******************************************************************************
  * HEADER FUNCTION DECLARATIONS
@@ -112,6 +113,16 @@ AmberLauncher_SetRegistryKey(const char* sValueName, uint32 dValueData);
 
 extern CAPI int
 AmberLauncher_GetRegistryKey(const char* sValueName, uint32* pValueData);
+
+/**
+ * @relatedalso AmberLauncher
+ * @brief       Run shell/system command silently
+ *
+ * @param       sCmd
+ * @return      int Success
+ */
+extern CAPI int
+AmberLauncher_RunSystemCommand(const char *sCmd);
 
 #ifdef __cplusplus
 }

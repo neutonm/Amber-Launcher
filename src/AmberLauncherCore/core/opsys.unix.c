@@ -486,4 +486,38 @@ _AmberLauncher_IsWinePrefix64bit(const char* winePrefix)
     return 0;
 }
 
+CAPI int
+AmberLauncher_RunSystemCommand(const char* sCmd)
+{
+    pid_t   tPID;
+    int     dStatus;
+
+    if (!sCmd)
+    {
+        return -1;
+    }
+
+    tPID = fork();
+    if (tPID < 0) {
+        return -1;
+    }
+    else if (tPID == 0) 
+    {
+        execl("/bin/sh", "sh", "-c", sCmd, (char*)0);
+        _exit(127);
+    }
+
+    if (waitpid(tPID, &dStatus, 0) < 0) 
+    {
+        return -1;
+    }
+
+    if (WIFEXITED(dStatus)) 
+    {
+        return WEXITSTATUS(dStatus);
+    }
+
+    return -1;
+}
+
 #endif

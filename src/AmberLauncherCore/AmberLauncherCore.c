@@ -497,9 +497,23 @@ _LUA_GetLaunchCommand(lua_State* L)
     return 1;
 }
 
+static int
+_LUA_SystemCall(struct lua_State* L)
+{
+    const char* sCmd    = luaL_checkstring(L, 1);
+    int         dResult = 0;
+
+    dResult             = AmberLauncher_RunSystemCommand(sCmd);
+
+    lua_pushnumber(L, (int)dResult);
+
+    return 1;
+}
+
 static const 
 luaL_Reg AL[] = 
 {
+    {"SystemCall",                  _LUA_SystemCall             },
     {"CommandAdd",                  _LUA_CommandAdd             },
     {"CommandCall",                 _LUA_CommandCall            },
     {"GetTableOfCommands",          _LUA_GetTableOfCommands     },
