@@ -1,9 +1,9 @@
 #include "core/core.hxx"
-#include "core/stdint.h"
+#include <core/stdint.h>
 #include "core/hfile.h"
 #include "draw2d/draw2d.hxx"
 #include "draw2d/guictx.hxx"
-#include "ext/miniz.h"
+#include <ext/miniz.h>
 #include "gui/gui.hxx"
 #include "osbs/osbs.hxx"
 #include "sewer/types.hxx"
@@ -170,8 +170,8 @@ _Nappgui_End(AppGUI **pApp);
 static uint32_t
 _Nappgui_ShowModal( AppGUI *pApp, Panel *pPanel, const char* sTitle);
 
-static int
-_RowForPage(int dPage, int dPageMax);
+static unsigned int
+_RowForPage(unsigned int dPage, unsigned int dPageMax);
 
 static Panel*
 _Panel_TweakerDescription(AppGUI *pApp);
@@ -778,7 +778,7 @@ _Panel_TweakerOptionsSelector(AppGUI *pApp)
     Layout      *pLayoutMain        = layout_create(APP_MAX_ELEMENTS,1);
     Label       *pLabelError;
     Button      *pButtonOpt[APP_MAX_ELEMENTS];
-    int i;
+    unsigned int i;
 
     pTweaker = &pApp->tGUITweaker[pApp->dPage];
     assert(IS_VALID(pTweaker));
@@ -834,8 +834,8 @@ _Panel_TweakerOptionsSelector(AppGUI *pApp)
 }
 
 /* 0 = single page, 1 = first, 2 = middle, 3 = last               */
-static int
-_RowForPage(int dPage, int dPageMax)
+static unsigned int
+_RowForPage(unsigned int dPage, unsigned int dPageMax)
 {
     if (dPageMax == 1)              return 0;       /* single page  */
     if (dPage == 0)                 return 1;       /* first page   */
@@ -860,8 +860,9 @@ _Panel_TweakerButtons(AppGUI *pApp)
     Button      *pButtonNext            = button_push();
     Button      *pButtonConfirm         = button_push();
     Button      *pButtonFirstConfirm    = button_push();
-    const int dRowForPage = _RowForPage(pApp->dPage, pApp->dPageMax);
-    int dRow;
+    const unsigned int dRowForPage = 
+        _RowForPage(pApp->dPage, pApp->dPageMax);
+    unsigned int dRow;
 
     pApp->pWindows->pLayoutExtra  = pLayoutDynamicButtons;
 
@@ -1126,6 +1127,8 @@ _Panel_GetModalOptionSubpanel(AppGUI *pApp)
     unsigned int j      = 0;
     unsigned int dRow   = 0;
 
+    const unsigned int dCorruptedRow = 999;
+
     GUIOptElement *pElem;
 
     cassert_no_null(pApp->pElementSets->pOptElementArray);
@@ -1138,7 +1141,7 @@ _Panel_GetModalOptionSubpanel(AppGUI *pApp)
     {
         Label  *pLabel          = label_create();
         Layout *pLayoutLabelRow = layout_create(2, 1);
-        int dCurRow             = dRow;
+        unsigned int dCurRow    = dRow;
 
         pElem = &pApp->pElementSets->pOptElementArray[i];
         assert(IS_VALID(pElem));
@@ -1282,11 +1285,11 @@ _Panel_GetModalOptionSubpanel(AppGUI *pApp)
             case UI_WIDGET_NULL:
             case UI_WIDGET_MAX:
             default:
-                dCurRow = -1; /* wrong/corrupted widget */
+                dCurRow = dCorruptedRow; /* wrong/corrupted widget */
                 break;
         }
 
-        if (dCurRow >= 0)
+        if (dCurRow != dCorruptedRow)
         {
             layout_layout(pLayoutMain, pLayoutLabelRow, 0, dCurRow);
         }
@@ -2132,7 +2135,7 @@ Callback_OnButtonModalTweaker(AppGUI *pApp, Event *e)
         case MODAL_NEXT:
             {
                 const int dStep = (dButtonTag == MODAL_NEXT) ? 1 : -1;
-                pApp->dPage     = (unsigned int)bmath_clampd(pApp->dPage + dStep, 0, pApp->dPageMax - 1);
+                pApp->dPage     = (unsigned int)bmath_clampd((int)pApp->dPage + dStep, 0, (int)pApp->dPageMax - 1);
                 bPageSwitch     = TRUE;
                 break;
             }
@@ -2142,10 +2145,10 @@ Callback_OnButtonModalTweaker(AppGUI *pApp, Event *e)
 
     if (bPageSwitch == TRUE)
     {
-        const int dRowForPage    = _RowForPage(pApp->dPage, pApp->dPageMax);
-        int dRow;
+        const int unsigned dRowForPage = _RowForPage(pApp->dPage, pApp->dPageMax);
+        unsigned int dRow;
 
-        pTweaker = &pApp->tGUITweaker[pApp->dPage];
+        pTweaker    = &pApp->tGUITweaker[pApp->dPage];
         dImageIndex = pApp->tGUITweaker[pApp->dPage].dSelectedOption;
         layout_panel_replace(pApp->pWindows->pLayoutModalMain, _Panel_TweakerDescription(pApp), 0, 0);
         layout_panel_replace(pApp->pWindows->pLayoutModalMain, _Panel_TweakerOptionsSelector(pApp), 0, 1);
@@ -3253,7 +3256,7 @@ _Callback_UIEvent(
                         }
                     }
 
-                    pApp->tGUITweaker[i].dMaxOptions = (int)dOptionIndex;
+                    pApp->tGUITweaker[i].dMaxOptions = (unsigned int)dOptionIndex;
 
                     _al_printf(pApp, "Group %zu Info: %s (%zu options)\n",
                                 i + 1,
@@ -3265,7 +3268,7 @@ _Callback_UIEvent(
 
                 /* Set the current page to first group */
                 pApp->dPage     = 0;
-                pApp->dPageMax  = (int)dGroupCount;
+                pApp->dPageMax  = (unsigned int)dGroupCount;
                 for(i = 0; i < APP_MAX_ELEMENTS; i++)
                 {
                     pApp->tGUITweaker[i].dSelectedOption    = 0;
@@ -3311,7 +3314,11 @@ _Callback_UIEvent(
                             for(i = 0; i < pApp->dPageMax; i++)
                             {
                                 const bool_t bIsEmpty = !str_empty(pApp->tGUITweaker[i].sTag);
-                                SVARKEYB_INT(tRetVal, bIsEmpty ? tc(pApp->tGUITweaker[i].sTag) : sOptName[i], pApp->tGUITweaker[i].dSelectedOption);
+                                SVARKEYB_INT(tRetVal, 
+                                    bIsEmpty ? 
+                                        tc(pApp->tGUITweaker[i].sTag) : 
+                                        sOptName[i], 
+                                    (int)pApp->tGUITweaker[i].dSelectedOption);
                             }
                         }
                         break;
@@ -3836,7 +3843,7 @@ _Callback_UIEvent(
                             /* active[{id}] = bool */
                             {
                                 SVar vBool;
-                                SVAR_BOOL(vBool, pMod->bActive);
+                                SVAR_BOOL(vBool, (CBOOL)pMod->bActive);
                                 _SVar_TableAdd(pActiveTbl, tc(pMod->sID), &vBool);
                             }
 

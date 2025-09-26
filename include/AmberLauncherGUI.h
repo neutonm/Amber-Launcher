@@ -165,8 +165,8 @@ typedef struct _GUITweaker
     String             *sTweakerInfo;
     String             *sTag;
 
-    int                 dSelectedOption;
-    int                 dMaxOptions;
+    unsigned int        dSelectedOption;
+    unsigned int        dMaxOptions;
 } GUITweaker;
 
 typedef struct _LangInfo
