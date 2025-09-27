@@ -143,7 +143,25 @@ AL_TLocales = {
                         return true
                     end,
         modCb       = _LocaliseMod,
-    }
+    },
+    {
+        name        = "German",
+        code        = "de_de",
+        core        = FS.PathJoin("Data", "Launcher", "local-de-core.png"),
+        mod         = "",
+        --mod         = FS.PathJoin("Data", "Launcher", "local-de-mod.png"),
+        coreCb      = _LocaliseCore,
+        modCb       = _LocaliseMod,
+    },
+    {
+        name        = "French",
+        code        = "fr_fr",
+        core        = FS.PathJoin("Data", "Launcher", "local-fr-core.png"),
+        mod         = "",
+        --mod         = FS.PathJoin("Data", "Launcher", "local-fr-mod.png"),
+        coreCb      = _LocaliseCore,
+        modCb       = _LocaliseMod,
+    },
 }
 
 function AL_WriteConfigLocalisationNames(langCore, langMod)
