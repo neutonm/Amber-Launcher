@@ -18,6 +18,7 @@ set(PROJECT_EXE_NAME		"Amber Launcher")
 option(AL_STATIC_LINKING    "Link libraries statically"                 OFF)
 option(AL_BUILD_DOCS        "Build documentation with Doxygen"          OFF)
 option(AL_BUILD_TESTS       "Build tests with CTest"                    OFF)
+option(AL_AUTOVERSION       "Enable Automated Build Version updates"    ON)
 
 # ------------------------------------------------------------------------------
 # C Standard Configuration
@@ -277,18 +278,20 @@ install(DIRECTORY ${CMAKE_SOURCE_DIR}/Scripts  DESTINATION .)
 # ------------------------------------------------------------------------------
 # Automated Build Version
 # ------------------------------------------------------------------------------
-set(VERSION_FILE "${PROJECT_SOURCE_DIR}/include/version.h")
+if(AL_AUTOVERSION)
+    set(VERSION_FILE "${PROJECT_SOURCE_DIR}/include/version.h")
 
-add_custom_command(
-    TARGET AmberLauncher POST_BUILD
-    COMMAND ${CMAKE_COMMAND} 
-        -DTARGET_NAME=AmberLauncher
-        -DVERSION_FILE=${VERSION_FILE}
-        -DTARGET_PATH=${CMAKE_CURRENT_SOURCE_DIR}
-        -P ${CMAKE_MODULE_PATH}/UpdateBuildVersion.cmake
-    COMMENT "Running script..."
-    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-)
+    add_custom_command(
+        TARGET AmberLauncher POST_BUILD
+        COMMAND ${CMAKE_COMMAND} 
+            -DTARGET_NAME=AmberLauncher
+            -DVERSION_FILE=${VERSION_FILE}
+            -DTARGET_PATH=${CMAKE_CURRENT_SOURCE_DIR}
+            -P ${CMAKE_MODULE_PATH}/UpdateBuildVersion.cmake
+        COMMENT "Running script..."
+        WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+    )
+endif()
 
 # ------------------------------------------------------------------------------
 # NappGUI Manifest hack (MSVC)
