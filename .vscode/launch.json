@@ -8,7 +8,7 @@
             "name": "C++ Launch",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/Amber Launcher",
+            "program": "${workspaceFolder}/AmberLauncher",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
