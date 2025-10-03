@@ -10,7 +10,7 @@ project(AmberLauncher
 set(PROJECT_TITLE_SAFE 		"AmberIsland")
 set(PROJECT_TITLE_FOLDER 	"Amber Island")
 set(PROJECT_TITLE 			"Might and Magic 7: Amber Island")
-set(PROJECT_EXE_NAME		"Amber Launcher")
+set(PROJECT_EXE_NAME		"AmberLauncher")
 
 # ------------------------------------------------------------------------------
 # Options
@@ -135,7 +135,7 @@ target_link_libraries(AmberLauncher PRIVATE
 # Compiler Properties
 # ------------------------------------------------------------------------------
 set_target_properties(AmberLauncherGUI PROPERTIES
-    OUTPUT_NAME "Amber Launcher"
+    OUTPUT_NAME "AmberLauncher"
 )
 
 if(MSVC)
