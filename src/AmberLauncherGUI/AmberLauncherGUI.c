@@ -2470,6 +2470,8 @@ Callback_OnButtonModalUpdater(AppGUI* pApp, Event *e)
                 }
 
                 AutoUpdate_Update(pApp, FALSE);
+                pApp->pWidgets->pTextView = NULL;
+                window_stop_modal(pApp->pWindows->pWindowModal, dButtonTag);
             }
             break;
 
