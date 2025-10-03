@@ -227,3 +227,11 @@ function OnSidebuttonClick(buttonID)
     print("Sidebutton clicked: "..UISIDEBUTTON_NAMES[buttonID])
     return retVal
 end
+
+function OnUpdateStart()
+
+end
+
+function OnUpdateEnd()
+
+end

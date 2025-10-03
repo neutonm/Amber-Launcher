@@ -2067,6 +2067,9 @@ AutoUpdate_Update(AppGUI *pApp, bool_t bForceDownload)
     const SVar tLuaModManifestURL       = AmberLauncher_GetGlobalVariable(pApp->pAppCore, _sLua_URL_UPDATER_MOD_MANIFEST);
     const SVar tLuaRootURL              = AmberLauncher_GetGlobalVariable(pApp->pAppCore, _sLua_URL_UPDATER_ROOT);
 
+    /* Fire start event */
+    AmberLauncher_Update(pApp->pAppCore, CFALSE);
+
     /* Launcher Manifest */
     _al_printf( pApp,
         "[Updater] Fetching Launcher manifest at \n\t%s\n",
@@ -2186,6 +2189,9 @@ AutoUpdate_Update(AppGUI *pApp, bool_t bForceDownload)
     json_destroy(&pJsonMod, InetUpdaterJSONData);
 
     _al_printf( pApp,"[Updater] Update done!\n");
+
+    /* Fire end event */
+    AmberLauncher_Update(pApp->pAppCore, CTRUE);
 
     return TRUE;
 }
@@ -2469,9 +2475,11 @@ Callback_OnButtonModalUpdater(AppGUI* pApp, Event *e)
                     break;
                 }
 
-                AutoUpdate_Update(pApp, FALSE);
-                pApp->pWidgets->pTextView = NULL;
-                window_stop_modal(pApp->pWindows->pWindowModal, dButtonTag);
+                if (AutoUpdate_Update(pApp, FALSE))
+                {
+                    pApp->pWidgets->pTextView = NULL;
+                    window_stop_modal(pApp->pWindows->pWindowModal, dButtonTag);
+                }
             }
             break;
 

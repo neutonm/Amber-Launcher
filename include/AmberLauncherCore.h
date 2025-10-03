@@ -32,6 +32,9 @@ extern CAPI void
 AmberLauncher_Play(struct AppCore* pApp);
 
 extern CAPI void
+AmberLauncher_Update(struct AppCore* pApp, CBOOL bIsPostUpdate);
+
+extern CAPI void
 AmberLauncher_ExecuteLua(struct AppCore *pApp, const char *sCommand);
 
 extern CAPI SVar

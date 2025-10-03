@@ -22,3 +22,13 @@ function events.PlayGame()
 
     print("Play CoreEvents.lua")
 end
+
+function events.BeforeUpdate()
+
+    print("Update Before CoreEvents.lua")
+end
+
+function events.AfterUpdate()
+
+    print("Update After CoreEvents.lua")
+end

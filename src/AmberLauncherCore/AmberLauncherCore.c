@@ -695,6 +695,35 @@ AmberLauncher_Play(AppCore* pAppCore)
 }
 
 CAPI void
+AmberLauncher_Update(struct AppCore* pAppCore, CBOOL bIsPostUpdate)
+{
+    if (!bIsPostUpdate)
+    {
+        SLuaState_CallEvent(
+            pAppCore->pLuaState, 
+            ELuaFunctionEventTypeStrings[SLUA_EVENT_UPDATE_BEFORE]
+        );
+    
+        SLuaState_CallReferencedFunction(
+            pAppCore->pLuaState, 
+            SLUA_FUNC_UPDATE_START,
+            NULL);
+
+        return;
+    }
+
+    SLuaState_CallReferencedFunction(
+        pAppCore->pLuaState, 
+        SLUA_FUNC_UPDATE_END,
+        NULL);
+    
+    SLuaState_CallEvent(
+        pAppCore->pLuaState, 
+        ELuaFunctionEventTypeStrings[SLUA_EVENT_UPDATE_AFTER]
+    );
+}
+
+CAPI void
 AmberLauncher_ExecuteLua(AppCore *pApp, const char *sCommand)
 {
     SLuaState_ExecuteCode(pApp->pLuaState, sCommand);

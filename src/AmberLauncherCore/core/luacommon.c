@@ -11,6 +11,8 @@ const char* ELuaFunctionRefTypeStrings[] = {
     "OnPostAppConfigure",
     "OnPlay",
     "OnSidebuttonClick",
+    "OnUpdateStart",
+    "OnUpdateEnd",
     NULL
 };
 
@@ -20,5 +22,7 @@ const char* ELuaFunctionEventTypeStrings[] = {
     "BeforeConfigure",
     "AfterConfigure",
     "PlayGame",
+    "BeforeUpdate",
+    "AfterUpdate",
     NULL
 };
