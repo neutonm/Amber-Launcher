@@ -268,7 +268,6 @@ install(FILES
     ${CMAKE_SOURCE_DIR}/icon.ico
     ${CMAKE_SOURCE_DIR}/LICENSE
     ${CMAKE_SOURCE_DIR}/README.md
-    ${CMAKE_SOURCE_DIR}/manifest.json
     DESTINATION .)
 
 # Extra folders
