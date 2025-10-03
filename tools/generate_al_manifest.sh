@@ -28,7 +28,7 @@ EOF
 fi
 
 # Whitelisted relative paths under $root_dir
-targets=("Data/Launcher" "Scripts/Launcher" "Amber Launcher" "Amber Launcher.exe")
+targets=("Data/Launcher" "Scripts/Launcher" "AmberLauncher" "AmberLauncher.exe")
 
 # Current/next launcher version
 current_version=$(jq '.launcher.version' "$manifest")
