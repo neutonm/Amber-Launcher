@@ -82,10 +82,16 @@ GAME_EXECUTABLE_NAME    = GAME_EXECUTABLE_NAME or "mm7.exe"
 GAME_MOD_ID             = GAME_MOD_ID or MODID.AMBER
 GAME_MOD_ID_NAME        = MODID_NAMES[GAME_MOD_ID]
 GAME_MOD_ID_TITLE       = MODID_TITLE[GAME_MOD_ID]
+GAME_MOD_VERSION        = GAME_MOD_VERSION or 0
+GAME_MOD_VERSION_STR    = GAME_MOD_VERSION_STR or "0.0.0"
 
 LAUNCHER_NAME           = LAUNCHER_NAME or "Amber Launcher"
 LAUNCHER_BUILD          = LAUNCHER_BUILD or _BUILD_NUMBER
 LAUNCHER_VERSION        = LAUNCHER_VERSION or 100
+
+URL_UPDATER_ROOT              = "https://mightandmagicmod.com/updater/"
+URL_UPDATER_LAUNCHER_MANIFEST = "https://mightandmagicmod.com/updater/al_manifest.json"
+URL_UPDATER_MOD_MANIFEST      = "https://mightandmagicmod.com/updater/mod_manifest.json"
 
 -- OS Separator
 if OS_NAME == "Windows" then 

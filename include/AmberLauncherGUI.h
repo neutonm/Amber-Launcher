@@ -444,6 +444,7 @@ AutoUpdate_Init(void);
  * @relatedalso Internet
  * @brief       Checks for update
  *
+ * @param       pApp
  * @return      bool_t TRUE if update is avaliable
  */
 extern bool_t
@@ -453,10 +454,12 @@ AutoUpdate_CheckForUpdates(AppGUI *pApp);
  * @relatedalso Internet
  * @brief       Executes update session
  *
+ * @param       pApp
+ * @param       bForceDownload
  * @return      bool_t TRUE On success
  */
 extern bool_t
-AutoUpdate_Update(AppGUI *pApp);
+AutoUpdate_Update(AppGUI *pApp, bool_t bForceDownload);
 
 /******************************************************************************
  * HEADER CALLBACK DECLARATIONS

@@ -1,17 +1,9 @@
 -- FILE:        ModalUpdater.lua
 -- DESCRIPTION: Launcher / Mod Updater script
 
-local function _parseVersion(v)
-    -- "major.minor.patch" or "major.minor"
-    local maj, min, pat = v:match("^(%d+)%.(%d+)%.?(%d*)$")
-    return tonumber(maj) or 0,
-           tonumber(min) or 0,
-           tonumber(pat) or 0
-end
-
 local function _isVersionNewer(vNew, vOld)
-    local a1,a2,a3 = _parseVersion(vNew)
-    local b1,b2,b3 = _parseVersion(vOld)
+    local a1,a2,a3 = AL_ParseVersion(vNew)
+    local b1,b2,b3 = AL_ParseVersion(vOld)
     if a1 ~= b1 then return a1 >  b1 end
     if a2 ~= b2 then return a2 >  b2 end
     return a3 >  b3

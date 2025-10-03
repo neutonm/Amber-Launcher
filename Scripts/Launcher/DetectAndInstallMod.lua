@@ -1,15 +1,8 @@
 
-local function _parseVersion(v)
-    -- "major.minor.patch" or "major.minor"
-    local maj, min, pat = v:match("^(%d+)%.(%d+)%.?(%d*)$")
-    return tonumber(maj) or 0,
-           tonumber(min) or 0,
-           tonumber(pat) or 0
-end
-
-local function IsAmberIslandMod(destinationFolder)
+function AL_DetectMod(destinationFolder, bSetModVersion)
 
     local approxCustomDungeonScriptSize = 4
+    bSetModVersion = bSetModVersion or false
     
     local modManifestLua   = FS.PathJoin(destinationFolder, "Scripts", "manifest.lua")
     local modManifestTable = {}
@@ -20,9 +13,14 @@ local function IsAmberIslandMod(destinationFolder)
         if ok and type(t) == "table" then
             modManifestTable = t
             print(string.format("Detected Amber Island Mod.\n"..
-            "• Name: \t\t%s (%s)\n\tVersion: \t\t%s\n\tLast update: \t%s",
+            "\t• Name: \t%s (%s)\n\t• Version: \t%s\n\t• Last update: \t%s",
             t.name, t.game, t.version, t.updated))
-            return true, _parseVersion(t.version)
+            if bSetModVersion then
+                local maj, min, pat  = AL_ParseVersion(t.version)
+                GAME_MOD_VERSION_STR = t.version
+                GAME_MOD_VERSION     = maj * 2^24 + min * 2^12 + pat
+            end
+            return true, AL_ParseVersion(t.version)
         end
     end
 
@@ -79,7 +77,7 @@ local function _DetectAndInstallMod()
 
     print("Detecting mod...")
 
-    if IsAmberIslandMod(GAME_DESTINATION_PATH) then
+    if AL_DetectMod(GAME_DESTINATION_PATH) then
         -- return true
 		-- autoconfig should reinstall it
     end

@@ -56,10 +56,25 @@ _Win32_SetupConsole(void)
  ******************************************************************************/
 
 static const char *
-_sAutoUpdateRemoteRootURL = "https://mightandmagicmod.com/updater/";
+_sDefaultUpdaterRemoteRootURL = 
+    "https://mightandmagicmod.com/updater/";
 
-static const char *
-_sAutoUpdateManifestURL = "https://mightandmagicmod.com/updater/manifest.json";
+static const char *_sDefaultUpdaterLauncherManifestURL = 
+    "https://mightandmagicmod.com/updater/al_manifest.json";
+
+static const char *_sDefaultUpdaterModManifestURL = 
+    "https://mightandmagicmod.com/updater/mod_manifest.json";
+
+static const char *_sLua_URL_UPDATER_ROOT =
+    "URL_UPDATER_ROOT";
+static const char *_sLua_URL_UPDATER_LAUNCHER_MANIFEST =
+    "URL_UPDATER_LAUNCHER_MANIFEST";
+static const char *_sLua_URL_UPDATER_MOD_MANIFEST =
+    "URL_UPDATER_MOD_MANIFEST";
+static const char *_sLua_LAUNCHER_VERSION =
+    "LAUNCHER_VERSION";
+static const char *_sLua_MOD_VERSION =
+    "GAME_MOD_VERSION";
 
 const char* EUIEventTypeStrings[] = {
     "NULL",
@@ -1851,12 +1866,18 @@ AutoUpdate_CheckForUpdates(AppGUI *pApp)
     uint32_t            dResult;
     ierror_t            eInetError;
     bool_t              bUpdateRequired;
-    Stream              *pJsonStream;
-    InetUpdaterJSONData *pJson;
+    Stream              *pJsonLauncherStream;
+    Stream              *pJsonModStream;
+    InetUpdaterJSONData *pJsonLauncher;
+    InetUpdaterJSONData *pJsonMod;
 
-    const SVar tLuaLauncherVersion      = AmberLauncher_GetGlobalVariable(pApp->pAppCore, "LAUNCHER_VERSION");
+    const SVar tLuaLauncherVersion      = AmberLauncher_GetGlobalVariable(pApp->pAppCore, _sLua_LAUNCHER_VERSION);
+    const SVar tLuaModVersion           = AmberLauncher_GetGlobalVariable(pApp->pAppCore, _sLua_MOD_VERSION);
+    const SVar tLuaLauncherManifestURL  = AmberLauncher_GetGlobalVariable(pApp->pAppCore, _sLua_URL_UPDATER_LAUNCHER_MANIFEST);
+    const SVar tLuaModManifestURL       = AmberLauncher_GetGlobalVariable(pApp->pAppCore, _sLua_URL_UPDATER_MOD_MANIFEST);
     const int32_t dLauncherBuild        = str_to_i32(BUILD_NUMBER, 10, NULL);
     const int32_t dLauncherVersion      = SVAR_IS_DOUBLE(tLuaLauncherVersion) ? (int32_t)SVAR_GET_DOUBLE(tLuaLauncherVersion) : 0;
+    const int32_t dModVersion           = SVAR_IS_DOUBLE(tLuaModVersion)      ? (int32_t)SVAR_GET_DOUBLE(tLuaModVersion) : 0;
 
     static const char *sSchemaFmt       = "• Schema: \t\t%s\n";
     static const char *sGeneratedFmt    = "• Generated: \t\t%s\n";
@@ -1864,67 +1885,207 @@ AutoUpdate_CheckForUpdates(AppGUI *pApp)
     static const char *sNetVersionFmt   = "• Net version: \t\t%d\n";
     static const char *sAppBuildFmt     = "• App build: \t\t%d\n";
     static const char *sNetBuildFmt     = "• Net build: \t\t%d\n";
+    static const char *sModVersionFmt   = "• Mod version: \t\t%d\n";
+    static const char *sModNetVersionFmt= "• Mod Net version: \t%d\n";
 
-    pJsonStream = http_dget(
-        _sAutoUpdateManifestURL,
+    /* Launcher manifest */
+    _al_printf( pApp,
+        "[Updater] Fetching Launcher manifest at \n\t%s\n",
+            SVAR_IS_CONSTCHAR(tLuaLauncherManifestURL) ?
+            SVAR_GET_CONSTCHAR(tLuaLauncherManifestURL) :
+            _sDefaultUpdaterLauncherManifestURL
+        );
+
+    pJsonLauncherStream = http_dget(
+        SVAR_IS_CONSTCHAR(tLuaLauncherManifestURL) ?
+            SVAR_GET_CONSTCHAR(tLuaLauncherManifestURL) :
+            _sDefaultUpdaterLauncherManifestURL,
         &dResult,
         &eInetError);
 
-    if (!pJsonStream)
+    if (!pJsonLauncherStream)
     {
         _al_printf(pApp,
-            "[Auto Updater] Couldn't fetch manifest.json"
+            "[Updater] Couldn't fetch al_manifest.json"
             "\n\tdResult: %d\n\teInetError: %d\n",
             dResult,
             eInetError);
         return FALSE;
     }
+    pJsonLauncher = json_read(pJsonLauncherStream, NULL, InetUpdaterJSONData);
 
-    pJson           = json_read(pJsonStream, NULL, InetUpdaterJSONData);
-    bUpdateRequired = dLauncherBuild < pJson->launcher->build ||
-                        dLauncherVersion < pJson->launcher->version;
+    /* Mod manifest */
+    _al_printf( pApp,
+        "[Updater] Fetching Mod manifest at \n\t%s\n",
+            SVAR_IS_CONSTCHAR(tLuaModManifestURL) ?
+            SVAR_GET_CONSTCHAR(tLuaModManifestURL) :
+            _sDefaultUpdaterModManifestURL
+        );
+
+    pJsonModStream = http_dget(
+        SVAR_IS_CONSTCHAR(tLuaModManifestURL) ?
+            SVAR_GET_CONSTCHAR(tLuaModManifestURL) :
+            _sDefaultUpdaterModManifestURL,
+        &dResult,
+        &eInetError);
+
+    if (!pJsonModStream)
+    {
+        _al_printf( pApp,
+                    "[Updater] Couldn't fetch mod_manifest.json"
+                    "\n\tdResult: %d\n\teInetError: %d\n",
+                    dResult,
+                    eInetError);
+        return FALSE;
+    }
+    pJsonMod        = json_read(pJsonModStream, NULL, InetUpdaterJSONData);
+
+    /* Check for update and report */
+    bUpdateRequired = (dLauncherBuild < pJsonLauncher->launcher->build ||
+                        dLauncherVersion < pJsonLauncher->launcher->version ||
+                        dModVersion < pJsonLauncher->launcher->version);
 
     _al_printf(pApp,
-        "[Auto Updater] Manifest retrieved successfuly:\n"
-        "• dResult: \t\t%d\n• eInetError: \t\t%d\n• Update required: \t\t%s\n",
-        dResult,
-        eInetError,
+        "[Updater] Manifests retrieved successfuly:\n"
+        "• Update required: \t%s\n",
         bUpdateRequired ? "true" : "false"
     );
-    _al_printf(pApp, sSchemaFmt, tc(pJson->schema));
-    _al_printf(pApp, sGeneratedFmt, tc(pJson->generated));
+    _al_printf(pApp, sSchemaFmt, tc(pJsonLauncher->schema));
+    _al_printf(pApp, sGeneratedFmt, tc(pJsonLauncher->generated));
     _al_printf(pApp, sAppVersionFmt, dLauncherVersion);
-    _al_printf(pApp, sNetVersionFmt, pJson->launcher->version);
+    _al_printf(pApp, sNetVersionFmt, pJsonLauncher->launcher->version);
     _al_printf(pApp, sAppBuildFmt, dLauncherBuild);
-    _al_printf(pApp, sNetBuildFmt, pJson->launcher->build);
+    _al_printf(pApp, sNetBuildFmt, pJsonLauncher->launcher->build);
+    _al_printf(pApp, sModVersionFmt, dModVersion);
+    _al_printf(pApp, sModNetVersionFmt, pJsonMod->launcher->version);
 
-    stm_close(&pJsonStream);
-    json_destroy(&pJson, InetUpdaterJSONData);
+    stm_close(&pJsonLauncherStream);
+    stm_close(&pJsonModStream);
+
+    json_destroy(&pJsonLauncher, InetUpdaterJSONData);
+    json_destroy(&pJsonMod, InetUpdaterJSONData);
 
     return bUpdateRequired;
 }
 
+static void
+_AutoUpdate_Update_DownloadFiles(
+    AppGUI *pApp,
+    InetUpdaterJSONData *pJson,
+    const char *sRootURL,
+    real32_t *fProgressIndex,
+    real32_t fProgressMax,
+    bool_t bForceDownload)
+{
+    arrst_foreach(elem, pJson->files, InetUpdaterFile)
+        bool_t bFileExists    = hfile_exists(tc(elem->path),0);
+        char *sSHA256Hash     = AmberLauncher_SHA256_HashFile(tc(elem->path));
+        String *sDownloadLink = str_printf("%s%s", sRootURL, tc(elem->path));
+
+        Stream *pDownloadFile;
+
+        _al_printf(pApp, "[Updater] Downloading %s...\n", tc(elem->path));
+
+        if (!bFileExists)
+        {
+            _al_printf(pApp, "[Updater] Local file %s doesn't exist!\n",
+                sDownloadLink);
+
+            pDownloadFile = http_dget(tc(sDownloadLink), NULL, NULL);
+            if (pDownloadFile)
+            {
+                /* download file */
+                Stream *pOutputFile = stm_to_file(tc(elem->path), NULL);
+                stm_write(pOutputFile, 
+                    stm_buffer(pDownloadFile),
+                    stm_buffer_size (pDownloadFile));
+                stm_close(&pOutputFile);
+            }
+        }
+        else if (sSHA256Hash || bForceDownload)
+        {
+            _al_printf(pApp, "[Updater] sha256 %s:\n\t%s\n", 
+                sDownloadLink, sSHA256Hash);
+
+            if (str_cmp(elem->sha256, sSHA256Hash) != 0 || bForceDownload)
+            {
+                _al_printf(pApp, "[Updater] Remote file is different!\n");
+
+                pDownloadFile = http_dget(tc(sDownloadLink), 
+                    NULL,
+                    NULL);
+                if (pDownloadFile)
+                {
+                    Stream *pOutputFile;
+
+                    /* stm_to_file doesn't overwrite as it promises to do, so, delete file.. */
+                    bfile_delete(tc(elem->path), NULL);
+
+                    pOutputFile = stm_to_file(tc(elem->path), NULL);
+                    stm_write(pOutputFile, 
+                        stm_buffer(pDownloadFile), 
+                        stm_buffer_size (pDownloadFile));
+                    stm_close(&pOutputFile);
+                }
+            }
+        }
+        else
+        {
+            _al_printf(pApp, "[Updater] unknown file error:\n\t%s(%s)\n", 
+                sDownloadLink, sSHA256Hash);
+        }
+        str_destroy(&sDownloadLink);
+        stm_close(&pDownloadFile);
+
+        /* Track progress */
+        *fProgressIndex += 1.0f;
+        if (pApp->pWidgets->pProgressbar)
+        {
+            progress_value(pApp->pWidgets->pProgressbar, 
+                *fProgressIndex / fProgressMax);
+        }
+
+        free(sSHA256Hash);
+    arrst_end()
+}
+
 bool_t
-AutoUpdate_Update(AppGUI *pApp)
+AutoUpdate_Update(AppGUI *pApp, bool_t bForceDownload)
 {
     uint32_t            dResult;
     ierror_t            eInetError;
-    Stream              *pJsonStream;
-    InetUpdaterJSONData *pJson;
+    Stream              *pJsonLauncherStream;
+    Stream              *pJsonModStream;
+    InetUpdaterJSONData *pJsonLauncher;
+    InetUpdaterJSONData *pJsonMod;
     real32_t            fProgressIndex;
     real32_t            fProgressMax;
 
     static const char *sFileArrayFmt = "• File: %s\n• • sha256: \n%s\n• • size: %u\n";
 
-    pJsonStream = http_dget(
-        _sAutoUpdateManifestURL,
+    const SVar tLuaLauncherManifestURL  = AmberLauncher_GetGlobalVariable(pApp->pAppCore, _sLua_URL_UPDATER_LAUNCHER_MANIFEST);
+    const SVar tLuaModManifestURL       = AmberLauncher_GetGlobalVariable(pApp->pAppCore, _sLua_URL_UPDATER_MOD_MANIFEST);
+    const SVar tLuaRootURL              = AmberLauncher_GetGlobalVariable(pApp->pAppCore, _sLua_URL_UPDATER_ROOT);
+
+    /* Launcher Manifest */
+    _al_printf( pApp,
+        "[Updater] Fetching Launcher manifest at \n\t%s\n",
+            SVAR_IS_CONSTCHAR(tLuaLauncherManifestURL) ?
+            SVAR_GET_CONSTCHAR(tLuaLauncherManifestURL) :
+            _sDefaultUpdaterLauncherManifestURL
+        );
+
+    pJsonLauncherStream = http_dget(
+        SVAR_IS_CONSTCHAR(tLuaLauncherManifestURL) ?
+            SVAR_GET_CONSTCHAR(tLuaLauncherManifestURL) :
+            _sDefaultUpdaterLauncherManifestURL,
         &dResult,
         &eInetError);
 
-    if (!pJsonStream)
+    if (!pJsonLauncherStream)
     {
         _al_printf( pApp,
-                    "[Updater] Couldn't fetch manifest.json"
+                    "[Updater] Couldn't fetch al_manifest.json"
                     "\n\tdResult: %d\n\teInetError: %d\n",
                     dResult,
                     eInetError);
@@ -1932,91 +2093,99 @@ AutoUpdate_Update(AppGUI *pApp)
     }
 
     _al_printf( pApp,
-                "[Updater] Manifest retrieved successfuly:\n"
+                "[Updater] Launcher Manifest retrieved successfuly:\n"
                 "• dResult: \t\t%d\n• eInetError: \t\t%d\n",
                 dResult,
                 eInetError);
 
-    /* Read JSON from manifest */
-    pJson = json_read(pJsonStream, NULL, InetUpdaterJSONData);
-    stm_close(&pJsonStream);
+    pJsonLauncher = json_read(pJsonLauncherStream, NULL, InetUpdaterJSONData);
+    stm_close(&pJsonLauncherStream);
+
+    /* Mod Manifest */
+    _al_printf( pApp,
+        "[Updater] Fetching Mod manifest at \n\t%s\n",
+            SVAR_IS_CONSTCHAR(tLuaModManifestURL) ?
+            SVAR_GET_CONSTCHAR(tLuaModManifestURL) :
+            _sDefaultUpdaterModManifestURL
+        );
+
+    pJsonModStream = http_dget(
+        SVAR_IS_CONSTCHAR(tLuaModManifestURL) ?
+            SVAR_GET_CONSTCHAR(tLuaModManifestURL) :
+            _sDefaultUpdaterModManifestURL,
+        &dResult,
+        &eInetError);
+
+    if (!pJsonModStream)
+    {
+        _al_printf( pApp,
+                    "[Updater] Couldn't fetch mod_manifest.json"
+                    "\n\tdResult: %d\n\teInetError: %d\n",
+                    dResult,
+                    eInetError);
+        return FALSE;
+    }
+
+    _al_printf( pApp,
+                "[Updater] Mod Manifest retrieved successfuly:\n"
+                "• dResult: \t\t%d\n• eInetError: \t\t%d\n",
+                dResult,
+                eInetError);
+
+    pJsonMod = json_read(pJsonModStream, NULL, InetUpdaterJSONData);
+    stm_close(&pJsonModStream);
 
     /* Print files */
-    arrst_foreach(elem, pJson->files, InetUpdaterFile)
+    _al_printf(pApp, "Launcher files: \n");
+    arrst_foreach(elem, pJsonLauncher->files, InetUpdaterFile)
+        _al_printf(pApp, sFileArrayFmt, tc(elem->path), tc(elem->sha256), elem->size);
+    arrst_end()
+    _al_printf(pApp, "\n");
+    _al_printf(pApp, "Mod files: \n");
+    arrst_foreach(elem, pJsonMod->files, InetUpdaterFile)
         _al_printf(pApp, sFileArrayFmt, tc(elem->path), tc(elem->sha256), elem->size);
     arrst_end()
     _al_printf(pApp, "\n");
 
     /* Download files */
     fProgressIndex  = 0.0f;
-    fProgressMax    = (real32_t)arrst_size(pJson->files, InetUpdaterFile);
+    fProgressMax    = (real32_t)arrst_size(pJsonLauncher->files, InetUpdaterFile) + 
+                        (real32_t)arrst_size(pJsonMod->files, InetUpdaterFile);
+
     if (pApp->pWidgets->pProgressbar)
     {
         progress_value(pApp->pWidgets->pProgressbar, 
             0.0f);
     }
     
-    _al_printf(pApp, "[Updater] Remote Updater Server: %s\n", _sAutoUpdateRemoteRootURL);
-    arrst_foreach(elem, pJson->files, InetUpdaterFile)
-        bool_t bFileExists  = hfile_exists(tc(elem->path),0);
-        char *sSHA256Hash   = AmberLauncher_SHA256_HashFile(tc(elem->path));
+    _al_printf(pApp, "[Updater] Remote Updater Server: %s\n",
+        SVAR_IS_CONSTCHAR(tLuaRootURL) ?
+            SVAR_GET_CONSTCHAR(tLuaRootURL) :
+            _sDefaultUpdaterRemoteRootURL);
 
-        _al_printf(pApp, "[Updater] Downloading %s...\n", tc(elem->path));
+    _AutoUpdate_Update_DownloadFiles(
+        pApp, 
+        pJsonLauncher,
+        SVAR_IS_CONSTCHAR(tLuaRootURL) ?
+            SVAR_GET_CONSTCHAR(tLuaRootURL) :
+            _sDefaultUpdaterRemoteRootURL,
+        &fProgressIndex, 
+        fProgressMax,
+        bForceDownload);
+    _AutoUpdate_Update_DownloadFiles(
+        pApp, 
+        pJsonMod,
+        SVAR_IS_CONSTCHAR(tLuaRootURL) ?
+            SVAR_GET_CONSTCHAR(tLuaRootURL) :
+            _sDefaultUpdaterRemoteRootURL,
+        &fProgressIndex, 
+        fProgressMax,
+        bForceDownload);
 
-        if (!bFileExists)
-        {
-            Stream *pFile           = stm_to_file(tc(elem->path), NULL);
-            String *sDownloadLink   = str_printf("%s%s", _sAutoUpdateRemoteRootURL, tc(elem->path));
+    json_destroy(&pJsonLauncher, InetUpdaterJSONData);
+    json_destroy(&pJsonMod, InetUpdaterJSONData);
 
-            _al_printf(pApp, "[Updater] Local file doesn't exist!\n");
-            pFile = http_dget(tc(sDownloadLink), NULL, NULL);
-            if (pFile)
-            {
-                /* download file */
-                Stream *pOutputFile = stm_to_file(tc(elem->path), NULL);
-                stm_write(pOutputFile, stm_buffer(pFile), stm_buffer_size (pFile));
-                stm_close(&pOutputFile);
-            }
-            str_destroy(&sDownloadLink);
-            stm_close(&pFile);
-        }
-        else if (sSHA256Hash)
-        {
-            _al_printf(pApp, "[Updater] sha256 dummy.lua:\n\t%s\n", sSHA256Hash);
-
-            if (str_cmp(elem->sha256, sSHA256Hash) != 0)
-            {
-                Stream *pFile;
-                String *sDownloadLink = str_printf("%s%s", _sAutoUpdateRemoteRootURL, tc(elem->path));
-
-                _al_printf(pApp, "[Updater] Remote file is different!\n");
-                pFile = http_dget(tc(sDownloadLink), NULL, NULL);
-                if (pFile)
-                {
-                    /* download file */
-                    Stream *pOutputFile;
-
-                    /* stm_to_file doesn't overwrite as it promises to do, so, delete file.. */
-                    bfile_delete(tc(elem->path), NULL);
-
-                    pOutputFile = stm_to_file(tc(elem->path), NULL);
-                    stm_write(pOutputFile, stm_buffer(pFile), stm_buffer_size (pFile));
-                    stm_close(&pOutputFile);
-                }
-                str_destroy(&sDownloadLink);
-                stm_close(&pFile);
-            }
-        }
-        fProgressIndex += 1.0f;
-        if (pApp->pWidgets->pProgressbar)
-        {
-            progress_value(pApp->pWidgets->pProgressbar, 
-                fProgressIndex / fProgressMax);
-        }
-        free(sSHA256Hash);
-    arrst_end()
-
-    json_destroy(&pJson, InetUpdaterJSONData);
+    _al_printf( pApp,"[Updater] Update done!\n");
 
     return TRUE;
 }
@@ -2300,7 +2469,7 @@ Callback_OnButtonModalUpdater(AppGUI* pApp, Event *e)
                     break;
                 }
 
-                AutoUpdate_Update(pApp);
+                AutoUpdate_Update(pApp, FALSE);
             }
             break;
 

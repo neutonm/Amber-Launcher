@@ -13,14 +13,19 @@ Table Of Contents:
 - [GUI Library](#gui-library)
 - [Lua Scripts](#lua-scripts)
 
+## Refactor
+* Improve code and boost up readability *
+- [ ] AmberLauncherGUI.c -> one giant monolithic source file, divide and organize
+
 ## Main
 *General points towards development*
 
-- [X] Fix memory leaks
+- [x] Fix memory leaks
 - [ ] Uninstall Game/Mod feature (should totally revert everything + backup saves)
 - [ ] App and scripts must be based on specified game (Amber Island by default)
 - - It's step into the future, providing app usage for multiple mods
-- [ ] Update LICENSE file
+- - partially done, check _const.lua > GAME_MOD_XXX vars
+- [x] Update LICENSE file
 - [ ] Write code style document
 - [ ] Clang format
 - [ ] Separate GUI  (cmake)
@@ -37,7 +42,7 @@ Table Of Contents:
 - [ ] save argc/argv into AppCore struct
 - [ ] rename header guards: conform to one convention
 - [ ] extern_c for every header!
-- [ ] lua error report
+- [x] lua error report
 - [ ] SCommand - change SCommandArg to SVar
  
 #### Lua Module:
@@ -48,12 +53,12 @@ Table Of Contents:
 ## GUI Library 
 *NAPPGUI user interface library that wraps Core Library calls.* 
 
-- [ ] Mod Manager: options for mods are implemented, but there's no GUI widgets to tweak it
-- [ ] String operations that re-create themselves should rely on "str_upd()"
+- [x] Mod Manager: options for mods are implemented, but there's no GUI widgets to tweak it
+- [x] String operations that re-create themselves should rely on "str_upd()"
 - [x] Autoconfigure should handle failed state
 - [x] Figure out how to show file browser (required for non-found game)
-- [ ] Re-design Modal: GameNotFound
-- [ ] Improve Tweaker GUI
+- [x] Re-design Modal: GameNotFound
+- [x] Improve Tweaker GUI
 - - window size must be fixed
 
 ## Lua Scripts

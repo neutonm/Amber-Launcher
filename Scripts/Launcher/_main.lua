@@ -65,6 +65,15 @@ function AL_print(msg)
     print(msg)
 end
 
+---Parses version: "major.minor.patch" or "major.minor"
+---@param v string
+function AL_ParseVersion(v)
+    local maj, min, pat = v:match("^v?(%d+)%.(%d+)%.?(%d*)$")
+    return tonumber(maj) or 0,
+           tonumber(min) or 0,
+           tonumber(pat) or 0
+end
+
 -- Includes
 FS = require("Scripts.Launcher._filesystem")
 
@@ -84,7 +93,12 @@ function OnPostAppInit()
     local src, how = AL_DetectGame(nil, false) -- "."
     if not src then
         AL.UICall(UIEVENT.AUTOCONFIG)
+        return
     end
+
+    -- Set GAME_MOD_VERSION during check (second argument)
+    AL_DetectMod(GAME_DESTINATION_PATH, true)
+    print("MOD VERSION: "..tostring(GAME_MOD_VERSION))
 end
 
 function OnAppDestroy()
