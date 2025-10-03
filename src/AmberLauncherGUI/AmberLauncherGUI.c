@@ -4182,8 +4182,18 @@ _Callback_UIEvent(
                     Panel_GetModalUpdater(pApp),
                     TXT_TITLE_UPDATER
                 );
-
-                SVARKEYB_BOOL(tRetVal, sStatusKey, CTRUE);
+                switch (dModalRetVal)
+                {
+                    case MODAL_UPDATE_APP:
+                        SVARKEYB_BOOL(tRetVal, sStatusKey, CTRUE);
+                        break;
+                    case ekGUI_CLOSE_BUTTON:
+                    case ekGUI_CLOSE_ESC:
+                    case MODAL_CANCEL:
+                    default:
+                        SVARKEYB_BOOL(tRetVal, sStatusKey, CFALSE);
+                        break;
+                }
             }
             break;
 
