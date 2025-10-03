@@ -1,6 +1,8 @@
 -- FILE:        ModalUpdater.lua
 -- DESCRIPTION: Launcher / Mod Updater script
 
+local _oldMods = {}
+
 local function _isVersionNewer(vNew, vOld)
     local a1,a2,a3 = AL_ParseVersion(vNew)
     local b1,b2,b3 = AL_ParseVersion(vOld)
@@ -9,20 +11,13 @@ local function _isVersionNewer(vNew, vOld)
     return a3 >  b3
 end
 
-function ModalShowUpdater()
-
-    local oldMods = AL_ScanMods()
-
-    local uiResponse = AL.UICall(UIEVENT.MODAL_UPDATER)
-    if uiResponse and uiResponse.status == true then
-        print(dump(uiResponse))
-    end
+local function _UpdateMods()
 
     -- Reinstall updated Mods
     local newMods = AL_ScanMods()
     local oldById = {}
 
-    for _, m in ipairs(oldMods) do
+    for _, m in ipairs(_oldMods) do
         oldById[m.id] = m
     end
 
@@ -37,4 +32,36 @@ function ModalShowUpdater()
             AL_ReinstallMod(m.id)
         end
     end
+end
+
+function ModalShowUpdater()
+
+    local uiResponse = AL.UICall(UIEVENT.MODAL_UPDATER)
+    if uiResponse and uiResponse.status == true then
+
+        AL.UICall(
+            UIEVENT.MODAL_MESSAGE,
+            "Update successful!\n\nLauncher will restart now..."
+        )
+
+        if OS_NAME == "Windows" then
+            os.execute(LAUNCHER_NAME..".exe")
+        else
+            os.execute("./"..LAUNCHER_NAME)
+        end
+
+        AL.UICall(UIEVENT.EXITAPP)
+    end
+end
+
+function events.BeforeUpdate()
+
+    _oldMods = AL_ScanMods()
+end
+
+function events.AfterUpdate()
+
+    AL_print("[Updater] Checking mods...")
+    _UpdateMods()
+    AL_print("[Updater] Done!")
 end
