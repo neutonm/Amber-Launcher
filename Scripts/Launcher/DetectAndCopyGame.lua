@@ -2,7 +2,7 @@
 -- DESCRIPTION: Detect and Copy Game contents into launcher folder
 
 -- List of files to check and copy
-local GRAYFACE_FILES = {
+GRAYFACE_FILES = {
     "Data/00 add.icons.lod",
     "Data/00 patch.bitmaps.lod",
     "Data/00 patch.events.lod",
@@ -22,7 +22,7 @@ local GRAYFACE_FILES = {
     "MM7-Rel.exe",
 }
 
-local MM7_COPY_FILES = {
+MM7_COPY_FILES = {
     "Anims/Magic7.vid",
     "Anims/Might7.vid",
     "Data/BITMAPS.LOD",
@@ -138,11 +138,6 @@ local function _CopyGameFiles(src, dst)
     AL_print("Copying game from '"..src.."…")
     FS.DirectoryEnsure(dst)
     FS.FilesCopy(src, dst, MM7_COPY_FILES)
-
-    if not FS.FilesCheck(dst, MM7_COPY_FILES) then
-        AL_print("Verification failed after copy.")
-        return false
-    end
 
     AL_print("Copy succeeded.")
     return true

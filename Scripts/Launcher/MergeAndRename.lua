@@ -12,6 +12,18 @@ local fileNames = {
     "MM7Setup.exe",
 }
 
+-- Public
+function AL_VerifyGameFiles(dst, files)
+
+    if not FS.FilesCheck(dst, files) then
+        AL_print("Game file verification failed!")
+        return false
+    end
+
+    AL_print("Game file verification succeeded!")
+    return true
+end
+
 -------------------------------------------------------------------------------
 
 local function ProcessFolders(base_dir, wanted_names)
@@ -141,6 +153,8 @@ local function _MergeAndRename()
     -- Run the processing function
     ProcessFolders(GAME_DESTINATION_PATH, folderNames)
     ProcessFiles(GAME_DESTINATION_PATH, fileNames)
+
+    AL_VerifyGameFiles(GAME_DESTINATION_PATH, MM7_COPY_FILES)
 
     AL_print("Done!")
 
