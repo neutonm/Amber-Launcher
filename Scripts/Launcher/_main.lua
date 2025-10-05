@@ -155,11 +155,6 @@ function OnPlay()
     local sep     = FS.OS_FILE_SEPARATOR
     destDir       = destDir:gsub(sep.."*$", "")
 
-    if destDir == "." then
-        -- extGameFolder was "", so nothing to do
-        return
-    end
-
     local ini               = AL.INILoad(INI_PATH_MOD)
     local bCloseOnLaunch    = nil
     local sLaunchCmd        = nil
