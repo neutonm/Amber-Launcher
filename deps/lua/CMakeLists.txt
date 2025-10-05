@@ -100,11 +100,19 @@ set_target_properties(lua_static PROPERTIES
 target_include_directories(lua_static PUBLIC ${lua_SOURCE_DIR})
 
 # Set the C standard to C89 for the Lua target
-set_target_properties(lua_static PROPERTIES
-    C_STANDARD 90
-    C_STANDARD_REQUIRED ON
-    C_EXTENSIONS OFF
-)
+if(MSVC)
+    set_target_properties(lua_static PROPERTIES
+        C_STANDARD 90
+        C_STANDARD_REQUIRED ON
+        C_EXTENSIONS OFF
+    )
+else()
+    set_target_properties(lua_static PROPERTIES
+        C_STANDARD 90
+        C_STANDARD_REQUIRED ON
+        C_EXTENSIONS ON
+    )
+endif()
 target_compile_definitions(lua_static PRIVATE LUA_USE_C89)
 
 # Adjust compiler flags as specified in the Lua makefile
@@ -116,8 +124,7 @@ if(MSVC)
 else()
     target_compile_options(lua_static PRIVATE
         -O2
-        -Wall
-        -Wextra
+        -w
     )
 endif()
 
@@ -125,8 +132,20 @@ endif()
 if(WIN32)
     target_compile_definitions(lua_static PRIVATE LUA_BUILD_AS_DLL LUA_USE_WINDOWS)
 else()
-    target_compile_definitions(lua_static PRIVATE LUA_USE_POSIX LUA_USE_DLOPEN LUA_USE_READLINE)
+    target_compile_definitions(lua_static PRIVATE
+        LUA_USE_LINUX
+        _FILE_OFFSET_BITS=64
+        _LARGEFILE_SOURCE
+    )
     target_link_libraries(lua_static PRIVATE dl m readline)
+    target_compile_options(lua_static PRIVATE
+        -fno-sanitize=all
+        -fPIC
+    )
+    target_link_options(lua_static PRIVATE
+        -fno-sanitize=all
+        -fPIC
+    )
 endif()
 
 # Suppress specific warnings for the lua_static target
