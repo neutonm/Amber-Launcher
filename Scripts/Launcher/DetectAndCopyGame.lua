@@ -91,7 +91,7 @@ local MM7_DETECT_FILES = _BuildDetectList(MM7_COPY_FILES)
 -- Public functions:
 function AL_DetectGame(searchFolder, bIgnoreWav)
 
-    print("Detecting game…")
+    AL_print("Detecting game...")
 
     bIgnoreWav               = bIgnoreWav   and bIgnoreWav or false
     local searchFolders      = searchFolder and {searchFolder} or GAME_EXECUTABLE_FOLDERS
@@ -146,24 +146,32 @@ end
 local function _DetectAndCopyGame(searchFolder)
     local src, how = AL_DetectGame(searchFolder, true)
     if not src then
-        print("Failed to find the game!")
+        AL_print("Failed to find the game!")
 
-        local uiRes = AL.UICall(UIEVENT.MODAL_GAMENOTFOUND)
+        local curDir    = FS.CurrentDir()
+        local uiRes     = AL.UICall(UIEVENT.MODAL_GAMENOTFOUND)
         print(dump(uiRes))
-        if uiRes and uiRes.status == false then
-            return false
+        if uiRes then
+
+            if uiRes.status == false then
+                return false
+            end
+
+            lfs.chdir(curDir)
+            if uiRes.path and uiRes.path ~= "" then
+                return _DetectAndCopyGame(uiRes.path) -- recursive
+            end
         end
-        if uiRes and uiRes.path and uiRes.path ~= "" then
-            return _DetectAndCopyGame(uiRes.path) -- recursive
-        end
+        
         return false
     end
 
     if how == "local" then
-        print("No copy needed - game verified in destination folder.")
+        AL_print("No copy needed - game verified in destination folder.")
         return true
     end
 
+    AL_print("Fetching game from: "..src)
     sleep(1) -- give that ui time to close
 
     return _CopyGameFiles(src, GAME_DESTINATION_PATH)
