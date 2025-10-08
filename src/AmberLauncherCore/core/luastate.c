@@ -5,6 +5,8 @@
 #include <core/luacommon.h>
 #include <core/command.h>
 
+#include <ext/lfs.h>
+
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -82,6 +84,9 @@ SLuaState_new(void)
     pLuaState->sScriptNameConst     = "_const";
     pLuaState->sScriptNameMain      = "_main";
     luaL_openlibs(pLuaState->pState);
+
+    /* Lua LFS module: lfs.c */
+    luaopen_lfs(pLuaState->pState);
 
     /* Traceback */
     lua_pushcfunction(pLuaState->pState, _LuaTraceback);
