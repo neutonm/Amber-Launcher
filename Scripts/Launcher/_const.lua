@@ -111,13 +111,16 @@ if OS_NAME == "Windows" then
         os.getenv("PROGRAMFILES(X86)") .. '\\GOG Galaxy\\Games\\',
         os.getenv("PROGRAMFILES(X86)") .. '\\',
         os.getenv("PROGRAMFILES") .. '\\',
+        "C:\\GOG Galaxy\\Games\\",
         "C:\\Program Files (x86)\\",
         "C:\\Program Files\\",
+        "C:\\",
         os.getenv("SYSTEMDRIVE") .. "\\Games\\",
         os.getenv("SYSTEMDRIVE") .. "\\",
         "D:\\Program Files (x86)\\",
         "D:\\Program Files\\",
         "D:\\Games\\",
+        "D:\\GOG Galaxy\\Games\\",
     }
 elseif OS_NAME == "Linux" then
     local homePath  = os.getenv("HOME")
