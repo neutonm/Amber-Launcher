@@ -4,10 +4,6 @@
 #include <core/vector.h>
 #include <core/common.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /******************************************************************************
  * MACROS
  ******************************************************************************/
@@ -33,6 +29,8 @@ typedef struct SSubject
  * HEADER FUNCTION DECLARATIONS
  ******************************************************************************/
 
+__EXTERN_C
+
 /* SObserver */
 extern CAPI SObserver*
 SObserver_new(void);
@@ -56,8 +54,6 @@ SSubject_Detach(SSubject *pSubject, SObserver *pObserver);
 extern CAPI void
 SSubject_Notify(SSubject *pSubject, int32 dFlags, void *pUserData);
 
-#ifdef __cplusplus
-}
-#endif
+__END_C
 
 #endif

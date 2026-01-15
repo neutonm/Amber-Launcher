@@ -3,9 +3,19 @@
 
 #include <core/common.h>
 
+/******************************************************************************
+ * FORWARD DECLARATION
+ ******************************************************************************/
+
 struct SCommand;
 struct SCommandArg;
 struct lua_State;
+
+/******************************************************************************
+ * HEADER DECLARATIONS
+ ******************************************************************************/
+
+__EXTERN_C
 
 /**
  * @relatedalso             Commands
@@ -32,5 +42,7 @@ LUA_SetRegistryKey(struct lua_State* L);
  */
 extern CAPI int 
 LUA_GetRegistryKey(struct lua_State* L);
+
+__END_C
 
 #endif

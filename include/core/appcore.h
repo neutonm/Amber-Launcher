@@ -36,6 +36,8 @@ struct AppCore
  * HEADER DECLARATIONS
  ******************************************************************************/
 
+__EXTERN_C
+
 extern CAPI AppCore*
 AppCore_create(void);
 
@@ -50,5 +52,7 @@ AppCore_SetLaunchCommand(AppCore* pAppCore, const char *sNewLaunchCmd);
 
 extern CAPI const char*
 AppCore_GetDefaultLaunchCommand(void);
+
+__END_C
 
 #endif

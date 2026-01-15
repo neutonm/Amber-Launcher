@@ -3,10 +3,6 @@
 
 #include <core/common.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /******************************************************************************
  * FORWARD DECLARATIONS
  ******************************************************************************/
@@ -71,6 +67,8 @@ struct SCommand
 /******************************************************************************
  * HEADER FUNCTION DECLARATIONS
  ******************************************************************************/
+
+__EXTERN_C
 
 /**
  * @relatedalso SCommand
@@ -164,8 +162,6 @@ SCommandArg_MakeVoid(void* pVar);
 extern CAPI int
 LUA_RegisterCommand(struct lua_State *L);
 
-#ifdef __cplusplus
-}
-#endif
+__END_C
 
 #endif

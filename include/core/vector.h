@@ -4,10 +4,6 @@
 #include <stddef.h>
 #include <core/apidef.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /******************************************************************************
  * MACROS
  ******************************************************************************/
@@ -43,6 +39,10 @@ typedef int (*SVectorPredicate)(const void* pElement, const void* pContext);
 /******************************************************************************
  * HEADER FUNCTION DECLARATIONS
  ******************************************************************************/
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /**
  * @relatedalso SVector

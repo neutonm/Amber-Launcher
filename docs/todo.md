@@ -7,6 +7,7 @@
                                                                                     
 ```
 Table Of Contents:
+- [Refactor](#refactor)
 - [Main](#main)
 - [Core Library](#core-library)
     - [Lua Module:](#lua-module)
@@ -41,7 +42,7 @@ Table Of Contents:
 - [ ] Code Review for header/sources
 - [ ] save argc/argv into AppCore struct
 - [ ] rename header guards: conform to one convention
-- [ ] extern_c for every header!
+- [X] extern_c for every header!
 - [x] lua error report
 - [ ] SCommand - change SCommandArg to SVar
  

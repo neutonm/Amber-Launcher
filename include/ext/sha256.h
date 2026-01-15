@@ -79,6 +79,10 @@ typedef struct {
 
 #define sha256_add_data sha256_add_bytes
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 int sha256_initialize(SHA256_Context * context);
 int sha256_add_bytes(SHA256_Context * context,
                      const void     * data,
@@ -88,6 +92,10 @@ int sha256_add_bits(SHA256_Context * context,
                     size_t           num_bits);
 int sha256_calculate(SHA256_Context * context,
                      unsigned char    digest[SHA256_HASH_SIZE]);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* ! SHA256_HASH_HEADER_ */
 

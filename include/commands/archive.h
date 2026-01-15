@@ -3,9 +3,19 @@
 
 #include <core/common.h>
 
+/******************************************************************************
+ * FORWARD DECLARATION
+ ******************************************************************************/
+
 struct SCommand;
 struct SCommandArg;
 struct lua_State;
+
+/******************************************************************************
+ * HEADER DECLARATIONS
+ ******************************************************************************/
+
+__EXTERN_C
 
 /**
  * @relatedalso             Commands
@@ -19,5 +29,7 @@ SCommand_Callback_Archive(const struct SCommand* pSelf, const struct SCommandArg
 
 extern CAPI int
 LUA_ArchiveExtract(struct lua_State* L);
+
+__END_C
 
 #endif

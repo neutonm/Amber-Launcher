@@ -3,9 +3,19 @@
 
 #include <core/common.h>
 
+/******************************************************************************
+ * FORWARD DECLARATION
+ ******************************************************************************/
+
 struct SCommand;
 struct SCommandArg;
 struct lua_State;
+
+/******************************************************************************
+ * HEADER DECLARATIONS
+ ******************************************************************************/
+
+__EXTERN_C
 
 /**
  * @relatedalso             Commands
@@ -34,5 +44,7 @@ LUA_INIGet(struct lua_State* L);
 
 extern CAPI int
 LUA_INISet(struct lua_State *L);
+
+__END_C
 
 #endif

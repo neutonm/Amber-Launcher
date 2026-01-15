@@ -1,14 +1,6 @@
 #ifndef SLUACOMMON_H_
 #define SLUACOMMON_H_
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-/******************************************************************************
- * FORWARD DECLARATIONS
- ******************************************************************************/
-
 /******************************************************************************
  * ENUMS
  ******************************************************************************/
@@ -101,9 +93,5 @@ typedef struct SLuaFunctionRef
     const char*     sName;  /**< String key for Lua Ref array */
 
 } SLuaFunctionRef;
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

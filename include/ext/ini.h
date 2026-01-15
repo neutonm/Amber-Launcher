@@ -12,6 +12,10 @@
 
 typedef struct ini_t ini_t;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 ini_t*      ini_load(const char *filename);
 void        ini_free(ini_t *ini);
 const char* ini_get(ini_t *ini, const char *section, const char *key);
@@ -21,5 +25,8 @@ int         ini_sget(ini_t *ini, const char *section, const char *key, const cha
 int         ini_set(ini_t *ini, const char *section, const char *key, const char *value);
 int         ini_save(ini_t *ini, const char *filename);
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif

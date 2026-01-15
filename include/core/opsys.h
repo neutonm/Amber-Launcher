@@ -16,6 +16,8 @@
  * HEADER FUNCTION DECLARATIONS
  ******************************************************************************/
 
+__EXTERN_C
+
 /**
  * @relatedalso AmberLauncher
  * @brief       Returns bitness value of this app
@@ -124,8 +126,6 @@ AmberLauncher_GetRegistryKey(const char* sValueName, uint32* pValueData);
 extern CAPI int
 AmberLauncher_RunSystemCommand(const char *sCmd);
 
-#ifdef __cplusplus
-}
-#endif
+__END_C
 
 #endif
