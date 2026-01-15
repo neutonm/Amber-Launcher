@@ -1,5 +1,5 @@
-#ifndef __SAPIDEF_H_
-#define __SAPIDEF_H_
+#ifndef __AMBER_LAUNCHER_APIDEF_H_
+#define __AMBER_LAUNCHER_APIDEF_H_
 
 /*
  * ----------------------------------------------------------------------------

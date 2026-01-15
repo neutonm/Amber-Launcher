@@ -1,5 +1,5 @@
-#ifndef SLUASTATE_H_
-#define SLUASTATE_H_
+#ifndef __AMBER_LAUNCHER_LUASTATE_H_
+#define __AMBER_LAUNCHER_LUASTATE_H_
 
 #include <core/common.h>
 #include <core/vector.h>

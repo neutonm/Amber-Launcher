@@ -1,5 +1,5 @@
-#ifndef SLUACOMMON_H_
-#define SLUACOMMON_H_
+#ifndef __AMBER_LAUNCHER_LUACOMMON_H_
+#define __AMBER_LAUNCHER_LUACOMMON_H_
 
 /******************************************************************************
  * ENUMS

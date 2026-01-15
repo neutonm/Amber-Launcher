@@ -1,5 +1,5 @@
-#ifndef CAPPCORE_H_
-#define CAPPCORE_H_
+#ifndef __AMBER_LAUNCHER_APPCORE_H_
+#define __AMBER_LAUNCHER_APPCORE_H_
 
 #include <core/common.h>
 

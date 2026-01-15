@@ -1,5 +1,5 @@
-#ifndef SSTDINT_H_
-#define SSTDINT_H_
+#ifndef __AMBER_LAUNCHER_STDINT_H_
+#define __AMBER_LAUNCHER_STDINT_H_
 
 #if defined(_MSC_VER)
 

@@ -1,5 +1,5 @@
-#ifndef SCOMMAND_H_
-#define SCOMMAND_H_
+#ifndef __AMBER_LAUNCHER_COMMAND_H_
+#define __AMBER_LAUNCHER_COMMAND_H_
 
 #include <core/common.h>
 

@@ -1,5 +1,5 @@
-#ifndef SOBSERVER_H_
-#define SOBSERVER_H_
+#ifndef __AMBER_LAUNCHER_OBSERVER_H_
+#define __AMBER_LAUNCHER_OBSERVER_H_
 
 #include <core/vector.h>
 #include <core/common.h>

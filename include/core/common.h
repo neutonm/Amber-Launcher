@@ -1,5 +1,5 @@
-#ifndef __COMMON_H
-#define __COMMON_H
+#ifndef __AMBER_LAUNCHER_COMMON_H
+#define __AMBER_LAUNCHER_COMMON_H
 
 #include <stddef.h>
 

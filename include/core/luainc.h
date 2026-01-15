@@ -1,5 +1,5 @@
-#ifndef SLUAINCLUDE_H_
-#define SLUAINCLUDE_H_
+#ifndef __AMBER_LAUNCHER_LUAINCLUDE_H_
+#define __AMBER_LAUNCHER_LUAINCLUDE_H_
 
 #include <lua.h>
 #include <lauxlib.h>

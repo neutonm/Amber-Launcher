@@ -1,5 +1,5 @@
-#ifndef SVECTOR_H_
-#define SVECTOR_H_
+#ifndef __AMBER_LAUNCHER_VECTOR_H_
+#define __AMBER_LAUNCHER_VECTOR_H_
 
 #include <stddef.h>
 #include <core/apidef.h>

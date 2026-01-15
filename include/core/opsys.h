@@ -1,5 +1,5 @@
-#ifndef OPERATING_SYSTEM_H_
-#define OPERATING_SYSTEM_H_
+#ifndef __AMBER_LAUNCHER_OPERATING_SYSTEM_H_
+#define __AMBER_LAUNCHER_OPERATING_SYSTEM_H_
 
 #include <core/common.h>
 #include <stddef.h>

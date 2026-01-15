@@ -41,7 +41,7 @@ Table Of Contents:
 
 - [ ] Code Review for header/sources
 - [ ] save argc/argv into AppCore struct
-- [ ] rename header guards: conform to one convention
+- [X] rename header guards: conform to one convention
 - [X] extern_c for every header!
 - [x] lua error report
 - [ ] SCommand - change SCommandArg to SVar
