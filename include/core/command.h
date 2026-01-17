@@ -28,24 +28,7 @@ typedef struct SCommand SCommand;
  * STRUCTS
  ******************************************************************************/
 
-/**
- * @brief   Substitute for void* argument ("variant")
- * 
- */
-typedef struct SCommandArg 
-{
-    union 
-    {
-        int32 dValue;
-        char* sValue;
-        void* pValue;
-    } uData;
-    uint32 dFlags;
-    ECType eType; 
-    
-} SCommandArg;
-
-typedef CBOOL (*CommandFunc)(const SCommand* pSelf, const SCommandArg *pArgs, const unsigned int dNumArgs);
+typedef CBOOL (*CommandFunc)(const SCommand* pSelf, const SVar *pArgs, const unsigned int dNumArgs);
 
 /**
  * @brief   Command pattern realization
@@ -119,45 +102,6 @@ SCommand_IsFlagSet(const SCommand* pCommand, unsigned int dFlag);
  */
 extern CAPI void
 SCommand_ClearFlag(SCommand* pCommand, unsigned int dFlag);
-
-/**
- * @relatedalso SCommandArg
- * @brief       Makes CCommandArg with intValue = 0;
- * 
- * @return      CCommandArg 
- */
-extern CAPI SCommandArg 
-SCommandArg_MakeNull(void);
-
-/**
- * @relatedalso SCommandArg
- * @brief       Makes CCommandArg with dValue = dVar;
- * 
- * @param       dVar
- * @return      CCommandArg 
- */
-extern CAPI SCommandArg 
-SCommandArg_MakeInt(int dVar);
-
-/**
- * @relatedalso SCommandArg
- * @brief       Makes CCommandArg with sValue = sVar;
- * 
- * @param       sVar
- * @return      CCommandArg 
- */
-extern CAPI SCommandArg 
-SCommandArg_MakeString(char* sVar);
-
-/**
- * @relatedalso SCommandArg
- * @brief       Makes CCommandArg with pValue = pVar;
- * 
- * @param       pVar
- * @return      CCommandArg 
- */
-extern CAPI SCommandArg 
-SCommandArg_MakeVoid(void* pVar);
 
 extern CAPI int
 LUA_RegisterCommand(struct lua_State *L);

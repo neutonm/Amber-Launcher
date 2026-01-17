@@ -8,7 +8,7 @@
 #include <lualib.h>
 
 CAPI CBOOL
-SCommand_Callback_RegEdit(const SCommand* pSelf, const SCommandArg* pArgs, const unsigned int dNumArgs)
+SCommand_Callback_RegEdit(const SCommand* pSelf, const SVar* pArgs, const unsigned int dNumArgs)
 {
     CBOOL bResult;
     UNUSED(pSelf);

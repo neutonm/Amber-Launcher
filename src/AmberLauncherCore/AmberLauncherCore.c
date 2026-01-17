@@ -30,7 +30,7 @@ static const char* STR_AL_APPCORE   = "AL.AppCore";
 #define AL_SHA_BUF 65536U
 
 static CBOOL
-_SCommand_Callback_Null(const SCommand* pSelf, const SCommandArg* pArgs, const unsigned int dNumArgs)
+_SCommand_Callback_Null(const SCommand* pSelf, const SVar* pArgs, const unsigned int dNumArgs)
 {
     UNUSED(pSelf);
     UNUSED(pArgs);
@@ -77,7 +77,7 @@ _predicate(const void* pElement, const void* pCtx)
 }
 
 static CBOOL
-_SCommand_Callback_LuaCall(const SCommand* pSelf, const SCommandArg* pArgs, const unsigned int dNumArgs)
+_SCommand_Callback_LuaCall(const SCommand* pSelf, const SVar* pArgs, const unsigned int dNumArgs)
 {
     const int dLuaRef   = pSelf->dLuaRef;
     struct lua_State *L = NULL;
@@ -87,7 +87,7 @@ _SCommand_Callback_LuaCall(const SCommand* pSelf, const SCommandArg* pArgs, cons
 
     if (IS_VALID(pArgs) && pArgs->eType == CTYPE_VOID)
     {
-        L = (lua_State*)pArgs->uData.pValue;
+        L = (lua_State*)pArgs->uData._void;
         assert(IS_VALID(L));
     }
 
@@ -441,7 +441,7 @@ _LUA_EventCall(lua_State* L)
 }
 
 static int
-_LUA_CommandCall(struct lua_State* L)
+_LUA_CommandCall(lua_State* L)
 {
     long dSVecFoundIndex     = 0;
     const char      *sKey    = luaL_checkstring(L, 1);
@@ -451,8 +451,9 @@ _LUA_CommandCall(struct lua_State* L)
     if (dSVecFoundIndex != -1)
     {
         SCommand* pObj = (SCommand*)SVector_Get(&tConfigureCommandList, (size_t)dSVecFoundIndex);
-        SCommandArg pArg = SCommandArg_MakeVoid(L);
-        bResult = pObj->cbExecuteFunc(pObj, &pArg, 1);
+        SVar tArg; 
+        SVAR_VOID(tArg, L, sizeof(lua_State*));
+        bResult = pObj->cbExecuteFunc(pObj, &tArg, 1);
         printf("Calling [%s]: %s\n", sKey, bResult ? "success!" : "fail.");
     }
     else

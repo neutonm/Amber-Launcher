@@ -8,7 +8,6 @@
  ******************************************************************************/
 
 struct SCommand;
-struct SCommandArg;
 struct lua_State;
 
 /******************************************************************************
@@ -25,7 +24,7 @@ __EXTERN_C
  * @param pArg 
  */
 extern CAPI void 
-SCommand_Callback_ConvertMusic(const struct SCommand* pSelf, const struct SCommandArg* pArg, const unsigned int dNumArgs);
+SCommand_Callback_ConvertMusic(const struct SCommand* pSelf, const SVar* pArg, const unsigned int dNumArgs);
 
 extern CAPI int
 LUA_ConvertMP3ToWAV(struct lua_State* L);

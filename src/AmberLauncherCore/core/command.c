@@ -6,18 +6,6 @@
 #include <lua.h>
 
 /******************************************************************************
- * MACROS
- ******************************************************************************/
-
-#define MAKE_AND_RETURN_SCOMMANDARG(TYPE, FIELD, VALUE) do { \
-    SCommandArg tArg;                                       \
-    tArg.eType = TYPE;                                      \
-    tArg.dFlags = 0;                                        \
-    tArg.uData.FIELD = VALUE;                               \
-    return tArg;                                            \
-} while(0)
-
-/******************************************************************************
  * HEADER FUNCTION DEFINITIONS
  ******************************************************************************/
 
@@ -90,35 +78,6 @@ SCommand_ClearFlag(SCommand* pCommand, unsigned int dFlag)
     {
         pCommand->dFlags &= ~dFlag;
     }
-}
-
-CAPI SCommandArg 
-SCommandArg_MakeNull(void) 
-{
-    SCommandArg tArg;
-    tArg.uData.pValue  = NULL;
-    tArg.dFlags        = 0;
-    tArg.eType         = CTYPE_NULL;
-    return tArg;
-}
-
-CAPI SCommandArg 
-SCommandArg_MakeInt(int dVar) 
-{
-    MAKE_AND_RETURN_SCOMMANDARG(CTYPE_INT, dValue, dVar);
-}
-
-CAPI SCommandArg 
-SCommandArg_MakeString(char* sVar) 
-{
-    /** @todo Ownership should belong to SCommandArg (const char*), use strdup or whatever, refactor */
-    MAKE_AND_RETURN_SCOMMANDARG(CTYPE_CHAR, sValue, sVar);
-}
-
-CAPI SCommandArg 
-SCommandArg_MakeVoid(void* pVar) 
-{
-    MAKE_AND_RETURN_SCOMMANDARG(CTYPE_VOID, pValue, pVar);
 }
 
 CAPI int

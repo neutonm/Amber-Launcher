@@ -15,7 +15,7 @@ typedef struct lua_ini_t
 } lua_ini_t;
 
 CAPI CBOOL
-SCommand_Callback_TweakConfig(const SCommand* pSelf, const SCommandArg* pArgs, const unsigned int dNumArgs)
+SCommand_Callback_TweakConfig(const SCommand* pSelf, const SVar* pArgs, const unsigned int dNumArgs)
 {
     ini_t* config;
     const char *ViewDistanceD3D;

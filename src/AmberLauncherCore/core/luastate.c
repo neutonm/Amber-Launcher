@@ -690,7 +690,7 @@ SLuaState_LuaObjectToSVar(
 CAPI void
 SCommand_ExecuteLuaBasedCommand(
     const SCommand* pSelf, 
-    const SCommandArg* pArg
+    const SVar* pArg
 )
 {
     lua_State* L = (lua_State*)pSelf->pOwner;
@@ -703,9 +703,9 @@ SCommand_ExecuteLuaBasedCommand(
         return;
     }
     
-    if (pSelf->dNumArgs >= 1 && pArg && pArg->eType == CTYPE_CHAR && pArg->uData.sValue) 
+    if (pSelf->dNumArgs >= 1 && pArg && pArg->eType == CTYPE_CONST_CHAR && pArg->uData._constchar) 
     {
-        lua_pushstring(L, pArg->uData.sValue);
+        lua_pushstring(L, pArg->uData._constchar);
     }
     
     if (lua_pcall(L, pSelf->dNumArgs, 0, dTracebackFunc) != LUA_OK)

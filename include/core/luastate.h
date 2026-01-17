@@ -10,7 +10,6 @@
  ******************************************************************************/
 
 struct SCommand;
-struct SCommandArg;
 struct lua_State;
 
 /******************************************************************************
@@ -243,7 +242,7 @@ SLuaState_LuaObjectToSVar(
 extern CAPI void
 SCommand_ExecuteLuaBasedCommand(
     const struct SCommand* pSelf, 
-    const struct SCommandArg* pArg
+    const SVar* pArg
 );
 
 __END_C

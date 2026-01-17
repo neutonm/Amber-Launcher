@@ -44,7 +44,7 @@ Table Of Contents:
 - [X] rename header guards: conform to one convention
 - [X] extern_c for every header!
 - [x] lua error report
-- [ ] SCommand - change SCommandArg to SVar
+- [X] SCommand - change SCommandArg to SVar
  
 #### Lua Module:
 - [x] Return status code from AL.CommandCall
@@ -77,17 +77,11 @@ Table Of Contents:
 - [ ] DetectAndCopyGame.lua
 - - check and warn if user suddenly points to mm6 or mm8 (optional)
 - - if during game detection issues occur - decide whether to continue searching game or not
-- - UI:
-- - - extra: put a header picture
-- - - Add event for "Edit" as well, user might manually type game path (currently, pApp->pString won't update if done manuallly)
-- - - Error modal:  should show current game path (for local issues)
-- - - Error modal:  continue and abort button
 - - Set file browser to start with working directory
 - - if there's no mm7.exe then don't report missing files, instead report wrong file or game
 - - File browser should visually clear itself after confirming game path (rendering issue - it does't look great)
 - - Errors should show modal window with error message and allow to continue or abort operation.
 - - - UserEvent call can be utilized here (or separate internal errorReport event)
-- - printfs should really print to pApp->pTextView
 - [X] DetectAndInstallMod.lua
 - [X] MergeAndRename.lua
 - [X] ConvertMusic.lua
