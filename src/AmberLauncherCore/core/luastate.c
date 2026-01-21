@@ -651,9 +651,19 @@ SLuaState_PushVariable(SLuaState* pLuaState, const SVar *pVar)
                 lua_newtable(L); /* push empty */
                 for (j = 0; j < t->dCount; ++j)
                 {
-                    SLuaState_PushVariable(pLuaState, &t->pEntries[j].tKey);
-                    SLuaState_PushVariable(pLuaState, &t->pEntries[j].tValue);
-                    lua_settable(L, -3); /* table[key]=value */
+                    if (t->pEntries[j].tKey.eType != CTYPE_CONST_CHAR ||
+                        t->pEntries[j].tKey.uData._constchar == NULL ||
+                        t->pEntries[j].tKey.uData._constchar[0] == '\0')
+                    {
+                        SLuaState_PushVariable(pLuaState, &t->pEntries[j].tValue);
+                        lua_rawseti(L, -2, (lua_Integer)(j + 1)); /* table[i]=value */
+                    }
+                    else
+                    {
+                        SLuaState_PushVariable(pLuaState, &t->pEntries[j].tKey);
+                        SLuaState_PushVariable(pLuaState, &t->pEntries[j].tValue);
+                        lua_settable(L, -3); /* table[key]=value */
+                    }
                 }
             }
             break;

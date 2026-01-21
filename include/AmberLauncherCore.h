@@ -41,7 +41,7 @@ extern CAPI SVar
 AmberLauncher_GetGlobalVariable(struct AppCore *pApp, const char *sVarName);
 
 extern CAPI CBOOL
-AmberLauncher_PushGlobalVariable(
+AmberLauncher_SetGlobalVariable(
     struct AppCore *pApp,
     const char *sVarName,
     const SVar *pVar);

@@ -40,7 +40,7 @@ Table Of Contents:
 *Responsible for providing main functionality for the launcher app. Must be independent module.* 
 
 - [ ] Code Review for header/sources
-- [ ] save argc/argv into AppCore struct
+- [X] pass argc/argv into lua
 - [X] rename header guards: conform to one convention
 - [X] extern_c for every header!
 - [x] lua error report

@@ -761,7 +761,7 @@ AmberLauncher_GetGlobalVariable(AppCore *pApp, const char *sVarName)
 }
 
 CAPI CBOOL
-AmberLauncher_PushGlobalVariable(
+AmberLauncher_SetGlobalVariable(
     AppCore *pApp,
     const char *sVarName,
     const SVar *pVar)

@@ -206,6 +206,15 @@ _GUIThread_Main_Null(GUIAsyncTaskData *pThreadData);
 static void
 _GUIThread_End_PanelSetMain(GUIAsyncTaskData *pThreadData, const uint32_t dRValue);
 
+static SVarTable*
+_SVar_TableNew(size_t dInitialCap);
+
+static void
+_SVar_TableDelete(SVarTable **pTable);
+
+static void
+_SVar_TableAdd(SVarTable *pTable, const char *sKey, const SVar *pVal);
+
 /******************************************************************************
  * STATIC CALLBACK DECLARATIONS
  ******************************************************************************/
@@ -2844,6 +2853,57 @@ _Nappgui_Start(void)
     AutoUpdate_Init();
     AmberLauncher_Start(pApp->pAppCore);
 
+    /* Push argc/argv */
+    {
+        uint32_t    i;
+        uint32_t    argc;
+        SVar        tArgc;
+        SVar        tArgv;
+        SVarTable  *pArgvTable;
+
+        argc        = osapp_argc();
+        pArgvTable  = _SVar_TableNew(argc);
+
+        for (i = 0; i < argc; ++i)
+        {
+            char_t      sArgbuf[128];
+            char       *sHeapStr;
+            size_t      n;
+            SVar        tArg;
+
+            osapp_argv(i, sArgbuf, sizeof(sArgbuf));
+
+            n           = strlen(sArgbuf) + 1;
+            sHeapStr    = (char_t*)malloc(n);
+            assert(IS_VALID(sHeapStr));
+            memcpy(sHeapStr, sArgbuf, n);
+
+            SVAR_CONSTCHAR(tArg, sHeapStr);
+            _SVar_TableAdd(pArgvTable, NULL, &tArg);
+        }
+
+        SVAR_UINT32(tArgc, argc);
+        AmberLauncher_SetGlobalVariable(pApp->pAppCore, "_ARGC", &tArgc);
+
+        SVAR_LUATABLE(tArgv, pArgvTable);
+        AmberLauncher_SetGlobalVariable(pApp->pAppCore, "_ARGV", &tArgv);
+
+        /* Clean Heap strings */
+        for (i = 0; i < (uint32_t)pArgvTable->dCount; ++i)
+        {
+            SVar *pVar = &pArgvTable->pEntries[i].tValue;
+
+            if (pVar->eType == CTYPE_CONST_CHAR && pVar->uData._constchar != NULL)
+            {
+                free((void*)pVar->uData._constchar);
+                pVar->uData._constchar  = NULL;
+                pVar->dSize             = 0;
+            }
+        }
+
+        _SVar_TableDelete(&pArgvTable);
+    }
+
     /* Main Window */
     pPanel                  = _Panel_GetRoot(pApp);
     pApp->pWindows->pWindow = window_create(
@@ -3098,7 +3158,6 @@ _Callback_OnCloseModalWindow(AppGUI *pApp, Event *e)
     }
 }
 
-
 static SVarTable*
 _SVar_TableNew(size_t dInitialCap)
 {
@@ -3114,11 +3173,30 @@ _SVar_TableNew(size_t dInitialCap)
 }
 
 static void
+_SVar_TableDelete(SVarTable **pTable)
+{
+    SVarTable *t;
+
+    assert(IS_VALID(pTable));
+    t = *pTable;
+    assert(IS_VALID(t));
+
+    free(t->pEntries);
+    t->pEntries = NULL;
+    t->dCount = 0;
+
+    free(t);
+    *pTable = NULL;
+}
+
+static void
 _SVar_TableAdd(SVarTable *pTable, const char *sKey, const SVar *pVal)
 {
+    const bool_t bIsKeyEmpty = (sKey == NULL || sKey[0] == '\0');
+
     pTable->pEntries[pTable->dCount].tKey.eType            = CTYPE_CONST_CHAR;
     pTable->pEntries[pTable->dCount].tKey.uData._constchar = sKey;
-    pTable->pEntries[pTable->dCount].tKey.dSize            = strlen(sKey)+1;
+    pTable->pEntries[pTable->dCount].tKey.dSize            = bIsKeyEmpty ? 0 : strlen(sKey)+1;
 
     /* shallow-copy value */
     pTable->pEntries[pTable->dCount].tValue = *pVal;
@@ -3181,6 +3259,13 @@ _Callback_UIEvent(
 
                 assert(pUserData);
                 assert(dNumArgs >= 1);
+
+                if (!SVAR_IS_CONSTCHAR(pUserData[0]))
+                {
+                    _al_printf(pApp, "Bad UIEVENT_PRINT argument\n");
+                    SVARKEYB_BOOL(tRetVal, sStatusKey, CFALSE);
+                    break;
+                }
 
                 sMessage = SVAR_GET_CONSTCHAR(pUserData[0]);
                 if (str_empty_c(sMessage))
