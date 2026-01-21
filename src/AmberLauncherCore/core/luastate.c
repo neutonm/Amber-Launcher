@@ -287,6 +287,32 @@ SLuaState_GetGlobalVariable(
     return CTRUE;
 }
 
+CAPI CBOOL
+SLuaState_SetGlobalVariable(
+    SLuaState* pLuaState,
+    const char* sVariableName,
+    const SVar* pVar)
+{
+    lua_State* L = pLuaState->pState;
+
+    if (!IS_VALID(pLuaState) || !IS_VALID(pLuaState->pState) || !IS_VALID(sVariableName))
+    {
+        fprintf
+        (
+            stderr,
+            "SLuaState_GetGlobalVariable"
+            "(SLuaState* pLuaState, const char* sVariableName, SLuaVar* pVarOut) -> "
+            "received \"LuaState\" as NULL."
+        );
+        return CFALSE;
+    }
+
+    SLuaState_PushVariable(pLuaState, pVar);
+    lua_setglobal(L, sVariableName);
+
+    return CTRUE;
+}
+
 CAPI CBOOL 
 SLuaVar_IsOfType(const SLuaVar* pVar, ELuaVarType eType)
 {

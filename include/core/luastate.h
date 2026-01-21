@@ -91,11 +91,26 @@ SLuaState_RegisterFunctionReference(
  * @param           pVarOut
  * @return          CBOOL
  */
-extern CAPI CBOOL 
+extern CAPI CBOOL
 SLuaState_GetGlobalVariable(
     const SLuaState* pLuaState, 
     const char* sVariableName, 
     SLuaVar* pVarOut);
+
+/**
+ * @relatedalso     pLuaState
+ * @brief           Sets or pushes global variable into lua state
+ * 
+ * @param           pLuaState
+ * @param           sVariableName
+ * @param           pVarOut
+ * @return          CBOOL
+ */
+extern CAPI CBOOL
+SLuaState_SetGlobalVariable(
+    SLuaState* pLuaState,
+    const char* sVariableName,
+    const SVar* pVar);
 
 /**
  * @relatedalso     CLuaVar

@@ -736,6 +736,8 @@ AmberLauncher_GetGlobalVariable(AppCore *pApp, const char *sVarName)
     SLuaVar tLuaVar;
     SVar    tRetVar;
 
+    assert(pApp);
+
     SLuaState_GetGlobalVariable(pApp->pLuaState, sVarName, &tLuaVar);
 
     /* Convert to Svar */
@@ -756,6 +758,22 @@ AmberLauncher_GetGlobalVariable(AppCore *pApp, const char *sVarName)
     }
 
     return tRetVar;
+}
+
+CAPI CBOOL
+AmberLauncher_PushGlobalVariable(
+    AppCore *pApp,
+    const char *sVarName,
+    const SVar *pVar)
+{
+    CBOOL bResult;
+    
+    assert(pApp);
+    assert(pVar);
+
+    bResult = SLuaState_SetGlobalVariable(pApp->pLuaState, sVarName, pVar);
+
+    return bResult;
 }
 
 CAPI CBOOL

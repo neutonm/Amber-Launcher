@@ -41,6 +41,12 @@ extern CAPI SVar
 AmberLauncher_GetGlobalVariable(struct AppCore *pApp, const char *sVarName);
 
 extern CAPI CBOOL
+AmberLauncher_PushGlobalVariable(
+    struct AppCore *pApp,
+    const char *sVarName,
+    const SVar *pVar);
+
+extern CAPI CBOOL
 AmberLauncher_ProcessUISideButton(struct AppCore *pApp, unsigned int dButtonTag);
 
 extern CAPI CBOOL
