@@ -98,7 +98,7 @@ function OnPostAppInit()
 
     -- Set GAME_MOD_VERSION during check (second argument)
     AL_DetectMod(GAME_DESTINATION_PATH, true)
-    print("MOD VERSION: "..tostring(GAME_MOD_VERSION))
+    print("MOD VERSION: "..tostring(GAME_MOD_VERSION_STR))
 end
 
 function OnAppDestroy()
