@@ -66,14 +66,12 @@ Table Of Contents:
 *Provide alternative and/or extended functionality for the launcher.*
 
 - [ ] INI:
-- - INI keys should be predefined in _const.lua as they repeat themselves at couple of places
 - - Checks must be made for INILoad, recreate default mod.ini and mm7.ini if file doesn't exist (extract from archive) 
 - [ ] ModalOptions.lua
 - - UI_WIDGET_LISTBOX binary "choice" representation of return value for ui call result is a bit overkill
 - - "Default" button
 - - - "default" value of global table should be responsible for reset value.
 - - - "value" should be responsible for current value, remove opt.value from choice processing part
-- - INI file gets opened too many times, very stupid move.
 - [ ] DetectAndCopyGame.lua
 - - check and warn if user suddenly points to mm6 or mm8 (optional)
 - - if during game detection issues occur - decide whether to continue searching game or not

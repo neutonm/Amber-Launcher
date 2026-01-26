@@ -2,6 +2,10 @@
 
 local _LocaleCoreTable = {}
 local _LocaleModTable  = {}
+local _INIModHandler   = nil
+local _INIMM7Handler   = nil
+local _bIsINIModChanged= false
+local _bIsINIMM7Changed= false
 
 local function _GetLocaleNames(which, t)
     assert(which == "core" or which == "mod", "Argument must be 'core' or 'mod'")
@@ -23,12 +27,10 @@ end
 local function _GetLocaleNameFromConfig(which)
     assert(which == "core" or which == "mod", "Argument must be 'core' or 'mod'")
 
-    local ini    = AL.INILoad(INI_PATH_MOD)
-    if ini == nil then
+    if _INIModHandler == nil then
         return ""
     end
-    local retStr = AL.INIGet(ini, "Localisation", which == "core" and "Core" or "Mod")
-    AL.INIClose(ini)
+    local retStr = AL.INIGet(_INIModHandler, "Localisation", which == "core" and "Core" or "Mod")
 
     retStr = (retStr == nil or retStr == 0) and "English" or retStr
     return retStr
@@ -66,9 +68,11 @@ local function _GetOptionsTable()
                 id          = "cmdargs",
                 type        = UIWIDGET.EDIT,
                 default     = (function()
-                    local ini    = AL.INILoad(INI_PATH_MOD)
-                    local retStr = AL.INIGet(ini, "Settings", "LaunchCommand")
-                    AL.INIClose(ini)
+
+                    local retStr = nil
+                    if _INIModHandler then
+                        retStr = AL.INIGet(_INIModHandler, "Settings", "LaunchCommand")
+                    end
 
                     if retStr == nil or retStr == "" then
                         retStr = AL.GetLaunchCommand()
@@ -80,12 +84,12 @@ local function _GetOptionsTable()
 
                     AL.SetLaunchCommand(t.value)
 
-                    local ini = AL.INILoad(INI_PATH_MOD)
-                    if ini ~= nil then
-                        AL.INISet(ini, "Settings", "LaunchCommand", t.value)
-                        AL.INISave(ini, INI_PATH_MOD)
-                        AL.INIClose(ini)
+                    if _INIModHandler == nil then
+                        return
                     end
+
+                    AL.INISet(_INIModHandler, "Settings", "LaunchCommand", t.value)
+                    _bIsINIModChanged = true
                 end
             },
             {
@@ -93,9 +97,11 @@ local function _GetOptionsTable()
                 id          = "closeonlaunch",
                 type        = UIWIDGET.CHECKBOX,
                 default     = (function()
-                    local ini    = AL.INILoad(INI_PATH_MOD)
-                    local retStr = AL.INIGet(ini, "Settings", "CloseOnLaunch")
-                    AL.INIClose(ini)
+
+                    local retStr = nil
+                    if _INIModHandler then
+                        retStr = AL.INIGet(_INIModHandler, "Settings", "CloseOnLaunch")
+                    end
 
                     if retStr == nil or retStr == "" then
                         retStr = "0"
@@ -105,12 +111,12 @@ local function _GetOptionsTable()
                 end)(),
                 callback    = function(t)
 
-                    local ini = AL.INILoad(INI_PATH_MOD)
-                    if ini ~= nil then
-                        AL.INISet(ini, "Settings", "CloseOnLaunch", tonumber(t.value))
-                        AL.INISave(ini, INI_PATH_MOD)
+                    if _INIModHandler == nil then
+                        return
                     end
-                    AL.INIClose(ini)
+
+                    AL.INISet(_INIModHandler, "Settings", "CloseOnLaunch", tonumber(t.value))
+                    _bIsINIModChanged = true
                 end
             },
             {
@@ -237,16 +243,24 @@ local function _GetOptionsTable()
                     "Turn",
                     "Move (strafe)"
                 },
-                default     = 1,
+                default     = (function()
+
+                    local retStr = "1"
+
+                    if _INIMM7Handler then
+                        retStr = AL.INIGet(_INIMM7Handler, "Settings", "AlwaysStrafe")
+                    end
+
+                    return tonumber(retStr)
+                end)(),
                 callback    = function(t)
 
-                    local ini = AL.INILoad(INI_PATH_MM7)
-                    if ini == nil then
+                    if _INIMM7Handler == nil then
                         return
                     end
-                    AL.INISet(ini, "Settings", "AlwaysStrafe", tostring(t.value))
-                    AL.INISave(ini, INI_PATH_MM7)
-                    AL.INIClose(ini)
+
+                    AL.INISet(_INIMM7Handler, "Settings", "AlwaysStrafe", tostring(t.value))
+                    _bIsINIMM7Changed = true
                 end
             },
             {
@@ -257,32 +271,50 @@ local function _GetOptionsTable()
                     "Modern (HD)",
                     "Original"
                 },
-                default     = 1,
+                default     = (function()
+
+                    local retStr = "1"
+
+                    if _INIMM7Handler then
+                        retStr = AL.INIGet(_INIMM7Handler, "Settings", "UILayout")
+                    end
+
+                    retStr = (retStr == "UI" and "0" or "1")
+
+                    return tonumber(retStr)
+                end)(),
                 callback    = function(t)
 
-                    local ini = AL.INILoad(INI_PATH_MM7)
-                    if ini == nil then
+                    if _INIMM7Handler == nil then
                         return
                     end
-                    AL.INISet(ini, "Settings", "UILayout", t.value == 0 and "UI" or "0")
-                    AL.INISave(ini, INI_PATH_MM7)
-                    AL.INIClose(ini)
+
+                    AL.INISet(_INIMM7Handler, "Settings", "UILayout", t.value == 0 and "UI" or "0")
+                    _bIsINIMM7Changed = true
                 end
             },
             {
                 title       = "Mouse Look Mode:",
                 id          = "mouselook",
                 type        = UIWIDGET.CHECKBOX,
-                default     = 1,
+                default     = (function()
+
+                    local retStr = "1"
+
+                    if _INIMM7Handler then
+                        retStr = AL.INIGet(_INIMM7Handler, "Settings", "MouseLook")
+                    end
+
+                    return tonumber(retStr)
+                end)(),
                 callback    = function(t)
 
-                    local ini = AL.INILoad(INI_PATH_MM7)
-                    if ini == nil then
+                    if _INIMM7Handler == nil then
                         return
                     end
-                    AL.INISet(ini, "Settings", "MouseLook", tostring(t.value))
-                    AL.INISave(ini, INI_PATH_MM7)
-                    AL.INIClose(ini)
+
+                    AL.INISet(_INIMM7Handler, "Settings", "MouseLook", tostring(t.value))
+                    _bIsINIMM7Changed = true
                 end
             },
         },
@@ -292,16 +324,24 @@ local function _GetOptionsTable()
                 title       = "View Distance:",
                 id          = "tviewdist",
                 type        = UIWIDGET.EDIT,
-                default     = "16000",
+                default     = (function()
+
+                    local retStr = "16000"
+
+                    if _INIMM7Handler then
+                        retStr = AL.INIGet(_INIMM7Handler, "Settings", "ViewDistanceD3D")
+                    end
+
+                    return retStr
+                end)(),
                 callback    = function(t)
 
-                    local ini = AL.INILoad(INI_PATH_MM7)
-                    if ini == nil then
+                    if _INIMM7Handler == nil then
                         return
                     end
-                    AL.INISet(ini, "Settings", "ViewDistanceD3D", tostring(t.value))
-                    AL.INISave(ini, INI_PATH_MM7)
-                    AL.INIClose(ini)
+
+                    AL.INISet(_INIMM7Handler, "Settings", "ViewDistanceD3D", tostring(t.value))
+                    _bIsINIMM7Changed = true
                 end
             },
         }
@@ -310,9 +350,36 @@ end
 
 function ModalShowOptions()
 
-    local optTable   = _GetOptionsTable()
-    local uiResponse = AL.UICall(UIEVENT.MODAL_OPTIONS, optTable)
+    local optTable      = nil
+    local uiResponse    = nil
+    _INIModHandler      = nil
+    _INIMM7Handler      = nil
+    _bIsINIModChanged   = false
+    _bIsINIMM7Changed   = false
+
+    _INIModHandler      = AL.INILoad(INI_PATH_MOD)
+    if _INIModHandler   == nil then
+        AL_print("[Error]: failed to open (read): "..INI_PATH_MOD)
+    end
+    _INIMM7Handler      = AL.INILoad(INI_PATH_MM7)
+    if _INIMM7Handler   == nil then
+        AL_print("[Error]: failed to open (read): "..INI_PATH_MM7)
+    end
+    optTable   = _GetOptionsTable()
+    AL.INIClose(_INIModHandler)
+    AL.INIClose(_INIMM7Handler)
+
+    uiResponse = AL.UICall(UIEVENT.MODAL_OPTIONS, optTable)
     if uiResponse and uiResponse.status == true then
+
+        _INIModHandler = AL.INILoad(INI_PATH_MOD)
+        if _INIModHandler == nil then
+            AL_print("[Error]: failed to open (write): "..INI_PATH_MOD)
+        end
+        _INIMM7Handler = AL.INILoad(INI_PATH_MM7)
+        if _INIMM7Handler == nil then
+            AL_print("[Error]: failed to open (write): "..INI_PATH_MM7)
+        end
 
         for _, section in ipairs(optTable) do
             for _, opt in ipairs(section) do
@@ -329,6 +396,16 @@ function ModalShowOptions()
                 end
             end
         end
+
+        if _bIsINIModChanged then
+            AL.INISave(_INIModHandler, INI_PATH_MOD)
+        end
+        if _bIsINIMM7Changed then
+            AL.INISave(_INIMM7Handler, INI_PATH_MM7)
+        end
+
+        AL.INIClose(_INIModHandler)
+        AL.INIClose(_INIMM7Handler)
     end
 
     print(dump(uiResponse))
