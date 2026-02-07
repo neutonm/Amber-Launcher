@@ -21,7 +21,7 @@ Table Of Contents:
 ## Main
 *General points towards development*
 
-- [x] Fix memory leaks
+- [X] Fix memory leaks
 - [ ] Uninstall Game/Mod feature (should totally revert everything + backup saves)
 - [ ] App and scripts must be based on specified game (Amber Island by default)
 - - It's step into the future, providing app usage for multiple mods

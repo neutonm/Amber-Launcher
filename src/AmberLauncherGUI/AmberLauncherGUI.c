@@ -1163,12 +1163,21 @@ _Panel_GetModalOptionSubpanel(AppGUI *pApp)
 
     for(i = 0; i < MAX_OPT_ELEMS; i ++)
     {
-        Label  *pLabel          = label_create();
-        Layout *pLayoutLabelRow = layout_create(2, 1);
-        unsigned int dCurRow    = dRow;
+        Label           *pLabel;
+        Layout          *pLayoutLabelRow;
+        unsigned int     dCurRow;
 
         pElem = &pApp->pElementSets->pOptElementArray[i];
         assert(IS_VALID(pElem));
+
+        if (pElem->eType == UI_WIDGET_NULL)
+        {
+            continue;
+        }
+
+        pLabel          = label_create();
+        pLayoutLabelRow = layout_create(2, 1);
+        dCurRow         = dRow;
 
         /* Default row widgets */
         label_font(pLabel, pFontBold);
