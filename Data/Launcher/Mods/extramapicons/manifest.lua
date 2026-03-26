@@ -14,6 +14,11 @@ This mod refreshes world map by replacing the base texture with a icon-rich vers
       dst       = "Data/xmapicons.ICONS.LOD", 
       autoclear = true 
     },
+    { 
+      src       = "Assets/xmapicons.ICONS.hard.LOD", 
+      dst       = "Data/Warrior/xmapicons.ICONS.hard.LOD", 
+      autoclear = true 
+    },
   },
 
   onInstall = function(ctx)
