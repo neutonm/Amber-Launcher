@@ -4,15 +4,14 @@
 -- Modal Mod Manager
 
 local modsRoot         = FS.PathJoin("Data", "Launcher", "Mods")
-local gameScriptsRoot  = FS.PathJoin(GAME_DESTINATION_PATH, "Scripts")
-local activeLua        = FS.PathJoin(modsRoot, "_active.lua")
+
 
 local function _Serialize(t, indent)
     indent = indent or ""
     local pad = indent .. "    "
     local buff = {"{\n"}
     for k, v in pairs(t) do
-        local key = ("[%q]"):format(k)
+        local key = type(k) == "number" and ("[%s]"):format(k) or ("[%q]"):format(k)
         local val
         if type(v) == "table" then
             val = _Serialize(v, pad)
@@ -41,22 +40,50 @@ local function _TablesEqual(a, b)
     return true
 end
 
---- Scans for mods with a valid `manifest.lua` and returns normalized manifests (`id`, `root`, `screenshot`).
+-- Prefer explicit compatibility lists; accept single-game name/key.
+local function _GetCompatibleGames(manifest)
+    if manifest.games ~= nil then
+        return manifest.games
+    end
+
+    if type(manifest.game) == "string" then
+        for key, id in pairs(MODID) do
+            if id > MODID.NULL and id < MODID.MAX and
+                (manifest.game == key or manifest.game == MODID_NAMES[id]) then
+                return {key}
+            end
+        end
+    end
+
+    return nil
+end
+
+--- Scans for compatible mods and returns normalized manifests (`id`, `games`, `root`, `screenshot`).
 -- @treturn {table,...} List of manifest tables
 function AL_ScanMods()
     local list = {}
+
+    if not FS.IsFilePresent(modsRoot) then
+        return list
+    end
+
     for _, dir in ipairs(FS.DirectoryList(modsRoot) or {}) do
         local manifestPath = FS.PathJoin(modsRoot, dir, "manifest.lua")
         if FS.IsFilePresent(manifestPath) then
             local ok, manifest = pcall(dofile, manifestPath)
-            if ok and type(manifest) == "table" and manifest.game == GAME_MOD_ID_NAME then
-                manifest.id         = manifest.id or dir
-                manifest.root       = FS.PathJoin(modsRoot, dir)
-                manifest.screenshot = FS.PathJoin(manifest.root, "screenshot.jpg")
-                list[#list + 1] = manifest
+            if ok and type(manifest) == "table" then
+                local games = _GetCompatibleGames(manifest)
+                if AL_IsGameCompatible(games) then
+                    manifest.id         = manifest.id or dir
+                    manifest.games      = games
+                    manifest.root       = FS.PathJoin(modsRoot, dir)
+                    manifest.screenshot = FS.PathJoin(manifest.root, "screenshot.jpg")
+                    list[#list + 1]      = manifest
+                end
             end
         end
     end
+
     return list
 end
 
@@ -118,14 +145,14 @@ local function _UninstallManifest(m, opts)
             _DeleteRule(r)
         end
     end
-    FS.PathDelete(FS.PathJoin(gameScriptsRoot, "ModSettings", m.id .. "_settings.lua"))
+    FS.PathDelete(FS.PathJoin(GAME_DESTINATION_PATH, "Scripts", "ModSettings", m.id .. "_settings.lua"))
     if type(m.onUninstall) == "function" then
         pcall(m.onUninstall, _MakeCtx(m, opts))
     end
 end
 
 local function _SaveSettings(modId, tbl)
-    local dir = FS.PathJoin(gameScriptsRoot, "ModSettings")
+    local dir = FS.PathJoin(GAME_DESTINATION_PATH, "Scripts", "ModSettings")
     FS.DirectoryEnsure(dir)
     local f = io.open(FS.PathJoin(dir, modId .. "_settings.lua"), "w")
     f:write("return ", _Serialize(tbl))
@@ -135,8 +162,8 @@ end
 --- Loads the active mods table
 -- @treturn table Active mods table (empty if missing/invalid)
 function AL_LoadActiveMods()
-    if FS.IsFilePresent(activeLua) then
-        local ok, t = pcall(dofile, activeLua)
+    if FS.IsFilePresent(MOD_ACTIVE_PATH) then
+        local ok, t = pcall(dofile, MOD_ACTIVE_PATH)
         if ok and type(t) == "table" then
             return t
         end
@@ -145,7 +172,8 @@ function AL_LoadActiveMods()
 end
 
 local function _SaveActive(list)
-    local f = io.open(activeLua, "w")
+    FS.DirectoryEnsure(FS.PathGetDirectory(MOD_ACTIVE_PATH))
+    local f = io.open(MOD_ACTIVE_PATH, "w")
     f:write("return ", _Serialize(list))
     f:close()
 end
@@ -170,7 +198,7 @@ function AL_InstallMod(modId, opts)
 
     local m = byId[modId]
     if not m then
-        return nil, "Unknown mod: " .. tostring(modId)
+        return nil, "Unknown or incompatible mod: " .. tostring(modId)
     end
 
     local active = AL_LoadActiveMods()
@@ -204,7 +232,7 @@ function AL_UninstallMod(modId, opts)
 
     local m = byId[modId]
     if not m then
-        return nil, "Unknown mod: " .. tostring(modId)
+        return nil, "Unknown or incompatible mod: " .. tostring(modId)
     end
 
     local active = AL_LoadActiveMods()
@@ -247,6 +275,17 @@ end
 -- @treturn boolean
 function AL_IsModActive(modId)
 
+    local compatible = false
+    for _, mod in ipairs(AL_ScanMods()) do
+        if mod.id == modId then
+            compatible = true
+            break
+        end
+    end
+    if not compatible then
+        return false
+    end
+
     for _, id in ipairs(AL_LoadActiveMods()) do
         if id == modId then
             return true
@@ -259,11 +298,23 @@ end
 local modsTable = {}
 
 function ModalShowModManager()
-    local mods      = AL_ScanMods()
-    local activeSeq = AL_LoadActiveMods()
-    local activeSet = {}
-    for _, id in ipairs(activeSeq) do
-        activeSet[id] = true
+    local mods         = AL_ScanMods()
+    local storedSeq    = AL_LoadActiveMods()
+    local activeSeq    = {}
+    local activeSet    = {}
+    local preservedSeq = {}
+    local byId         = {}
+    for _, mod in ipairs(mods) do
+        byId[mod.id] = mod
+    end
+    for _, id in ipairs(storedSeq) do
+        if byId[id] then
+            activeSeq[#activeSeq + 1] = id
+            activeSet[id]            = true
+        else
+            -- Hidden mods cannot be edited by this game's modal.
+            preservedSeq[#preservedSeq + 1] = id
+        end
     end
     _DebugList(mods, activeSet)
 
@@ -276,20 +327,27 @@ function ModalShowModManager()
     end
 
     local newSet, newSeq, seen = {}, {}, {}
+    local function _SelectMod(id)
+        if byId[id] and not seen[id] then
+            newSet[id]         = true
+            newSeq[#newSeq + 1] = id
+            seen[id]           = true
+        end
+    end
     if type(rsp.active) == "table" and not (type(rsp.active[1]) == "string") then
         for _, id in ipairs(activeSeq) do
             if rsp.active[id] then
-                newSet[id], newSeq[#newSeq + 1], seen[id] = true, id, true
+                _SelectMod(id)
             end
         end
         for id, state in pairs(rsp.active) do
             if state and not seen[id] then
-                newSet[id], newSeq[#newSeq + 1] = true, id
+                _SelectMod(id)
             end
         end
     else
         for _, id in ipairs(rsp.active or {}) do
-            newSet[id], newSeq[#newSeq + 1] = true, id
+            _SelectMod(id)
         end
     end
 
@@ -307,38 +365,36 @@ function ModalShowModManager()
     end
 
     local runtimeByMod = {}
-    local byId = {}
-    for _, m in ipairs(mods) do
-        byId[m.id] = m
-    end
 
     if rsp.options then
         for modId, schema in pairs(rsp.options) do
-            local opts = _ExtractRuntime(schema)
-            runtimeByMod[modId] = opts
+            if byId[modId] and type(schema) == "table" then
+                local opts = _ExtractRuntime(schema)
+                runtimeByMod[modId] = opts
 
-            local prev = {}
-            local path = FS.PathJoin(gameScriptsRoot, "ModSettings", modId .. "_settings.lua")
-            if FS.IsFilePresent(path) then
-                local ok, t = pcall(dofile, path)
-                if ok and type(t) == "table" then
-                    prev = t
+                local prev = {}
+                local path = FS.PathJoin(GAME_DESTINATION_PATH, "Scripts", "ModSettings", modId .. "_settings.lua")
+                if FS.IsFilePresent(path) then
+                    local ok, t = pcall(dofile, path)
+                    if ok and type(t) == "table" then
+                        prev = t
+                    end
                 end
-            end
 
-            if not _TablesEqual(prev, opts) then
-                local m = byId[modId]
-                if m and type(m.onOption) == "function" then
-                    for k, v in pairs(opts) do
-                        if prev[k] ~= v then
-                            pcall(m.onOption, _MakeCtx(m, opts), k, prev[k], v)
+                if not _TablesEqual(prev, opts) then
+                    local m = byId[modId]
+                    if m and type(m.onOption) == "function" then
+                        for k, v in pairs(opts) do
+                            if prev[k] ~= v then
+                                pcall(m.onOption, _MakeCtx(m, opts), k, prev[k], v)
+                            end
                         end
                     end
                 end
-            end
 
-            if next(opts) then
-                _SaveSettings(modId, opts)
+                if next(opts) then
+                    _SaveSettings(modId, opts)
+                end
             end
         end
     end
@@ -354,10 +410,12 @@ function ModalShowModManager()
         end
     end
 
+    for _, id in ipairs(preservedSeq) do
+        newSeq[#newSeq + 1] = id
+    end
     _SaveActive(newSeq)
 end
 
 function events.InitLauncher()
     --
 end
-

@@ -17,15 +17,18 @@ Table Of Contents:
 ## Refactor
 * Improve code and boost up readability *
 - [ ] AmberLauncherGUI.c -> one giant monolithic source file, divide and organize
+- [ ] Shared multigame scripts -> amber and mm7 have shared scripts: combine/refactor
 
 ## Main
 *General points towards development*
 
 - [X] Fix memory leaks
 - [ ] Uninstall Game/Mod feature (should totally revert everything + backup saves)
-- [ ] App and scripts must be based on specified game (Amber Island by default)
+- [X] App and scripts must be based on specified game (Amber Island by default)
 - - It's step into the future, providing app usage for multiple mods
 - - partially done, check _const.lua > GAME_MOD_XXX vars
+- - [ ] Realtime game/mod/expansion switch
+- - [ ] website: rearrange update files, place them in proper game folders on a server, update manifests
 - [x] Update LICENSE file
 - [ ] Write code style document
 - [ ] Clang format

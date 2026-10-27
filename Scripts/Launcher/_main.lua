@@ -86,19 +86,43 @@ function OnAppInit()
     end
 end
 
+function OnAppScriptsLoaded()
+    AL_DiscoverGames()
+    if not AL_SelectCurrentGame() then
+        return false
+    end
+
+    AL_ApplyCurrentGame()
+    if not AL_LoadGameScripts(GAME_CURRENT.scriptsPath) then
+        return false
+    end
+    if not AL_SaveCurrentGame() then
+        AL_print("Failed to save launcher preferences.")
+        return false
+    end
+    return true
+end
+
 function OnPostAppInit()
 
     print("Post App Init")
 
+    if GAME_CURRENT == GAME_NULL then
+        return
+    end
+
     local src, how = AL_DetectGame(nil, false) -- "."
-    if not src then
+    if not src or how ~= "local" or
+        (GAME_CURRENT.isConfigured and not GAME_CURRENT.isConfigured()) then
         AL.UICall(UIEVENT.AUTOCONFIG)
         return
     end
 
     -- Set GAME_MOD_VERSION during check (second argument)
-    AL_DetectMod(GAME_DESTINATION_PATH, true)
-    print("MOD VERSION: "..tostring(GAME_MOD_VERSION_STR))
+    if type(AL_DetectMod) == "function" then
+        AL_DetectMod(GAME_DESTINATION_PATH, true)
+        print("MOD VERSION: "..tostring(GAME_MOD_VERSION_STR))
+    end
 end
 
 function OnAppDestroy()
@@ -149,52 +173,48 @@ end
 
 function OnPlay()
 
-    print("Starting game...")
-
-    local destDir = (GAME_DESTINATION_PATH or ".")
-    local sep     = FS.OS_FILE_SEPARATOR
-    destDir       = destDir:gsub(sep.."*$", "")
-
-    local ini               = AL.INILoad(INI_PATH_MOD)
-    local bCloseOnLaunch    = nil
-    local sLaunchCmd        = nil
-    if ini ~= nil then
-        bCloseOnLaunch      = AL.INIGet(ini, "Settings", "CloseOnLaunch")
-        sLaunchCmd          = AL.INIGet(ini, "Settings", "LaunchCommand")
-        bCloseOnLaunch      = tonumber(bCloseOnLaunch)
-    end
-    AL.INIClose(ini)
-
-    local rawPath 			= FS.PathJoin(FS.CurrentDir(), destDir, GAME_EXECUTABLE_NAME)
-	local fullExePath 		= FS.PathClean(FS.PathNormalize(rawPath))
-    local cmd          		= sLaunchCmd or AL.GetLaunchCommand()
-    if cmd:find(fullExePath, 1, true) then
-        return
+    local ini            = AL.INILoad(INI_PATH_MOD)
+    local closeOnLaunch  = 0
+    local command        = GAME_EXECUTABLE_NAME
+    if ini then
+        closeOnLaunch = tonumber(AL.INIGet(ini, "Settings", "CloseOnLaunch")) or 0
+        local saved   = AL.INIGet(ini, GAME_SETTINGS_SECTION, "LaunchCommand")
+        if saved and saved ~= "" then
+            command = saved
+        end
+        AL.INIClose(ini)
     end
 
-    -- Replace mm7.exe, preserving quotes
-    local pattern = '(["\']?)%f[%w]' ..
-                    GAME_EXECUTABLE_NAME:gsub("%.", "%%.") ..
-                    '%f[^%w]%1'
+    local executable = FS.PathResolveCaseInsensitive(GAME_DESTINATION_PATH, GAME_EXECUTABLE_NAME) or
+        FS.PathJoin(GAME_DESTINATION_PATH, GAME_EXECUTABLE_NAME)
+    local quoted     = OS_NAME == "Windows" and ('"'..executable..'"') or
+        ("'"..executable:gsub("'", "'\"'\"'").."'")
 
-    local newCmd, n = cmd:gsub(pattern,
-        function(q)
-            return (q or "")..fullExePath..(q or "")
-        end, 1)
-
-    if n > 0 then
-        AL.SetLaunchCommand(newCmd)
+    -- Replace only the bare executable token, keeping user-supplied wrappers and
+    -- arguments (e.g. wine mm7.exe -windowed). Absolute custom commands stay intact.
+    local start = 1
+    while true do
+        local first, last = command:find(GAME_EXECUTABLE_NAME, start, true)
+        if not first then break end
+        local left, right = first, last
+        local before      = command:sub(first - 1, first - 1)
+        if (before == '"' or before == "'") and command:sub(last + 1, last + 1) == before then
+            left, right = first - 1, last + 1
+        end
+        if (left == 1 or command:sub(left - 1, left - 1):match("%s")) and
+            (right == #command or command:sub(right + 1, right + 1):match("%s")) then
+            command = command:sub(1, left - 1)..quoted..command:sub(right + 1)
+            break
+        end
+        start = last + 1
     end
-	
-	print("Full exe path: "..fullExePath)
+    AL.SetLaunchCommand(command)
+    print("Starting game in "..GAME_DESTINATION_PATH..": "..command)
 
-    -- Permission for exe on Linux
-    if OS_NAME ~= "Windows" and not FS.IsFileExecutable(fullExePath) then
-        os.execute(('chmod +x "%s" 2>/dev/null'):format(fullExePath))
+    if OS_NAME ~= "Windows" and not FS.IsFileExecutable(executable) then
+        os.execute("chmod +x "..quoted.." 2>/dev/null")
     end
-
-    -- close nappgui (cleaner solution)
-    if bCloseOnLaunch > 0 then
+    if closeOnLaunch > 0 then
         AL.UICall(UIEVENT.EXITAPP)
     end
 end

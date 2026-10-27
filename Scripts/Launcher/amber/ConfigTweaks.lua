@@ -85,10 +85,9 @@ local function _ConfigTweaks()
         if uiResponse.desktoplink then
 
             if uiResponse.desktoplink == 0 then
-                local curDir = FS.CurrentDir()
-                local exe    = FS.PathJoin(curDir,GAME_DESTINATION_FOLDER, 
+                local exe    = FS.PathJoin(LAUNCHER_PATH, 
                     (FS.OS_NAME=="Windows") and (LAUNCHER_NAME..".exe") or LAUNCHER_NAME)
-                FS.CreateDesktopLink(GAME_MOD_ID_TITLE,exe,FS.PathJoin(curDir, "icon.ico"))
+                FS.CreateDesktopLink(GAME_MOD_ID_TITLE,exe,FS.PathJoin(LAUNCHER_PATH, "icon.ico"))
             end
         end
     end

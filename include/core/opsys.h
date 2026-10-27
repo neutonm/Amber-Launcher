@@ -100,6 +100,7 @@ AmberLauncher_PrintDefaultSystemInformation(void);
  * @param       argc
  * @param       argv
  * @param       bCloseOnLaunch
+ * @param       sWorkingDirectory Child process directory; launcher cwd is unchanged.
  * @return      int Success
  */
 extern CAPI int
@@ -107,7 +108,8 @@ AmberLauncher_ProcessLaunch(
     const char* sAppPath, 
     int argc, 
     char **argv, 
-    CBOOL bCloseOnLaunch
+    CBOOL bCloseOnLaunch,
+    const char *sWorkingDirectory
 );
 
 extern CAPI int

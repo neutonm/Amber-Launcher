@@ -1,6 +1,6 @@
 return {
   id          = "extramapicons",
-  game        = MODID_NAMES[MODID.AMBER],
+  games       = {"AMBER"},
   name        = "Extra Map Icons",
   version     = "1.0.0",
   website     = "https://mightandmagicmod.com",

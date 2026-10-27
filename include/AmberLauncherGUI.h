@@ -235,6 +235,7 @@ typedef struct _AppGUI
 
     EPanelType          eCurrentPanel;
     EUIEventType        eCurrentUIEvent;
+    bool_t              bUpdaterModSkipped;
 } AppGUI;
 
 typedef struct _GUIAsyncTaskData

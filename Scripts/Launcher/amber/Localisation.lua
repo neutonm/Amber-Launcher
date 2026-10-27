@@ -171,14 +171,23 @@ function AL_WriteConfigLocalisationNames(langCore, langMod)
     end
 
     local ini     = AL.INILoad(INI_PATH_MOD)
+    if not ini then
+        AL_print("[Error]: failed to open localisation settings: "..INI_PATH_MOD)
+        return false
+    end
     if (langCore ~= nil) then
         AL.INISet(ini, "Localisation", "Core", langCore)
     end
     if (langMod ~= nil) then
         AL.INISet(ini, "Localisation", "Mod", langMod)
     end
-    AL.INISave(ini, INI_PATH_MOD)
+    local saved = AL.INISave(ini, INI_PATH_MOD)
     AL.INIClose(ini)
+    if not saved then
+        AL_print("[Error]: failed to save localisation settings: "..INI_PATH_MOD)
+        return false
+    end
+    return true
 end
 
 local function _Localisation()
@@ -194,7 +203,9 @@ local function _Localisation()
     if uiResponse and uiResponse.status == true then
 
         -- cleanup core first
-        AL_LocaliseCoreFreeAll()
+        if type(AL_LocaliseCoreFreeAll) == "function" then
+            AL_LocaliseCoreFreeAll()
+        end
         for _, locale in ipairs(AL_TLocales) do
             if locale.coreFreeCb then locale.coreFreeCb(locale) end
         end
@@ -222,7 +233,9 @@ local function _Localisation()
         end
     end
 
-    AL_WriteConfigLocalisationNames(langCore, langMod)
+    if AL_WriteConfigLocalisationNames(langCore, langMod) == false then
+        return false
+    end
     AL_print("Localisation adjusted!")
 
     return true

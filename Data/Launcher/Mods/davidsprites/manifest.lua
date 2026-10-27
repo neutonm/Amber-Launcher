@@ -1,6 +1,6 @@
 return {
   id          = "davidsprites",
-  game        = MODID_NAMES[MODID.AMBER],
+  games       = {"AMBER", "MM7"},
   name        = "DaveHer's Foliage Overhaul",
   version     = "1.0.0",
   website     = "https://www.celestialheavens.com/forum/10",

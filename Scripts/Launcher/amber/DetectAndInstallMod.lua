@@ -25,7 +25,7 @@ function AL_DetectMod(destinationFolder, bSetModVersion)
     end
 
     -- Original Public release
-    local modLuaName = FS.PathJoin("Scripts", "General", "Mod.lua")
+    local modLuaName = FS.PathJoin(destinationFolder, "Scripts", "General", "Mod.lua")
     local file, err  = io.open(modLuaName, "rb")
     if not file then
         --print("Couldn't open file, assuming there's no mod installed: "..err)
@@ -65,7 +65,25 @@ local function InstallMod(destinationFolder)
         AL_print("Failed to extract _grayfacePatch257")
         return false
     end
-    if not AL.ArchiveExtract(modZip, destinationFolder) then
+    -- The bundled mod.ini must not overwrite shared launcher preferences when
+    -- configuring an installation beside the launcher.
+    local originalConfig = nil
+    if GAME_LAYOUT == "local" then
+        local file = io.open(INI_PATH_MOD, "rb")
+        if file then
+            originalConfig = file:read("*all")
+            file:close()
+        end
+    end
+    local extracted = AL.ArchiveExtract(modZip, destinationFolder)
+    if originalConfig then
+        local file = io.open(INI_PATH_MOD, "wb")
+        if not file then return false end
+        local written = file:write(originalConfig)
+        local closed  = file:close()
+        if not written or not closed then return false end
+    end
+    if not extracted then
         AL_print("Failed to extract _mod.zip")
         return false
     end

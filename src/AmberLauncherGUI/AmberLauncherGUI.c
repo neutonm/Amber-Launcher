@@ -62,9 +62,6 @@ _sDefaultUpdaterRemoteRootURL =
 static const char *_sDefaultUpdaterLauncherManifestURL = 
     "https://mightandmagicmod.com/updater/al_manifest.json";
 
-static const char *_sDefaultUpdaterModManifestURL = 
-    "https://mightandmagicmod.com/updater/mod_manifest.json";
-
 static const char *_sLua_URL_UPDATER_ROOT =
     "URL_UPDATER_ROOT";
 static const char *_sLua_URL_UPDATER_LAUNCHER_MANIFEST =
@@ -1000,12 +997,34 @@ Panel_GetModalTweaker(AppGUI *pApp)
     return pPanelMain;
 }
 
+/* Pop-up indices count only languages available for that tier. */
+static uint32_t
+_LocalisationIndex(const AppGUI *pApp, ELocTier eTier, uint32_t dChoice)
+{
+    uint32_t i;
+    for (i = 0; i < pApp->pLocalizations->dLocaleCount; ++i)
+    {
+        const LangInfo *pLocale = &pApp->pLocalizations->tLocale[i];
+        if ((eTier == LOC_CORE && pLocale->bCore) ||
+            (eTier == LOC_MOD && pLocale->bMod))
+        {
+            if (dChoice == 0)
+                return i;
+            --dChoice;
+        }
+    }
+    return UINT32_MAX;
+}
+
 static void
 _Callback_LocalisationPopupSelector(AppGUI *pApp, Event *e)
 {
     /* Since there's no way to "tag" popups, just acquire data from all widgets */
-    pApp->pLocalizations->dLocaleSelected[LOC_CORE] = popup_get_selected(pApp->pWidgets->pPopupCore);
-    pApp->pLocalizations->dLocaleSelected[LOC_MOD]  = popup_get_selected(pApp->pWidgets->pPopupMod);
+    pApp->pLocalizations->dLocaleSelected[LOC_CORE] =
+        _LocalisationIndex(pApp, LOC_CORE, popup_get_selected(pApp->pWidgets->pPopupCore));
+    if (pApp->pWidgets->pPopupMod)
+        pApp->pLocalizations->dLocaleSelected[LOC_MOD] =
+            _LocalisationIndex(pApp, LOC_MOD, popup_get_selected(pApp->pWidgets->pPopupMod));
 
     view_update(pApp->pWidgets->pLocaleView);
 
@@ -1031,26 +1050,29 @@ _LocalisationFillPopup(AppGUI *pApp, PopUp *pPop, ELocTier eTier)
             popup_add_elem(pPop, li->sCode, NULL);
         }
     }
-    popup_selected(pPop, 0);
+    pApp->pLocalizations->dLocaleSelected[eTier] = _LocalisationIndex(pApp, eTier, 0);
+    if (pApp->pLocalizations->dLocaleSelected[eTier] != UINT32_MAX)
+        popup_selected(pPop, 0);
 }
 
 Panel*
 Panel_GetModalLocalisation(AppGUI *pApp)
 {
+    const bool_t bHasMod            = _LocalisationIndex(pApp, LOC_MOD, 0) != UINT32_MAX;
     Panel       *pPanelMain         = panel_create();
     /* Panel       *pPanelImage        = Panel_GetImageDemo(pApp); */
     Layout      *pLayoutMain        = layout_create(1,6);
     Layout      *pLayoutDescription = layout_create(1,1);
-    Layout      *pLayoutPopups      = layout_create(3,2);
+    Layout      *pLayoutPopups      = layout_create(bHasMod ? 2 : 1, 2);
     Layout      *pLayoutButtons     = layout_create(4,1);
     Label       *pLabelDescription  = label_create();
     Label       *pLabelLocCore      = label_create();
-    Label       *pLabelLocMod       = label_create();
+    Label       *pLabelLocMod       = bHasMod ? label_create() : NULL;
     View        *pViewPreview       = view_create();
     Button      *pButtonAccept      = button_push();
     Button      *pButtonCancel      = button_push();
     PopUp       *pPopUpCore         = popup_create();
-    PopUp       *pPopUpMod          = popup_create();
+    PopUp       *pPopUpMod          = bHasMod ? popup_create() : NULL;
 
     pApp->pWidgets->pPopupCore      = pPopUpCore;
     pApp->pWidgets->pPopupMod       = pPopUpMod;
@@ -1058,17 +1080,20 @@ Panel_GetModalLocalisation(AppGUI *pApp)
 
     /* Label: Description */
     label_multiline(pLabelDescription, TRUE);
-    label_text(pLabelDescription, TXT_LOCALISATION);
+    label_text(pLabelDescription, bHasMod ? TXT_LOCALISATION : "Select the language for core game texts and voiceovers.");
 
     /* Label: Languages */
     label_text(pLabelLocCore, TXT_LOC_CORE);
-    label_text(pLabelLocMod, TXT_LOC_MOD);
+    if (bHasMod)
+        label_text(pLabelLocMod, TXT_LOC_MOD);
     label_align(pLabelLocCore, ekLEFT);
-    label_align(pLabelLocMod, ekLEFT);
+    if (bHasMod)
+        label_align(pLabelLocMod, ekLEFT);
 
     /* Popups: Languages */
     _LocalisationFillPopup(pApp, pPopUpCore,  LOC_CORE);
-    _LocalisationFillPopup(pApp, pPopUpMod,   LOC_MOD);
+    if (bHasMod)
+        _LocalisationFillPopup(pApp, pPopUpMod, LOC_MOD);
 
     /* gui_image(USA_PNG) */
     /* popup_add_elem(pPopUpCore, TXT_LOC_ENGLISH, NULL);
@@ -1083,7 +1108,8 @@ Panel_GetModalLocalisation(AppGUI *pApp)
     popup_OnSelect(pPopUpCore, listener(pApp, _Callback_LocalisationPopupSelector, AppGUI));
 
     /* popup_add_elem(pPopUpMod, TXT_LOC_ENGLISH, NULL); */
-    popup_OnSelect(pPopUpMod, listener(pApp, _Callback_LocalisationPopupSelector, AppGUI));
+    if (bHasMod)
+        popup_OnSelect(pPopUpMod, listener(pApp, _Callback_LocalisationPopupSelector, AppGUI));
 
     /* View: Localisation image preview */
     view_size(pViewPreview, s2df(640, 360));
@@ -1110,13 +1136,17 @@ Panel_GetModalLocalisation(AppGUI *pApp)
     /* Layout: Popups */
     layout_margin(pLayoutPopups, LAYOUT_DEFAULT_MARGIN);
     layout_halign(pLayoutPopups, 0, 0, ekLEFT);
-    layout_halign(pLayoutPopups, 1, 0, ekLEFT);
+    if (bHasMod)
+        layout_halign(pLayoutPopups, 1, 0, ekLEFT);
     layout_hsize(pLayoutPopups, 0, PANEL_DEFAULT_W / 2.f);
-    layout_hsize(pLayoutPopups, 1, PANEL_DEFAULT_W / 2.f);
+    if (bHasMod)
+        layout_hsize(pLayoutPopups, 1, PANEL_DEFAULT_W / 2.f);
     layout_label(pLayoutPopups, pLabelLocCore, 0, 0);
-    layout_label(pLayoutPopups, pLabelLocMod, 1, 0);
+    if (bHasMod)
+        layout_label(pLayoutPopups, pLabelLocMod, 1, 0);
     layout_popup(pLayoutPopups, pPopUpCore, 0, 1);
-    layout_popup(pLayoutPopups, pPopUpMod, 1, 1);
+    if (bHasMod)
+        layout_popup(pLayoutPopups, pPopUpMod, 1, 1);
 
     /* Layout: Buttons */
     layout_margin4(pLayoutButtons, _fDefMarg * 2.f, _fDefMarg, _fDefMarg, _fDefMarg);
@@ -1615,7 +1645,7 @@ static Panel*
 _Panel_GetModalToolsSubpanel(AppGUI *pApp)
 {
     Panel       *pPanelMain  = panel_scroll(FALSE,TRUE);
-    Layout      *pLayoutMain = layout_create(1,16);
+    Layout      *pLayoutMain = layout_create(1,MAX_TOOL_ELEMS);
     Font        *pFontBold   = font_system(18, ekFBOLD | ekFPIXELS);
 
     unsigned int i = 0;
@@ -1871,6 +1901,7 @@ AutoUpdate_Init(void)
 
     dbind(InetUpdaterLauncherData, int32_t, version);
     dbind(InetUpdaterLauncherData, int32_t, build);
+    dbind_default(InetUpdaterLauncherData, int32_t, version, -1);
 
     dbind(InetUpdaterJSONData, String*, schema);
     dbind(InetUpdaterJSONData, String*, generated);
@@ -1878,337 +1909,325 @@ AutoUpdate_Init(void)
     dbind(InetUpdaterJSONData, ArrSt(InetUpdaterFile)*, files);
 }
 
+/* Manifest paths are relative to their launcher/game destination. */
+static bool_t
+_AutoUpdate_IsRelativePath(const char *sPath)
+{
+    const char *p = sPath;
+    if (p == NULL || *p == '\0' || *p == '/' || *p == '\\')
+        return FALSE;
+    while (*p != '\0')
+    {
+        const char *sPart = p;
+        while (*p != '\0' && *p != '/' && *p != '\\')
+        {
+            if (*p == ':')
+                return FALSE;
+            ++p;
+        }
+        if (p == sPart || (p - sPart == 2 && sPart[0] == '.' && sPart[1] == '.'))
+            return FALSE;
+        if (*p != '\0')
+            ++p;
+    }
+    return TRUE;
+}
+
+static InetUpdaterJSONData *
+_AutoUpdate_LoadManifest(AppGUI *pApp, const char *sURL)
+{
+    uint32_t            dResult    = 0;
+    ierror_t            eInetError = ekIOK;
+    Stream              *pStream   = NULL;
+    InetUpdaterJSONData *pJson     = NULL;
+
+    if (sURL == NULL || sURL[0] == '\0')
+    {
+        _al_printf(pApp, "[Updater] No manifest URL is configured.\n");
+        return NULL;
+    }
+
+    _al_printf(pApp, "[Updater] Fetching manifest:\n\t%s\n", sURL);
+    pStream = http_dget(sURL, &dResult, &eInetError);
+    if (pStream == NULL || eInetError != ekIOK || dResult < 200 || dResult >= 300)
+    {
+        _al_printf(pApp,
+            "[Updater] Couldn't fetch manifest: %s\n"
+            "\tHTTP status: %u\n\tNetwork error: %d\n",
+            sURL, dResult, eInetError);
+        if (pStream != NULL)
+        {
+            stm_close(&pStream);
+        }
+        return NULL;
+    }
+
+    pJson = json_read(pStream, NULL, InetUpdaterJSONData);
+    stm_close(&pStream);
+
+    if (pJson == NULL || pJson->launcher == NULL || pJson->files == NULL ||
+        pJson->launcher->version < 0 || pJson->launcher->build < 0)
+    {
+        _al_printf(pApp, "[Updater] Invalid manifest: %s\n", sURL);
+        if (pJson != NULL)
+        {
+            json_destroy(&pJson, InetUpdaterJSONData);
+        }
+        return NULL;
+    }
+
+    arrst_foreach(elem, pJson->files, InetUpdaterFile)
+        if (elem->path == NULL || !_AutoUpdate_IsRelativePath(tc(elem->path)) ||
+            elem->sha256 == NULL || tc(elem->sha256)[0] == '\0')
+        {
+            _al_printf(pApp, "[Updater] Invalid file entry in manifest: %s\n", sURL);
+            json_destroy(&pJson, InetUpdaterJSONData);
+            return NULL;
+        }
+    arrst_end()
+
+    return pJson;
+}
+
 bool_t
 AutoUpdate_CheckForUpdates(AppGUI *pApp)
 {
-    uint32_t            dResult;
-    ierror_t            eInetError;
-    bool_t              bUpdateRequired;
-    Stream              *pJsonLauncherStream;
-    Stream              *pJsonModStream;
-    InetUpdaterJSONData *pJsonLauncher;
-    InetUpdaterJSONData *pJsonMod;
+    bool_t              bUpdateRequired = FALSE;
+    InetUpdaterJSONData *pJsonLauncher  = NULL;
+    InetUpdaterJSONData *pJsonMod       = NULL;
 
-    const SVar tLuaLauncherVersion      = AmberLauncher_GetGlobalVariable(pApp->pAppCore, _sLua_LAUNCHER_VERSION);
-    const SVar tLuaModVersion           = AmberLauncher_GetGlobalVariable(pApp->pAppCore, _sLua_MOD_VERSION);
-    const SVar tLuaLauncherManifestURL  = AmberLauncher_GetGlobalVariable(pApp->pAppCore, _sLua_URL_UPDATER_LAUNCHER_MANIFEST);
-    const SVar tLuaModManifestURL       = AmberLauncher_GetGlobalVariable(pApp->pAppCore, _sLua_URL_UPDATER_MOD_MANIFEST);
-    const int32_t dLauncherBuild        = str_to_i32(BUILD_NUMBER, 10, NULL);
-    const int32_t dLauncherVersion      = SVAR_IS_DOUBLE(tLuaLauncherVersion) ? (int32_t)SVAR_GET_DOUBLE(tLuaLauncherVersion) : 0;
-    const int32_t dModVersion           = SVAR_IS_DOUBLE(tLuaModVersion)      ? (int32_t)SVAR_GET_DOUBLE(tLuaModVersion) : 0;
+    const SVar tLuaLauncherVersion     = AmberLauncher_GetGlobalVariable(pApp->pAppCore, _sLua_LAUNCHER_VERSION);
+    const SVar tLuaModVersion          = AmberLauncher_GetGlobalVariable(pApp->pAppCore, _sLua_MOD_VERSION);
+    const SVar tLuaLauncherManifestURL = AmberLauncher_GetGlobalVariable(pApp->pAppCore, _sLua_URL_UPDATER_LAUNCHER_MANIFEST);
+    const SVar tLuaModManifestURL      = AmberLauncher_GetGlobalVariable(pApp->pAppCore, _sLua_URL_UPDATER_MOD_MANIFEST);
+    const int32_t dLauncherBuild       = str_to_i32(BUILD_NUMBER, 10, NULL);
+    const int32_t dLauncherVersion     = SVAR_IS_DOUBLE(tLuaLauncherVersion) ? (int32_t)SVAR_GET_DOUBLE(tLuaLauncherVersion) : 0;
+    const int32_t dModVersion          = SVAR_IS_DOUBLE(tLuaModVersion) ? (int32_t)SVAR_GET_DOUBLE(tLuaModVersion) : 0;
 
-    static const char *sSchemaFmt       = "• Schema: \t\t%s\n";
-    static const char *sGeneratedFmt    = "• Generated: \t\t%s\n";
-    static const char *sAppVersionFmt   = "• App version: \t\t%d\n";
-    static const char *sNetVersionFmt   = "• Net version: \t\t%d\n";
-    static const char *sAppBuildFmt     = "• App build: \t\t%d\n";
-    static const char *sNetBuildFmt     = "• Net build: \t\t%d\n";
-    static const char *sModVersionFmt   = "• Mod version: \t\t%d\n";
-    static const char *sModNetVersionFmt= "• Mod Net version: \t%d\n";
-
-    /* Launcher manifest */
-    _al_printf( pApp,
-        "[Updater] Fetching Launcher manifest at \n\t%s\n",
-            SVAR_IS_CONSTCHAR(tLuaLauncherManifestURL) ?
-            SVAR_GET_CONSTCHAR(tLuaLauncherManifestURL) :
-            _sDefaultUpdaterLauncherManifestURL
-        );
-
-    pJsonLauncherStream = http_dget(
+    pJsonLauncher = _AutoUpdate_LoadManifest(pApp,
         SVAR_IS_CONSTCHAR(tLuaLauncherManifestURL) ?
-            SVAR_GET_CONSTCHAR(tLuaLauncherManifestURL) :
-            _sDefaultUpdaterLauncherManifestURL,
-        &dResult,
-        &eInetError);
+            SVAR_GET_CONSTCHAR(tLuaLauncherManifestURL) : _sDefaultUpdaterLauncherManifestURL);
+    if (pJsonLauncher == NULL)
+    {
+        return FALSE;
+    }
 
-    if (!pJsonLauncherStream)
+    pJsonMod = _AutoUpdate_LoadManifest(pApp,
+        SVAR_IS_CONSTCHAR(tLuaModManifestURL) ? SVAR_GET_CONSTCHAR(tLuaModManifestURL) : NULL);
+    if (pJsonMod == NULL)
     {
         _al_printf(pApp,
-            "[Updater] Couldn't fetch al_manifest.json"
-            "\n\tdResult: %d\n\teInetError: %d\n",
-            dResult,
-            eInetError);
-        return FALSE;
+            "[Updater] Warning: mod manifest unavailable. Checking launcher updates only.\n");
     }
-    pJsonLauncher = json_read(pJsonLauncherStream, NULL, InetUpdaterJSONData);
 
-    /* Mod manifest */
-    _al_printf( pApp,
-        "[Updater] Fetching Mod manifest at \n\t%s\n",
-            SVAR_IS_CONSTCHAR(tLuaModManifestURL) ?
-            SVAR_GET_CONSTCHAR(tLuaModManifestURL) :
-            _sDefaultUpdaterModManifestURL
-        );
-
-    pJsonModStream = http_dget(
-        SVAR_IS_CONSTCHAR(tLuaModManifestURL) ?
-            SVAR_GET_CONSTCHAR(tLuaModManifestURL) :
-            _sDefaultUpdaterModManifestURL,
-        &dResult,
-        &eInetError);
-
-    if (!pJsonModStream)
-    {
-        _al_printf( pApp,
-                    "[Updater] Couldn't fetch mod_manifest.json"
-                    "\n\tdResult: %d\n\teInetError: %d\n",
-                    dResult,
-                    eInetError);
-        return FALSE;
-    }
-    pJsonMod        = json_read(pJsonModStream, NULL, InetUpdaterJSONData);
-
-    /* Check for update and report */
     bUpdateRequired = (dLauncherBuild < pJsonLauncher->launcher->build ||
                         dLauncherVersion < pJsonLauncher->launcher->version ||
-                        dModVersion < pJsonLauncher->launcher->version);
+                        (pJsonMod != NULL && dModVersion < pJsonMod->launcher->version));
 
-    _al_printf(pApp,
-        "[Updater] Manifests retrieved successfuly:\n"
-        "• Update required: \t%s\n",
-        bUpdateRequired ? "true" : "false"
-    );
-    _al_printf(pApp, sSchemaFmt, tc(pJsonLauncher->schema));
-    _al_printf(pApp, sGeneratedFmt, tc(pJsonLauncher->generated));
-    _al_printf(pApp, sAppVersionFmt, dLauncherVersion);
-    _al_printf(pApp, sNetVersionFmt, pJsonLauncher->launcher->version);
-    _al_printf(pApp, sAppBuildFmt, dLauncherBuild);
-    _al_printf(pApp, sNetBuildFmt, pJsonLauncher->launcher->build);
-    _al_printf(pApp, sModVersionFmt, dModVersion);
-    _al_printf(pApp, sModNetVersionFmt, pJsonMod->launcher->version);
-
-    stm_close(&pJsonLauncherStream);
-    stm_close(&pJsonModStream);
+    _al_printf(pApp, "[Updater] Update required: %s\n", bUpdateRequired ? "true" : "false");
+    _al_printf(pApp, "• App version: \t\t%d\n", dLauncherVersion);
+    _al_printf(pApp, "• Net version: \t\t%d\n", pJsonLauncher->launcher->version);
+    _al_printf(pApp, "• App build: \t\t%d\n", dLauncherBuild);
+    _al_printf(pApp, "• Net build: \t\t%d\n", pJsonLauncher->launcher->build);
+    _al_printf(pApp, "• Mod version: \t\t%d\n", dModVersion);
+    if (pJsonMod != NULL)
+    {
+        _al_printf(pApp, "• Mod Net version: \t%d\n", pJsonMod->launcher->version);
+    }
 
     json_destroy(&pJsonLauncher, InetUpdaterJSONData);
-    json_destroy(&pJsonMod, InetUpdaterJSONData);
+    if (pJsonMod != NULL)
+    {
+        json_destroy(&pJsonMod, InetUpdaterJSONData);
+    }
 
     return bUpdateRequired;
 }
 
-static void
+static bool_t
+_AutoUpdate_EnsureDirectory(const char *sPath)
+{
+    String *sParent = NULL;
+    bool_t bSuccess;
+
+    if (sPath[0] == '\0' || hfile_dir(sPath))
+        return TRUE;
+    str_split_pathname(sPath, &sParent, NULL);
+    bSuccess = strcmp(tc(sParent), sPath) != 0 && _AutoUpdate_EnsureDirectory(tc(sParent));
+    str_destroy(&sParent);
+    return bSuccess && bfile_dir_create(sPath, NULL);
+}
+
+static bool_t
 _AutoUpdate_Update_DownloadFiles(
     AppGUI *pApp,
     InetUpdaterJSONData *pJson,
     const char *sRootURL,
+    const char *sDestination,
     real32_t *fProgressIndex,
     real32_t fProgressMax,
     bool_t bForceDownload)
 {
     arrst_foreach(elem, pJson->files, InetUpdaterFile)
-        bool_t bFileExists    = hfile_exists(tc(elem->path),0);
-        char *sSHA256Hash     = AmberLauncher_SHA256_HashFile(tc(elem->path));
-        String *sDownloadLink = str_printf("%s%s", sRootURL, tc(elem->path));
+        String  *sLocalPath    = str_cpath("%s/%s", sDestination, tc(elem->path));
+        String  *sParent       = NULL;
+        bool_t  bFileExists    = hfile_exists(tc(sLocalPath), 0);
+        bool_t  bSuccess       = TRUE;
+        char    *sSHA256Hash   = AmberLauncher_SHA256_HashFile(tc(sLocalPath));
+        String  *sDownloadLink = str_printf("%s%s", sRootURL, tc(elem->path));
+        Stream  *pDownloadFile = NULL;
+        Stream  *pOutputFile   = NULL;
+        uint32_t dResult       = 0;
+        ierror_t eInetError    = ekIOK;
 
-        Stream *pDownloadFile;
-
-        _al_printf(pApp, "[Updater] Downloading %s...\n", tc(elem->path));
-
-        if (!bFileExists)
+        if (bForceDownload || !bFileExists || sSHA256Hash == NULL ||
+            str_cmp(elem->sha256, sSHA256Hash) != 0)
         {
-            _al_printf(pApp, "[Updater] Local file %s doesn't exist!\n",
-                sDownloadLink);
-
-            pDownloadFile = http_dget(tc(sDownloadLink), NULL, NULL);
-            if (pDownloadFile)
+            _al_printf(pApp, "[Updater] Downloading %s...\n", tc(sDownloadLink));
+            pDownloadFile = http_dget(tc(sDownloadLink), &dResult, &eInetError);
+            if (pDownloadFile == NULL || eInetError != ekIOK || dResult < 200 || dResult >= 300)
             {
-                /* download file */
-                Stream *pOutputFile = stm_to_file(tc(elem->path), NULL);
-                stm_write(pOutputFile, 
-                    stm_buffer(pDownloadFile),
-                    stm_buffer_size (pDownloadFile));
-                stm_close(&pOutputFile);
+                _al_printf(pApp,
+                    "[Updater] Couldn't download %s (HTTP %u, network error %d).\n",
+                    tc(sDownloadLink), dResult, eInetError);
+                bSuccess = FALSE;
             }
-        }
-        else if (sSHA256Hash || bForceDownload)
-        {
-            _al_printf(pApp, "[Updater] sha256 %s:\n\t%s\n", 
-                sDownloadLink, sSHA256Hash);
-
-            if (str_cmp(elem->sha256, sSHA256Hash) != 0 || bForceDownload)
+            else
             {
-                _al_printf(pApp, "[Updater] Remote file is different!\n");
-
-                pDownloadFile = http_dget(tc(sDownloadLink), 
-                    NULL,
-                    NULL);
-                if (pDownloadFile)
+                str_split_pathname(tc(sLocalPath), &sParent, NULL);
+                if (!_AutoUpdate_EnsureDirectory(tc(sParent)))
                 {
-                    Stream *pOutputFile;
-
-                    /* stm_to_file doesn't overwrite as it promises to do, so, delete file.. */
-                    bfile_delete(tc(elem->path), NULL);
-
-                    pOutputFile = stm_to_file(tc(elem->path), NULL);
-                    stm_write(pOutputFile, 
-                        stm_buffer(pDownloadFile), 
-                        stm_buffer_size (pDownloadFile));
+                    _al_printf(pApp, "[Updater] Couldn't create directory: %s\n", tc(sParent));
+                    bSuccess = FALSE;
+                }
+                /* stm_to_file does not overwrite existing files. */
+                if (bSuccess && bFileExists)
+                {
+                    bfile_delete(tc(sLocalPath), NULL);
+                }
+                if (bSuccess)
+                    pOutputFile = stm_to_file(tc(sLocalPath), NULL);
+                if (pOutputFile == NULL)
+                {
+                    _al_printf(pApp, "[Updater] Couldn't open file for writing: %s\n", tc(elem->path));
+                    bSuccess = FALSE;
+                }
+                else
+                {
+                    stm_write(pOutputFile, stm_buffer(pDownloadFile), stm_buffer_size(pDownloadFile));
+                    bSuccess = stm_state(pOutputFile) == ekSTOK;
                     stm_close(&pOutputFile);
+                    if (!bSuccess)
+                    {
+                        _al_printf(pApp, "[Updater] Couldn't write file: %s\n", tc(elem->path));
+                    }
                 }
             }
         }
-        else
+
+        if (pDownloadFile != NULL)
         {
-            _al_printf(pApp, "[Updater] unknown file error:\n\t%s(%s)\n", 
-                sDownloadLink, sSHA256Hash);
+            stm_close(&pDownloadFile);
         }
         str_destroy(&sDownloadLink);
-        stm_close(&pDownloadFile);
+        str_destroy(&sLocalPath);
+        str_destopt(&sParent);
+        free(sSHA256Hash);
 
-        /* Track progress */
+        if (!bSuccess)
+        {
+            return FALSE;
+        }
+
         *fProgressIndex += 1.0f;
         if (pApp->pWidgets->pProgressbar)
         {
-            progress_value(pApp->pWidgets->pProgressbar, 
-                *fProgressIndex / fProgressMax);
+            progress_value(pApp->pWidgets->pProgressbar, *fProgressIndex / fProgressMax);
         }
-
-        free(sSHA256Hash);
     arrst_end()
+
+    return TRUE;
 }
 
 bool_t
 AutoUpdate_Update(AppGUI *pApp, bool_t bForceDownload)
 {
-    uint32_t            dResult;
-    ierror_t            eInetError;
-    Stream              *pJsonLauncherStream;
-    Stream              *pJsonModStream;
-    InetUpdaterJSONData *pJsonLauncher;
-    InetUpdaterJSONData *pJsonMod;
-    real32_t            fProgressIndex;
-    real32_t            fProgressMax;
+    InetUpdaterJSONData *pJsonLauncher = NULL;
+    InetUpdaterJSONData *pJsonMod      = NULL;
+    real32_t            fProgressIndex = 0.0f;
+    real32_t            fProgressMax   = 0.0f;
+    bool_t              bSuccess       = FALSE;
 
-    static const char *sFileArrayFmt = "• File: %s\n• • sha256: \n%s\n• • size: %u\n";
+    const SVar tLuaLauncherManifestURL = AmberLauncher_GetGlobalVariable(pApp->pAppCore, _sLua_URL_UPDATER_LAUNCHER_MANIFEST);
+    const SVar tLuaModManifestURL      = AmberLauncher_GetGlobalVariable(pApp->pAppCore, _sLua_URL_UPDATER_MOD_MANIFEST);
+    const SVar tLuaRootURL             = AmberLauncher_GetGlobalVariable(pApp->pAppCore, _sLua_URL_UPDATER_ROOT);
+    const char *sRootURL               = SVAR_IS_CONSTCHAR(tLuaRootURL) ?
+                                            SVAR_GET_CONSTCHAR(tLuaRootURL) : _sDefaultUpdaterRemoteRootURL;
 
-    const SVar tLuaLauncherManifestURL  = AmberLauncher_GetGlobalVariable(pApp->pAppCore, _sLua_URL_UPDATER_LAUNCHER_MANIFEST);
-    const SVar tLuaModManifestURL       = AmberLauncher_GetGlobalVariable(pApp->pAppCore, _sLua_URL_UPDATER_MOD_MANIFEST);
-    const SVar tLuaRootURL              = AmberLauncher_GetGlobalVariable(pApp->pAppCore, _sLua_URL_UPDATER_ROOT);
+    const SVar tLauncherPath = AmberLauncher_GetGlobalVariable(pApp->pAppCore, "LAUNCHER_PATH");
+    const SVar tGamePath     = AmberLauncher_GetGlobalVariable(pApp->pAppCore, "GAME_DESTINATION_PATH");
+    const char *sLauncherPath = SVAR_IS_CONSTCHAR(tLauncherPath) ? SVAR_GET_CONSTCHAR(tLauncherPath) : ".";
+    const char *sGamePath     = SVAR_IS_CONSTCHAR(tGamePath) ? SVAR_GET_CONSTCHAR(tGamePath) : sLauncherPath;
 
-    /* Fire start event */
+    pApp->bUpdaterModSkipped = FALSE;
+
+    pJsonLauncher = _AutoUpdate_LoadManifest(pApp,
+        SVAR_IS_CONSTCHAR(tLuaLauncherManifestURL) ?
+            SVAR_GET_CONSTCHAR(tLuaLauncherManifestURL) : _sDefaultUpdaterLauncherManifestURL);
+    if (pJsonLauncher == NULL)
+    {
+        return FALSE;
+    }
+
+    pJsonMod = _AutoUpdate_LoadManifest(pApp,
+        SVAR_IS_CONSTCHAR(tLuaModManifestURL) ? SVAR_GET_CONSTCHAR(tLuaModManifestURL) : NULL);
+    if (pJsonMod == NULL)
+    {
+        pApp->bUpdaterModSkipped = TRUE;
+        _al_printf(pApp,
+            "[Updater] Warning: mod manifest unavailable. Updating launcher only; mod update skipped.\n");
+    }
+
+    /* The launcher manifest is required; the mod manifest is optional. */
     AmberLauncher_Update(pApp->pAppCore, CFALSE);
 
-    /* Launcher Manifest */
-    _al_printf( pApp,
-        "[Updater] Fetching Launcher manifest at \n\t%s\n",
-            SVAR_IS_CONSTCHAR(tLuaLauncherManifestURL) ?
-            SVAR_GET_CONSTCHAR(tLuaLauncherManifestURL) :
-            _sDefaultUpdaterLauncherManifestURL
-        );
-
-    pJsonLauncherStream = http_dget(
-        SVAR_IS_CONSTCHAR(tLuaLauncherManifestURL) ?
-            SVAR_GET_CONSTCHAR(tLuaLauncherManifestURL) :
-            _sDefaultUpdaterLauncherManifestURL,
-        &dResult,
-        &eInetError);
-
-    if (!pJsonLauncherStream)
+    fProgressMax = (real32_t)arrst_size(pJsonLauncher->files, InetUpdaterFile);
+    if (pJsonMod != NULL)
     {
-        _al_printf( pApp,
-                    "[Updater] Couldn't fetch al_manifest.json"
-                    "\n\tdResult: %d\n\teInetError: %d\n",
-                    dResult,
-                    eInetError);
-        return FALSE;
+        fProgressMax += (real32_t)arrst_size(pJsonMod->files, InetUpdaterFile);
+    }
+    if (pApp->pWidgets->pProgressbar)
+    {
+        progress_value(pApp->pWidgets->pProgressbar, 0.0f);
     }
 
-    _al_printf( pApp,
-                "[Updater] Launcher Manifest retrieved successfuly:\n"
-                "• dResult: \t\t%d\n• eInetError: \t\t%d\n",
-                dResult,
-                eInetError);
-
-    pJsonLauncher = json_read(pJsonLauncherStream, NULL, InetUpdaterJSONData);
-    stm_close(&pJsonLauncherStream);
-
-    /* Mod Manifest */
-    _al_printf( pApp,
-        "[Updater] Fetching Mod manifest at \n\t%s\n",
-            SVAR_IS_CONSTCHAR(tLuaModManifestURL) ?
-            SVAR_GET_CONSTCHAR(tLuaModManifestURL) :
-            _sDefaultUpdaterModManifestURL
-        );
-
-    pJsonModStream = http_dget(
-        SVAR_IS_CONSTCHAR(tLuaModManifestURL) ?
-            SVAR_GET_CONSTCHAR(tLuaModManifestURL) :
-            _sDefaultUpdaterModManifestURL,
-        &dResult,
-        &eInetError);
-
-    if (!pJsonModStream)
+    _al_printf(pApp, "[Updater] Remote Updater Server: %s\n", sRootURL);
+    bSuccess = _AutoUpdate_Update_DownloadFiles(
+        pApp, pJsonLauncher, sRootURL, sLauncherPath, &fProgressIndex, fProgressMax, bForceDownload);
+    if (bSuccess && pJsonMod != NULL)
     {
-        _al_printf( pApp,
-                    "[Updater] Couldn't fetch mod_manifest.json"
-                    "\n\tdResult: %d\n\teInetError: %d\n",
-                    dResult,
-                    eInetError);
-        return FALSE;
+        bSuccess = _AutoUpdate_Update_DownloadFiles(
+            pApp, pJsonMod, sRootURL, sGamePath, &fProgressIndex, fProgressMax, bForceDownload);
     }
 
-    _al_printf( pApp,
-                "[Updater] Mod Manifest retrieved successfuly:\n"
-                "• dResult: \t\t%d\n• eInetError: \t\t%d\n",
-                dResult,
-                eInetError);
-
-    pJsonMod = json_read(pJsonModStream, NULL, InetUpdaterJSONData);
-    stm_close(&pJsonModStream);
-
-    /* Print files */
-    _al_printf(pApp, "Launcher files: \n");
-    arrst_foreach(elem, pJsonLauncher->files, InetUpdaterFile)
-        _al_printf(pApp, sFileArrayFmt, tc(elem->path), tc(elem->sha256), elem->size);
-    arrst_end()
-    _al_printf(pApp, "\n");
-    _al_printf(pApp, "Mod files: \n");
-    arrst_foreach(elem, pJsonMod->files, InetUpdaterFile)
-        _al_printf(pApp, sFileArrayFmt, tc(elem->path), tc(elem->sha256), elem->size);
-    arrst_end()
-    _al_printf(pApp, "\n");
-
-    /* Download files */
-    fProgressIndex  = 0.0f;
-    fProgressMax    = (real32_t)arrst_size(pJsonLauncher->files, InetUpdaterFile) + 
-                        (real32_t)arrst_size(pJsonMod->files, InetUpdaterFile);
+    json_destroy(&pJsonLauncher, InetUpdaterJSONData);
+    if (pJsonMod != NULL)
+    {
+        json_destroy(&pJsonMod, InetUpdaterJSONData);
+    }
+    if (!bSuccess)
+    {
+        _al_printf(pApp, "[Updater] Update failed.\n");
+        return FALSE;
+    }
 
     if (pApp->pWidgets->pProgressbar)
     {
-        progress_value(pApp->pWidgets->pProgressbar, 
-            0.0f);
+        progress_value(pApp->pWidgets->pProgressbar, 1.0f);
     }
-    
-    _al_printf(pApp, "[Updater] Remote Updater Server: %s\n",
-        SVAR_IS_CONSTCHAR(tLuaRootURL) ?
-            SVAR_GET_CONSTCHAR(tLuaRootURL) :
-            _sDefaultUpdaterRemoteRootURL);
-
-    _AutoUpdate_Update_DownloadFiles(
-        pApp, 
-        pJsonLauncher,
-        SVAR_IS_CONSTCHAR(tLuaRootURL) ?
-            SVAR_GET_CONSTCHAR(tLuaRootURL) :
-            _sDefaultUpdaterRemoteRootURL,
-        &fProgressIndex, 
-        fProgressMax,
-        bForceDownload);
-    _AutoUpdate_Update_DownloadFiles(
-        pApp, 
-        pJsonMod,
-        SVAR_IS_CONSTCHAR(tLuaRootURL) ?
-            SVAR_GET_CONSTCHAR(tLuaRootURL) :
-            _sDefaultUpdaterRemoteRootURL,
-        &fProgressIndex, 
-        fProgressMax,
-        bForceDownload);
-
-    json_destroy(&pJsonLauncher, InetUpdaterJSONData);
-    json_destroy(&pJsonMod, InetUpdaterJSONData);
-
-    _al_printf( pApp,"[Updater] Update done!\n");
-
-    /* Fire end event */
+    _al_printf(pApp, pApp->bUpdaterModSkipped ?
+        "[Updater] Launcher update done. Mod update was skipped.\n" :
+        "[Updater] Update done!\n");
     AmberLauncher_Update(pApp->pAppCore, CTRUE);
 
     return TRUE;
@@ -2371,8 +2390,11 @@ Callback_OnButtonModalLocalisation(AppGUI *pApp, Event *e)
     Button *pButton     = event_sender(e, Button);
     uint32_t dButtonTag = button_get_tag(pButton);
 
-    pApp->pLocalizations->dLocaleSelected[LOC_CORE] = popup_get_selected(pApp->pWidgets->pPopupCore);
-    pApp->pLocalizations->dLocaleSelected[LOC_MOD]  = popup_get_selected(pApp->pWidgets->pPopupMod);
+    pApp->pLocalizations->dLocaleSelected[LOC_CORE] =
+        _LocalisationIndex(pApp, LOC_CORE, popup_get_selected(pApp->pWidgets->pPopupCore));
+    if (pApp->pWidgets->pPopupMod)
+        pApp->pLocalizations->dLocaleSelected[LOC_MOD] =
+            _LocalisationIndex(pApp, LOC_MOD, popup_get_selected(pApp->pWidgets->pPopupMod));
 
     window_stop_modal(pApp->pWindows->pWindowModal, dButtonTag);
 
@@ -2542,26 +2564,26 @@ Callback_OnDrawLocalisation(AppGUI *pApp, Event *e)
     DCtx                       *pCtx       = pEvDraw ? pEvDraw->ctx : NULL;
     const AppGUILocalization   *pLocs      = pApp->pLocalizations;
 
-    assert(pLocs->tLocale[pLocs->dLocaleSelected[LOC_CORE]].bCore);
-    assert(pLocs->tLocale[pLocs->dLocaleSelected[LOC_MOD]].bMod);
+    const uint32_t dCore = pLocs->dLocaleSelected[LOC_CORE];
+    const uint32_t dMod  = pLocs->dLocaleSelected[LOC_MOD];
 
-    pImageBG = image_from_file(
-        pLocs->tLocale[pLocs->dLocaleSelected[LOC_CORE]].sCorePath, &eError1);
-    pImageFG = image_from_file(
-        pLocs->tLocale[pLocs->dLocaleSelected[LOC_MOD]].sModPath, &eError2);
-
-    assert(eError1 == ekFOK);
-    assert(eError2 == ekFOK);
+    if (dCore < pLocs->dLocaleCount && pLocs->tLocale[dCore].bCore)
+        pImageBG = image_from_file(pLocs->tLocale[dCore].sCorePath, &eError1);
+    if (dMod < pLocs->dLocaleCount && pLocs->tLocale[dMod].bMod)
+        pImageFG = image_from_file(pLocs->tLocale[dMod].sModPath, &eError2);
 
     draw_clear(pCtx, color_rgb(0, 0, 0));
 
     if (IS_VALID(pImageBG))
     {
         draw_image(pCtx, pImageBG, 0, 0);
-        draw_image(pCtx, pImageFG, 0, 0);
         image_destroy(&pImageBG);
     }
-    image_destroy(&pImageFG);
+    if (IS_VALID(pImageFG))
+    {
+        draw_image(pCtx, pImageFG, 0, 0);
+        image_destroy(&pImageFG);
+    }
     unref(pApp);
 }
 
@@ -3612,15 +3634,16 @@ _Callback_UIEvent(
 
                 /* Reset */
                 pApp->pLocalizations->dLocaleCount = 0;
-                memset(pApp->pLocalizations->dLocaleSelected, 0, sizeof(pApp->pLocalizations->dLocaleSelected));
+                pApp->pLocalizations->dLocaleSelected[LOC_CORE] = UINT32_MAX;
+                pApp->pLocalizations->dLocaleSelected[LOC_MOD]  = UINT32_MAX;
 
                 /* Fill pApp->tLocale[] from Lua */
                 for (i = 0; i < pTable->dCount && i < APP_MAX_LOCALES; ++i)
                 {
                     SVarTable *pLoc;
-                    const char_t *sCode;
-                    const char_t *sCorePath;
-                    const char_t *sModPath;
+                    const char_t *sCode     = NULL;
+                    const char_t *sCorePath = "";
+                    const char_t *sModPath  = "";
 
                     if (pTable->pEntries[i].tValue.eType != CTYPE_LUATABLE)
                     {
@@ -3681,8 +3704,10 @@ _Callback_UIEvent(
                         uint32_t dCore  = pApp->pLocalizations->dLocaleSelected[LOC_CORE];
                         uint32_t dMod   = pApp->pLocalizations->dLocaleSelected[LOC_MOD];
                         SVARKEYB_BOOL(tRetVal,sStatusKey, CTRUE);
-                        SVARKEYB_CONSTCHAR(tRetVal,"core",  pApp->pLocalizations->tLocale[dCore].sCode);
-                        SVARKEYB_CONSTCHAR(tRetVal,"mod",   pApp->pLocalizations->tLocale[dMod].sCode);
+                        if (dCore < pApp->pLocalizations->dLocaleCount)
+                            SVARKEYB_CONSTCHAR(tRetVal,"core", pApp->pLocalizations->tLocale[dCore].sCode);
+                        if (dMod < pApp->pLocalizations->dLocaleCount)
+                            SVARKEYB_CONSTCHAR(tRetVal,"mod", pApp->pLocalizations->tLocale[dMod].sCode);
                     }
                         break;
                 }
@@ -4194,7 +4219,7 @@ _Callback_UIEvent(
                     size_t     i;
 
                     pRoot = (SVarTable *)SVAR_GET_LUATABLE(pUserData[0]);
-                    for (i = 0; i < pRoot->dCount && dToolCount < APP_MAX_ELEMENTS; ++i)
+                    for (i = 0; i < pRoot->dCount && dToolCount < MAX_TOOL_ELEMS; ++i)
                     {
                         if (pRoot->pEntries[i].tValue.eType == CTYPE_LUATABLE)
                         {
@@ -4280,6 +4305,7 @@ _Callback_UIEvent(
                 {
                     case MODAL_UPDATE_APP:
                         SVARKEYB_BOOL(tRetVal, sStatusKey, CTRUE);
+                        SVARKEYB_BOOL(tRetVal, "modSkipped", pApp->bUpdaterModSkipped);
                         break;
                     case ekGUI_CLOSE_BUTTON:
                     case ekGUI_CLOSE_ESC:

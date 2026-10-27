@@ -112,6 +112,10 @@ function fs.DirectoryList(dir)
 end
 
 function fs.DirectoryFindCaseInsensitive(dir, name)
+    if lfs.attributes(dir, "mode") ~= "directory" then
+        return nil
+    end
+
     for _, file in ipairs(fs.DirectoryList(dir)) do
         if file:lower() == name:lower() then
             return file
@@ -126,17 +130,27 @@ function fs.DirectoryEnsure(path)
     local sep = fs.OS_FILE_SEPARATOR
     local prefix = ""
 
-    -- Handle drive letter on Windows
+    -- Preserve absolute roots, including Windows drives and network shares.
     if fs.OS_NAME == "Windows" and path:match("^%a:[/\\]") then
         prefix = path:sub(1,2)
         path = path:sub(3)
+    elseif fs.OS_NAME == "Windows" and path:match("^[/\\][/\\]") then
+        prefix = path:match("^[/\\][/\\][^/\\]+[/\\][^/\\]+") or ""
+        path   = path:sub(#prefix + 1)
+    elseif path:sub(1, 1) == sep then
+        prefix = sep
+        path   = path:sub(2)
     end
 
     local current = prefix
     for part in path:gmatch("[^"..sep.."]+") do
-        current = (current == "" and part) or fs.PathJoin(current, part)
-        lfs.mkdir(current)
+        current = current == "" and part or current:gsub("[/\\]+$", "")..sep..part
+        local ok, err = lfs.mkdir(current)
+        if not ok and lfs.attributes(current, "mode") ~= "directory" then
+            return false, err
+        end
     end
+    return true
 end
 
 -------------------------------------------------------------------------------
@@ -277,6 +291,7 @@ function fs.CreateDesktopLink(name, target, icon)
         f:write("Type=Application\n")
         f:write("Name=", name, "\n")
         f:write("Exec=\"", target, "\"\n")
+        f:write("Path=", fs.PathGetDirectory(target), "\n")
         f:write("Icon=", icon, "\n")
         f:write("Terminal=false\n")
         f:write("Categories=Game;\n")

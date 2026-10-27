@@ -52,36 +52,77 @@ for k, v in pairs(UISIDEBUTTON) do
     UISIDEBUTTON_NAMES[v] = k
 end
 
+GAME_NULL = {
+    key             = "NULL",
+    name            = "null",
+    title           = "(null)",
+    exeName         = "null.exe",
+    iniName         = "null.ini",
+    manifestName    = "null.json",
+    folderNames     = function()
+        return {
+            "(null)",
+        }
+    end,
+    basePaths       = function()
+        return {
+            "(null)",
+        }
+    end
+}
+GAMEID                  = GAMEID or {}
+local idx               = #GAMEID + 1
+GAMEID[idx]             = GAME_NULL
+GAMEID[GAME_NULL.key]   = GAME_NULL
+GAME_NULL.id            = idx
+GAME_CURRENT            = GAME_NULL
+GAME_DEFAULT_KEY        = "AMBER"
+
 MODID = {
     NULL                = 0,
-    MM7                 = 1,
-    AMBER               = 2,
-    MAX                 = 3
+    AMBER               = 1,
+    AMBERENROTH         = 2,
+    AMBERMERGE          = 3,
+    MM6                 = 4,
+    MM7                 = 5,
+    MM8                 = 6,
+    OPENENROTH7         = 7,
+    MMERGE              = 8,
+    MAX                 = 9
 }
 MODID_NAMES = {
     [MODID.NULL]        = "null",
-    [MODID.MM7]         = "mm7",
     [MODID.AMBER]       = "amber",
+    [MODID.AMBERENROTH] = "amberenroth",
+    [MODID.AMBERMERGE]  = "ambermerge",
+    [MODID.MM6]         = "mm6",
+    [MODID.MM7]         = "mm7",
+    [MODID.MM8]         = "mm8",
+    [MODID.OPENENROTH7] = "enroth7",
+    [MODID.MMERGE]      = "mmerge",
 }
 
 MODID_TITLE = {
     [MODID.NULL]        = "(null)",
-    [MODID.MM7]         = "Might & Magic 7",
     [MODID.AMBER]       = "Amber Island",
+    [MODID.AMBERENROTH] = "Amber Island (Open Enroth)",
+    [MODID.AMBERMERGE]  = "Amber Island (Merge Mod)",
+    [MODID.MM6]         = "Might & Magic 6",
+    [MODID.MM7]         = "Might & Magic 7",
+    [MODID.MM8]         = "Might & Magic 8",
+    [MODID.OPENENROTH7] = "Might & Magic 7 (Open Enroth)",
+    [MODID.MMERGE]      = "Merge Mod",
 }
 
 -- Variables
 OS_NAME                 = OS_NAME or os.name()
-GAME_FOLDER_NAME        = GAME_FOLDER_NAME or {
-    "Might and Magic 7",
-    "Might and Magic VII"
-}
-GAME_EXECUTABLE_FOLDERS = GAME_EXECUTABLE_FOLDERS or {}
-GAME_BASE_PATHS         = GAME_BASE_PATHS or {}
-GAME_EXECUTABLE_NAME    = GAME_EXECUTABLE_NAME or "mm7.exe"
-GAME_MOD_ID             = GAME_MOD_ID or MODID.AMBER
-GAME_MOD_ID_NAME        = MODID_NAMES[GAME_MOD_ID]
-GAME_MOD_ID_TITLE       = MODID_TITLE[GAME_MOD_ID]
+GAME_FOLDER_NAME        = {}
+GAME_EXECUTABLE_FOLDERS = {}
+GAME_BASE_PATHS         = {}
+GAME_EXECUTABLE_NAME    = GAME_NULL.exeName
+GAME_MOD_ID             = MODID.NULL
+GAME_MOD_ID_NAME        = GAME_NULL.name
+GAME_MOD_ID_TITLE       = GAME_NULL.title
 GAME_MOD_VERSION        = GAME_MOD_VERSION or 0
 GAME_MOD_VERSION_STR    = GAME_MOD_VERSION_STR or "0.0.0"
 
@@ -91,8 +132,8 @@ LAUNCHER_BUILD          = LAUNCHER_BUILD or _BUILD_NUMBER
 LAUNCHER_VERSION        = LAUNCHER_VERSION or 100
 
 URL_UPDATER_ROOT              = "https://mightandmagicmod.com/updater/"
-URL_UPDATER_LAUNCHER_MANIFEST = "https://mightandmagicmod.com/updater/al_manifest.json"
-URL_UPDATER_MOD_MANIFEST      = "https://mightandmagicmod.com/updater/mod_manifest.json"
+URL_UPDATER_LAUNCHER_MANIFEST = URL_UPDATER_ROOT.."al_manifest.json"
+URL_UPDATER_MOD_MANIFEST      = URL_UPDATER_ROOT..GAME_NULL.manifestName
 
 -- OS Separator
 if OS_NAME == "Windows" then 

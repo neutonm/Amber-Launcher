@@ -57,7 +57,7 @@ AmberLauncher_GetApplicationPath(char *pOutPath, size_t dSize)
     ssize_t len = readlink("/proc/self/exe", pOutPath, dSize - 1);
     if (len == -1) 
     {
-        fprintf(stderr, "Error getting application path");
+        fprintf(stderr, "Error getting application path\n");
     }
     pOutPath[len] = '\0';
 }
@@ -133,94 +133,48 @@ AmberLauncher_PrintDefaultSystemInformation(void)
 
     if (uname(&buffer) != 0) 
     {
-        fprintf(stderr, "Failed to retrieve info via \"uname\"");
+        fprintf(stderr, "Failed to retrieve info via \"uname\"\n");
         return;
     }
 
-    fprintf(stderr, "\tSystem name: \t%s",   buffer.sysname);
-    fprintf(stderr, "\tNode name: \t\t%s",   buffer.nodename);
-    fprintf(stderr, "\tRelease: \t\t%s",     buffer.release);
-    fprintf(stderr, "\tVersion: \t\t%s",     buffer.version);
-    fprintf(stderr, "\tMachine: \t\t%s",     buffer.machine);
+    fprintf(stderr, "\tSystem name: \t%s\n",   buffer.sysname);
+    fprintf(stderr, "\tNode name: \t\t%s\n",   buffer.nodename);
+    fprintf(stderr, "\tRelease: \t\t%s\n",     buffer.release);
+    fprintf(stderr, "\tVersion: \t\t%s\n",     buffer.version);
+    fprintf(stderr, "\tMachine: \t\t%s\n",     buffer.machine);
 
     #ifdef _GNU_SOURCE
-    fprintf(stderr, "\tDomain name: \t%s",   buffer.UT_DOMAINNAME);
+    fprintf(stderr, "\tDomain name: \t%s\n",   buffer.UT_DOMAINNAME);
     #endif
 }
 
 CAPI int
-AmberLauncher_ProcessLaunch(const char* sAppPath, int argc, char **argv, CBOOL bCloseOnLaunch)
+AmberLauncher_ProcessLaunch(const char* sAppPath, int argc, char **argv, CBOOL bCloseOnLaunch,
+                            const char *sWorkingDirectory)
 {
-    pid_t dPID      = 0;
-    int dStatus     = 0;
+    pid_t dPID = fork();
+    UNUSED(argc);
+    UNUSED(argv);
 
-    /* posix_spawn method */
-    #if _XOPEN_SOURCE >= 600 
-
-        char *pAltArgv[] = {(char*)0, (char*)0};
-
-        pAltArgv[0] = (char*)sAppPath;
-
-        dStatus = posix_spawn(&dPID, sAppPath, NULL, NULL, argv == NULL ? pAltArgv : argv, environ);
-        if(dStatus != 0) 
+    if (dPID < 0)
+    {
+        fprintf(stderr, "Failed to fork: %s\n", strerror(errno));
+        return 0;
+    }
+    if (dPID == 0)
+    {
+        /* Only the child changes directory; launcher assets stay rooted. */
+        if (sWorkingDirectory != NULL && chdir(sWorkingDirectory) != 0)
         {
-            fprintf(stderr, "Failed to launch process: %s - > %s", sAppPath, strerror(dStatus));
-            return 0;
+            fprintf(stderr, "Failed to enter game directory: %s\n", strerror(errno));
+            _exit(127);
         }
-
-        if (bCloseOnLaunch)
-        {
-            exit(EXIT_SUCCESS);
-        }
-        
-        UNUSED(argv);
-        UNUSED(argc);
-        
-    #else
-
-        /* the old way */
-        char sArgvCombined[STR_DEFAULT_BUFFER_SIZE];
-
-        if (access(sAppPath, X_OK) != 0) 
-        {
-            fprintf(stderr, "Executable doesn't exist: %s", sAppPath);
-            return 0;
-        }
-        
-        dPID = fork();
-        _AmberLauncher_ConcatCharArray(sArgvCombined, argv, argc, STR_DEFAULT_BUFFER_SIZE, ' ');
-
-        switch(dPID)
-        {
-            case -1:
-                fprintf(stderr, "Failed to fork: %s", sAppPath);
-                perror("fork");
-                return 0;
-            
-            case 0:
-
-                dStatus = execl(sAppPath, sArgvCombined, (char *)NULL);
-                if (dStatus == -1)
-                {
-                    fprintf(stderr, "Failed to launch process: %s", sAppPath);
-                    return 0;
-                }
-                return 1;
-
-            default:
-
-                if (bCloseOnLaunch)
-                {
-                    exit(EXIT_SUCCESS);
-                }
-                break;
-        }
-
-        /* waitdPID(dPID, NULL, 0); */
-
-    #endif
-
-    return dPID;
+        execl("/bin/sh", "sh", "-c", sAppPath, (char *)NULL);
+        _exit(127);
+    }
+    if (bCloseOnLaunch)
+        exit(EXIT_SUCCESS);
+    return (int)dPID;
 }
 
 CAPI int

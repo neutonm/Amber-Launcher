@@ -39,9 +39,16 @@ function ModalShowUpdater()
     local uiResponse = AL.UICall(UIEVENT.MODAL_UPDATER)
     if uiResponse and uiResponse.status == true then
 
+        local message = "Update successful!\n\nLauncher will restart now..."
+        if uiResponse.modSkipped then
+            message = "Launcher updated successfully.\n\n"..
+                      "Warning: the mod manifest was unavailable, so the mod update was skipped.\n\n"..
+                      "Launcher will restart now..."
+        end
+
         AL.UICall(
             UIEVENT.MODAL_MESSAGE,
-            "Update successful!\n\nLauncher will restart now..."
+            message
         )
 
         if OS_NAME == "Windows" then

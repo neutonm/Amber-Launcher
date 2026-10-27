@@ -552,6 +552,7 @@ CAPI void
 AmberLauncher_Start(AppCore* pAppCore)
 {
     size_t i = 0;
+    SVar tScriptsLoaded;
 
     /* Register C functions to lua */
     luaL_newlib(pAppCore->pLuaState->pState, AL);
@@ -599,8 +600,24 @@ AmberLauncher_Start(AppCore* pAppCore)
     }
 
     /* Lua State */
-    SLuaState_Init(pAppCore->pLuaState);
+    if (!SLuaState_Init(pAppCore->pLuaState))
+    {
+        return;
+    }
+
+    /* Prepare the selected game before dispatching its initialization handlers. */
+    if (!SLuaState_CallReferencedFunction(
+            pAppCore->pLuaState, SLUA_FUNC_APP_SCRIPTS_LOADED, &tScriptsLoaded))
+    {
+        return;
+    }
+    if (!SVAR_IS_BOOL(tScriptsLoaded) || !SVAR_GET_BOOL(tScriptsLoaded))
+    {
+        return;
+    }
+
     SLuaState_CallEvent(pAppCore->pLuaState, ELuaFunctionEventTypeStrings[SLUA_EVENT_INIT]);
+    SLuaState_CallReferencedFunction(pAppCore->pLuaState, SLUA_FUNC_POST_APPINIT,NULL);
 }
 
 CAPI void
@@ -682,16 +699,19 @@ AmberLauncher_ConfigureStart(AppCore* pAppCore)
 CAPI void
 AmberLauncher_Play(AppCore* pAppCore)
 {
+    SVar tDestination;
     SLuaState_CallEvent(
         pAppCore->pLuaState, 
         ELuaFunctionEventTypeStrings[SLUA_EVENT_PLAY]
     );
     SLuaState_CallReferencedFunction(pAppCore->pLuaState, SLUA_FUNC_PLAY,NULL);
+    tDestination = AmberLauncher_GetGlobalVariable(pAppCore, "GAME_DESTINATION_PATH");
     AmberLauncher_ProcessLaunch(
         pAppCore->sLaunchCmd,
         0,
         NULL,
-        CFALSE
+        CFALSE,
+        SVAR_IS_CONSTCHAR(tDestination) ? SVAR_GET_CONSTCHAR(tDestination) : NULL
     );
 }
 
@@ -865,4 +885,3 @@ AmberLauncher_SHA256_HashFile(const char *sPath)
     _SHA256toHex(sDigest, sHex);
     return sHex;
 }
-

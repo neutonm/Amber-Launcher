@@ -156,31 +156,40 @@ AmberLauncher_PrintDefaultSystemInformation(void)
 }
 
 CAPI int
-AmberLauncher_ProcessLaunch(const char* sAppPath, int argc, char **argv, CBOOL bCloseOnLaunch)
+AmberLauncher_ProcessLaunch(const char* sAppPath, int argc, char **argv, CBOOL bCloseOnLaunch,
+                            const char *sWorkingDirectory)
 {
     STARTUPINFOA si;
     PROCESS_INFORMATION pi;
-    char cmdLine[MAX_PATH];
+    char *cmdLine = (char *)malloc(strlen(sAppPath) + 1);
+
+    UNUSED(argc);
+    UNUSED(argv);
+    UNUSED(bCloseOnLaunch);
+    if (cmdLine == NULL)
+        return 0;
+    strcpy(cmdLine, sAppPath);
 
     ZeroMemory(&si, sizeof(si));
     si.cb = sizeof(si);
     ZeroMemory(&pi, sizeof(pi));
 
-    snprintf(cmdLine, sizeof(cmdLine), "\"%s\"", sAppPath);
 
     if (CreateProcessA(
         NULL,
         cmdLine,
         NULL, NULL,
         FALSE, 0,
-        NULL, NULL,
+        NULL, sWorkingDirectory,
         &si, &pi))
     {
+        free(cmdLine);
         CloseHandle(pi.hThread);
         CloseHandle(pi.hProcess);
         return 1;
     }
 
+    free(cmdLine);
     fprintf(stderr, "CreateProcess failed (%d): %s\n", GetLastError(), sAppPath);
     return 0;
 }
