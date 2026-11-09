@@ -143,8 +143,9 @@ else
 end
 
 GAME_CURRENT_FOLDER_OS  = OS_NAME == "Windows" and "" or "."
-GAME_DESTINATION_FOLDER = _DEBUG and "DST" or ""
-GAME_DESTINATION_PATH   = GAME_DESTINATION_PATH or "."..OS_FILE_SEPARATOR..GAME_DESTINATION_FOLDER
+GAME_DESTINATION_FOLDER = ""
+GAME_DESTINATION_PATH   = LAUNCHER_PATH
+GAME_SETTINGS_SECTION   = "Settings"
 
 -- Common system-specific folders for the game
 if OS_NAME == "Windows" then
@@ -177,12 +178,14 @@ elseif OS_NAME == "Linux" then
 end
 
 -- Mods
-MOD_ROOT_FOLDER = (GAME_DESTINATION_PATH .. OS_FILE_SEPARATOR ..
-                table.concat({ "Data", "Launcher", "Mods" }, OS_FILE_SEPARATOR))
+MOD_ROOT_FOLDER         = (LAUNCHER_PATH .. OS_FILE_SEPARATOR ..
+                          table.concat({ "Data", "Launcher", "Mods" }, OS_FILE_SEPARATOR))
+MOD_ACTIVE_PATH         = MOD_ROOT_FOLDER..OS_FILE_SEPARATOR.."_active.lua"
 
 -- Common files
-INI_PATH_MM7            = GAME_DESTINATION_PATH..OS_FILE_SEPARATOR.."mm7.ini"
-INI_PATH_MOD            = GAME_DESTINATION_PATH..OS_FILE_SEPARATOR.."mod.ini"
+INI_PATH_GAME           = GAME_DESTINATION_PATH..OS_FILE_SEPARATOR..GAME_NULL.iniName
+INI_PATH_MM7            = INI_PATH_GAME
+INI_PATH_MOD            = LAUNCHER_PATH..OS_FILE_SEPARATOR.."mod.ini"
 
 -- Generate the combinations of base paths and game folder names
 for _, basePath in ipairs(GAME_BASE_PATHS) do
