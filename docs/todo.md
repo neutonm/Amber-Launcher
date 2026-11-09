@@ -18,6 +18,7 @@ Table Of Contents:
 * Improve code and boost up readability *
 - [ ] AmberLauncherGUI.c -> one giant monolithic source file, divide and organize
 - [ ] Shared multigame scripts -> amber and mm7 have shared scripts: combine/refactor
+- [ ] Multithrrading: right now, log window doesn't get updated in realt-itime during configuration (updater as well). Add MT to fix this.
 
 ## Main
 *General points towards development*
