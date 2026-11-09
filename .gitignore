@@ -123,6 +123,9 @@ bin/
 tmp/
 DST/
 
+# Managed game installations
+/Games/
+
 # ---> VisualStudioCode
 .settings
 
