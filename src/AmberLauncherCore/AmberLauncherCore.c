@@ -117,13 +117,31 @@ _SCommand_Callback_LuaCall(const SCommand* pSelf, const SVar* pArgs, const unsig
     return bResult;
 }
 
+static void
+_SCommand_Dispose(const SCommand* pCommand)
+{
+    if (SCommand_IsFlagSet(pCommand, SCOMMAND_FLAG_LUA))
+    {
+        AppCore* pAppCore = (AppCore*)pCommand->pOwner;
+        luaL_unref(pAppCore->pLuaState->pState, LUA_REGISTRYINDEX, pCommand->dLuaRef);
+    }
+    free((void*)pCommand->sName);
+}
+
 static CBOOL
 _SCommand_AddToList(const char* sName, CommandFunc cbCmdFunction, void* pOwner, int dLuaRef, int dPriority)
 {
     long dSVecFoundIndex;
-
     SCommand tCommand;
-    tCommand.sName          = sName;
+    char* sNameCopy = (char*)malloc(strlen(sName) + 1);
+
+    if (!sNameCopy)
+    {
+        return CFALSE;
+    }
+    strcpy(sNameCopy, sName);
+
+    tCommand.sName          = sNameCopy;
     tCommand.dFlags         = dLuaRef > 0 ? SCOMMAND_FLAG_LUA : SCOMMAND_FLAG_NULL;
     tCommand.dLuaRef        = dLuaRef;
     tCommand.dPriority      = dPriority;
@@ -135,20 +153,18 @@ _SCommand_AddToList(const char* sName, CommandFunc cbCmdFunction, void* pOwner, 
     dSVecFoundIndex = SVector_FindByPredicate(&tConfigureCommandList, _predicate, sName);
     if (dSVecFoundIndex != -1)
     {
-        SCommand* pObj  = (SCommand*)SVector_Get(&tConfigureCommandList, (size_t)dSVecFoundIndex);
-        pObj->dFlags    = tCommand.dFlags;
-        pObj->dLuaRef   = tCommand.dLuaRef;
-        pObj->dPriority = tCommand.dPriority;
-
-        if (SCommand_IsFlagSet(pObj, SCOMMAND_FLAG_LUA))
-        {
-            pObj->cbExecuteFunc = _SCommand_Callback_LuaCall;
-        }
-
+        SCommand* pObj = (SCommand*)SVector_Get(&tConfigureCommandList, (size_t)dSVecFoundIndex);
+        _SCommand_Dispose(pObj);
+        *pObj = tCommand;
         return CTRUE;
     }
 
     /* Add new element */
+    if (SVector_Reserve(&tConfigureCommandList, SVector_GetSize(&tConfigureCommandList) + 1) != 0)
+    {
+        free(sNameCopy);
+        return CFALSE;
+    }
     SVector_PushBack(&tConfigureCommandList, &tCommand);
 
     return CTRUE;
@@ -172,9 +188,30 @@ _LUA_CommandAdd(struct lua_State* L)
     pAppCore = lua_touserdata(L, -1);
     lua_pop(L, 1);
 
-    _SCommand_AddToList(sCmdName, _SCommand_Callback_LuaCall, pAppCore, dLuaFuncRef, dPriority);
+    if (!_SCommand_AddToList(sCmdName, _SCommand_Callback_LuaCall, pAppCore, dLuaFuncRef, dPriority))
+    {
+        luaL_unref(L, LUA_REGISTRYINDEX, dLuaFuncRef);
+        return luaL_error(L, "Failed to register command: %s", sCmdName);
+    }
 
     return 0;
+}
+
+static int
+_LUA_CommandRemove(lua_State* L)
+{
+    const char* sName = luaL_checkstring(L, 1);
+    long dIndex      = SVector_FindByPredicate(&tConfigureCommandList, _predicate, sName);
+
+    if (dIndex == -1)
+    {
+        lua_pushboolean(L, CFALSE);
+        return 1;
+    }
+
+    _SCommand_Dispose((SCommand*)SVector_Get(&tConfigureCommandList, (size_t)dIndex));
+    lua_pushboolean(L, SVector_Erase(&tConfigureCommandList, (size_t)dIndex) == 0);
+    return 1;
 }
 
 static int 
@@ -450,10 +487,13 @@ _LUA_CommandCall(lua_State* L)
     dSVecFoundIndex = SVector_FindByPredicate(&tConfigureCommandList, _predicate, sKey);
     if (dSVecFoundIndex != -1)
     {
-        SCommand* pObj = (SCommand*)SVector_Get(&tConfigureCommandList, (size_t)dSVecFoundIndex);
-        SVar tArg; 
+        SCommand tCommand = *(SCommand*)SVector_Get(&tConfigureCommandList, (size_t)dSVecFoundIndex);
+        SVar tArg;
+
+        /* Keep the running command valid if its callback changes the registry. */
+        tCommand.sName = sKey;
         SVAR_VOID(tArg, L, sizeof(lua_State*));
-        bResult = pObj->cbExecuteFunc(pObj, &tArg, 1);
+        bResult = tCommand.cbExecuteFunc(&tCommand, &tArg, 1);
         printf("Calling [%s]: %s\n", sKey, bResult ? "success!" : "fail.");
     }
     else
@@ -516,6 +556,7 @@ luaL_Reg AL[] =
 {
     {"SystemCall",                  _LUA_SystemCall             },
     {"CommandAdd",                  _LUA_CommandAdd             },
+    {"CommandRemove",               _LUA_CommandRemove          },
     {"CommandCall",                 _LUA_CommandCall            },
     {"GetTableOfCommands",          _LUA_GetTableOfCommands     },
     {"EventCall",                   _LUA_EventCall              },
@@ -691,10 +732,7 @@ AmberLauncher_End(AppCore* pAppCore)
     SVector_ForEach(&tConfigureCommandList)
     {
         SVector_InitIterator(SCommand, &tConfigureCommandList);
-        if (SCommand_IsFlagSet(SVECTOR_ITERATOR, SCOMMAND_FLAG_LUA))
-        {
-            luaL_unref(pAppCore->pLuaState->pState, LUA_REGISTRYINDEX, SVECTOR_ITERATOR->dLuaRef);
-        }
+        _SCommand_Dispose(SVECTOR_ITERATOR);
     }
 
     /* Other shit */

@@ -42,7 +42,14 @@ local function _InstallPatch()
         "[Settings]\nCurrentGame=MM7\nCloseOnLaunch=1\n[Localisation]\nCore=English\n")
 end
 
-function events.InitLauncher()
+function events.GameActivated(gameID)
 
+    if gameID ~= MODID.MM7 then return end
     AL.CommandAdd("InstallPatch", _InstallPatch, -90)
+end
+
+function events.GameDeactivated(gameID)
+
+    if gameID ~= MODID.MM7 then return end
+    AL.CommandRemove("InstallPatch")
 end

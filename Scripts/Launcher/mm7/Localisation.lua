@@ -187,9 +187,14 @@ local function _Localisation()
     return true
 end
 
-function events.InitLauncher()
+function events.GameActivated(gameID)
 
-    print("Initialize Localisation.lua")
-    AL.CommandAdd("Localisation", _Localisation, -40) -- overwrites internal cmd
+    if gameID ~= MODID.MM7 then return end
+    AL.CommandAdd("Localisation", _Localisation, -40)
+end
 
+function events.GameDeactivated(gameID)
+
+    if gameID ~= MODID.MM7 then return end
+    AL.CommandRemove("Localisation")
 end

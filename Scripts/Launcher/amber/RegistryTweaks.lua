@@ -25,8 +25,14 @@ local function _RegistryTweaks()
     return true
 end
 
-function events.InitLauncher()
+function events.GameActivated(gameID)
 
-    print("Initialize RegistryTweaks.lua")
-    AL.CommandAdd("RegistryTweaks", _RegistryTweaks, -60) -- overwrites internal cmd
+    if gameID ~= MODID.AMBER then return end
+    AL.CommandAdd("RegistryTweaks", _RegistryTweaks, -60)
+end
+
+function events.GameDeactivated(gameID)
+
+    if gameID ~= MODID.AMBER then return end
+    AL.CommandRemove("RegistryTweaks")
 end

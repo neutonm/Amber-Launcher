@@ -20,7 +20,14 @@ local function _DetectAndCopyGame()
     })
 end
 
-function events.InitLauncher()
+function events.GameActivated(gameID)
 
+    if gameID ~= MODID.AMBER then return end
     AL.CommandAdd("DetectAndCopyGame", _DetectAndCopyGame, -100)
+end
+
+function events.GameDeactivated(gameID)
+
+    if gameID ~= MODID.AMBER then return end
+    AL.CommandRemove("DetectAndCopyGame")
 end

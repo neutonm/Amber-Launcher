@@ -110,9 +110,14 @@ local function _DetectAndInstallMod()
     return true
 end
 
-function events.InitLauncher()
+function events.GameActivated(gameID)
 
-    print("Initialize DetectAndInstallMod.lua")
-    AL.CommandAdd("DetectAndInstallMod", _DetectAndInstallMod, -90) 
+    if gameID ~= MODID.AMBER then return end
+    AL.CommandAdd("DetectAndInstallMod", _DetectAndInstallMod, -90)
+end
 
+function events.GameDeactivated(gameID)
+
+    if gameID ~= MODID.AMBER then return end
+    AL.CommandRemove("DetectAndInstallMod")
 end

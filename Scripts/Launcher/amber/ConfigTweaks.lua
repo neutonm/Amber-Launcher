@@ -102,9 +102,14 @@ local function _ConfigTweaks()
     return true
 end
 
-function events.InitLauncher()
+function events.GameActivated(gameID)
 
-    print("Initialize ConfigTweaks.lua")
-    AL.CommandAdd("ConfigTweaks", _ConfigTweaks, -50) -- overwrites internal cmd
+    if gameID ~= MODID.AMBER then return end
+    AL.CommandAdd("ConfigTweaks", _ConfigTweaks, -50)
+end
 
+function events.GameDeactivated(gameID)
+
+    if gameID ~= MODID.AMBER then return end
+    AL.CommandRemove("ConfigTweaks")
 end

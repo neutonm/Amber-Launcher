@@ -13,7 +13,14 @@ local function _MergeAndRename()
     return AL_VerifyGameFiles(GAME_DESTINATION_PATH, MM7_GAME_FILES.copyFiles)
 end
 
-function events.InitLauncher()
+function events.GameActivated(gameID)
 
+    if gameID ~= MODID.AMBER then return end
     AL.CommandAdd("MergeAndRename", _MergeAndRename, -80)
+end
+
+function events.GameDeactivated(gameID)
+
+    if gameID ~= MODID.AMBER then return end
+    AL.CommandRemove("MergeAndRename")
 end
