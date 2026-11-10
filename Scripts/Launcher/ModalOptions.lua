@@ -1,10 +1,11 @@
 -- FILE:        ModalOptions.lua
--- DESCRIPTION: Shared Settings registry, compatibility filtering and INI lifetime.
+-- DESCRIPTION: Shared Settings registry and INI lifetime.
 
 local _Options      = {}
 local _OptionsByID  = {}
+local _Generation   = 0
 
--- Register definitions only; readers run when a compatible option is displayed.
+-- Readers run when the modal opens.
 function AL_RegisterOption(option)
 
     assert(type(option) == "table", "Option definition must be a table")
@@ -20,18 +21,9 @@ function AL_RegisterOption(option)
     assert(option.optTitle == nil or type(option.optTitle) == "table" or
         type(option.optTitle) == "function", "Option optTitle must be a table or function")
 
-    -- Validate independently of the currently selected game.
-    assert(type(option.games) == "table" and
-        AL_IsGameCompatible(option.games, {key = option.games[1]}),
-        "Option games must be a non-empty compatibility list of valid game keys")
-
     local entry = {}
     for key, value in pairs(option) do
         entry[key] = value
-    end
-    entry.games = {}
-    for i, key in ipairs(option.games) do
-        entry.games[i] = key
     end
     if type(option.optTitle) == "table" then
         entry.optTitle = {}
@@ -136,7 +128,7 @@ local function _NewContext(modPath, gamePath)
     return context
 end
 
-local function _BuildOptions(context, game)
+local function _BuildOptions(context)
 
     local sections  = {}
     local byName    = {}
@@ -147,29 +139,27 @@ local function _BuildOptions(context, game)
         if #displayed >= 32 then
             break
         end
-        if AL_IsGameCompatible(option.games, game) then
-            local choices = option.optTitle
-            if type(choices) == "function" then
-                choices = choices(context)
+        local choices = option.optTitle
+        if type(choices) == "function" then
+            choices = choices(context)
+        end
+        -- Empty choice providers (e.g. no available languages) have no control.
+        if choices == nil or #choices > 0 then
+            local widget = {
+                id       = option.id,
+                title    = option.title,
+                type     = option.type,
+                optTitle = choices,
+                default  = option.read(context)
+            }
+            local section = byName[option.section]
+            if not section then
+                section                 = {sectionName = option.section}
+                byName[option.section]  = section
+                sections[#sections + 1] = section
             end
-            -- Empty choice providers (e.g. no available languages) have no control.
-            if choices == nil or #choices > 0 then
-                local widget = {
-                    id       = option.id,
-                    title    = option.title,
-                    type     = option.type,
-                    optTitle = choices,
-                    default  = option.read(context)
-                }
-                local section = byName[option.section]
-                if not section then
-                    section                 = {sectionName = option.section}
-                    byName[option.section]  = section
-                    sections[#sections + 1] = section
-                end
-                section[#section + 1]     = widget
-                displayed[#displayed + 1] = {definition = option, widget = widget}
-            end
+            section[#section + 1]     = widget
+            displayed[#displayed + 1] = {definition = option, widget = widget}
         end
     end
     return sections, displayed
@@ -177,11 +167,14 @@ end
 
 function ModalShowOptions()
 
+    if GAME_CURRENT == GAME_NULL then return false end
+
     local game       = GAME_CURRENT
+    local generation = _Generation
     local modPath    = INI_PATH_MOD
     local gamePath   = INI_PATH_GAME
     local context    = _NewContext(modPath, gamePath)
-    local ok, data, displayed = pcall(_BuildOptions, context, game)
+    local ok, data, displayed = pcall(_BuildOptions, context)
     context:Close(false)
     if not ok then
         AL_print("[Error]: failed to read settings: "..tostring(data))
@@ -189,7 +182,7 @@ function ModalShowOptions()
     end
 
     local response = AL.UICall(UIEVENT.MODAL_OPTIONS, data)
-    if not response or response.status ~= true or GAME_CURRENT ~= game then
+    if not response or response.status ~= true or GAME_CURRENT ~= game or generation ~= _Generation then
         return false
     end
 
@@ -201,7 +194,7 @@ function ModalShowOptions()
             local option = shown.definition
             local widget = shown.widget
             local value  = response[option.id]
-            if _OptionsByID[option.id] == option and AL_IsGameCompatible(option.games) and
+            if _OptionsByID[option.id] == option and
                 value ~= nil and tostring(value) ~= tostring(widget.default) then
                 local valid = option.type == UIWIDGET.EDIT and type(value) == "string"
                 if option.type ~= UIWIDGET.EDIT and type(value) == "number" then
@@ -224,12 +217,16 @@ function ModalShowOptions()
     return applied and saved and success
 end
 
+function events.GameDeactivated()
+
+    _Generation = _Generation + 1
+end
+
 function events.InitLauncher()
 
     AL_RegisterOption({
         id       = "cmdargs",
         section  = "General",
-        games    = {"*"},
         title    = "Launch arguments:",
         type     = UIWIDGET.EDIT,
         read     = function(context)
@@ -243,7 +240,6 @@ function events.InitLauncher()
     AL_RegisterOption({
         id       = "closeonlaunch",
         section  = "General",
-        games    = {"*"},
         title    = "Close App On Game Launch:",
         type     = UIWIDGET.CHECKBOX,
         read     = function(context)

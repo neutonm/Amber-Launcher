@@ -30,6 +30,8 @@ struct AppCore
     struct SSubject* pOnUserEventNotifier;
     UICallback cbUIEvent;
     char *sLaunchCmd;
+    unsigned int dActiveGameID;
+    CBOOL bChangingGame;
 };
 
 /******************************************************************************

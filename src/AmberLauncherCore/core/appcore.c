@@ -33,11 +33,13 @@ AppCore_init(AppCore *pAppCore)
 {
     if (IS_VALID(pAppCore))
     {
-        pAppCore->argc                  = 0;
-        pAppCore->argv                  = NULL;
-        pAppCore->pLuaState             = SLuaState_new();
-        pAppCore->pOnUserEventNotifier  = SSubject_new();
-        pAppCore->sLaunchCmd            = NULL;
+        pAppCore->argc                 = 0;
+        pAppCore->argv                 = NULL;
+        pAppCore->pLuaState            = SLuaState_new();
+        pAppCore->pOnUserEventNotifier = SSubject_new();
+        pAppCore->sLaunchCmd           = NULL;
+        pAppCore->dActiveGameID        = 0;
+        pAppCore->bChangingGame        = CFALSE;
 
         AppCore_SetLaunchCommand(pAppCore, AppCore_GetDefaultLaunchCommand());
 

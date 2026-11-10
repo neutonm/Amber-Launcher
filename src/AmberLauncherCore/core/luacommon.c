@@ -20,6 +20,8 @@ const char* ELuaFunctionRefTypeStrings[] = {
 const char* ELuaFunctionEventTypeStrings[] = {
     "InitLauncher",
     "DestroyLauncher",
+    "GameActivated",
+    "GameDeactivated",
     "BeforeConfigure",
     "AfterConfigure",
     "PlayGame",

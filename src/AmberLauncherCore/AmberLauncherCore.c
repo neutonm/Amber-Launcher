@@ -553,6 +553,7 @@ AmberLauncher_Start(AppCore* pAppCore)
 {
     size_t i = 0;
     SVar tScriptsLoaded;
+    SVar tGameID;
 
     /* Register C functions to lua */
     luaL_newlib(pAppCore->pLuaState->pState, AL);
@@ -617,13 +618,74 @@ AmberLauncher_Start(AppCore* pAppCore)
     }
 
     SLuaState_CallEvent(pAppCore->pLuaState, ELuaFunctionEventTypeStrings[SLUA_EVENT_INIT]);
+    tGameID = AmberLauncher_GetGlobalVariable(pAppCore, "GAME_MOD_ID");
+    if (!SVAR_IS_DOUBLE(tGameID) ||
+        !AmberLauncher_ActivateGame(pAppCore, (unsigned int)SVAR_GET_DOUBLE(tGameID)))
+    {
+        return;
+    }
     SLuaState_CallReferencedFunction(pAppCore->pLuaState, SLUA_FUNC_POST_APPINIT,NULL);
+}
+
+CAPI CBOOL
+AmberLauncher_ActivateGame(AppCore* pAppCore, unsigned int dGameID)
+{
+    SVar tGameID;
+
+    if (pAppCore->bChangingGame || dGameID == 0)
+    {
+        return CFALSE;
+    }
+    if (pAppCore->dActiveGameID == dGameID)
+    {
+        return CTRUE;
+    }
+    if (pAppCore->dActiveGameID != 0)
+    {
+        return CFALSE;
+    }
+
+    pAppCore->dActiveGameID = dGameID;
+    pAppCore->bChangingGame = CTRUE;
+    SVAR_UINT(tGameID, dGameID);
+    SLuaState_CallEventArgs(
+        pAppCore->pLuaState,
+        ELuaFunctionEventTypeStrings[SLUA_EVENT_GAME_ACTIVATED],
+        &tGameID,
+        1
+    );
+    pAppCore->bChangingGame = CFALSE;
+    return CTRUE;
+}
+
+CAPI CBOOL
+AmberLauncher_DeactivateGame(AppCore* pAppCore)
+{
+    SVar tGameID;
+
+    if (pAppCore->bChangingGame || pAppCore->dActiveGameID == 0)
+    {
+        return CFALSE;
+    }
+
+    pAppCore->bChangingGame = CTRUE;
+    SVAR_UINT(tGameID, pAppCore->dActiveGameID);
+    SLuaState_CallEventArgs(
+        pAppCore->pLuaState,
+        ELuaFunctionEventTypeStrings[SLUA_EVENT_GAME_DEACTIVATED],
+        &tGameID,
+        1
+    );
+    pAppCore->dActiveGameID = 0;
+    pAppCore->bChangingGame = CFALSE;
+    return CTRUE;
 }
 
 CAPI void
 AmberLauncher_End(AppCore* pAppCore)
 {
     /* Lua stuff */
+    AmberLauncher_DeactivateGame(pAppCore);
     SLuaState_CallEvent(pAppCore->pLuaState, ELuaFunctionEventTypeStrings[SLUA_EVENT_DESTROY]);
     SLuaState_CallReferencedFunction(pAppCore->pLuaState, SLUA_FUNC_APPDESTROY,NULL);
     SVector_ForEach(&tConfigureCommandList)
