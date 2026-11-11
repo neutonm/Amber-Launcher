@@ -126,6 +126,10 @@ DST/
 # Managed game installations
 /Games/
 
+# Launcher preferences
+/launcher.ini
+/al_*.ini
+
 # ---> VisualStudioCode
 .settings
 
