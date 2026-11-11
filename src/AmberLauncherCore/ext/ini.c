@@ -226,7 +226,7 @@ void ini_free(ini_t *ini) {
 
 
 const char* ini_get(ini_t *ini, const char *section, const char *key) {
-  char *current_section = (char*)0;
+  const char *current_section = "";
   char *val;
   char *p = ini->data;
 
@@ -278,10 +278,14 @@ static int _ini_grow(ini_t *ini, size_t extra)
 {
   size_t old_sz = (size_t)(ini->end - ini->data);
   char  *tmp    = realloc(ini->data, old_sz + extra + 1);
-  if (!tmp) return 0;
+  if (!tmp)
+  {
+    return 0;
+  }
 
   ini->data = tmp;
   ini->end  = tmp + old_sz + extra;
+  *ini->end = '\0';
   return 1;
 }
 
@@ -295,9 +299,73 @@ int ini_set(ini_t *ini, const char *section, const char *key, const char *value)
   char *val;
 
   val = (char*)ini_get(ini, section, key);
+  if (!*value)
+  {
+    /* Empty values are discarded by split_data, so remove their key as well. */
+    if (val)
+    {
+      char *start = val;
+      while (start > ini->data && start[-1] == '\0')
+      {
+        --start;
+      }
+      while (start > ini->data && start[-1] != '\0')
+      {
+        --start;
+      }
+      memset(start, '\0', (size_t)(val - start) + strlen(val) + 1);
+    }
+    return 1;
+  }
   if (!val)
   {
-    return 0;
+    size_t old_size = (size_t)(ini->end - ini->data);
+    size_t offset   = old_size;
+    size_t key_size = strlen(key) + 1;
+    size_t val_size = strlen(value) + 1;
+    int found       = !section || !*section;
+    char *p         = ini->data;
+
+    while (p < ini->end && !*p)
+    {
+      ++p;
+    }
+    while (p < ini->end)
+    {
+      if (*p == '[')
+      {
+        if (found)
+        {
+          offset = (size_t)(p - ini->data);
+          break;
+        }
+        found = !strcmpci(p + 1, section);
+      }
+      else
+      {
+        p = next(ini, p);
+      }
+      p = next(ini, p);
+    }
+
+    size_t header_size = found ? 0 : strlen(section) + 2;
+    size_t extra       = 1 + header_size + key_size + val_size;
+    if (!_ini_grow(ini, extra))
+    {
+      return 0;
+    }
+    p = ini->data + offset;
+    memmove(p + extra, p, old_size - offset + 1);
+    *p++ = '\0';
+    if (!found)
+    {
+      *p++ = '[';
+      memcpy(p, section, header_size - 1);
+      p += header_size - 1;
+    }
+    memcpy(p, key, key_size);
+    memcpy(p + key_size, value, val_size);
+    return 1;
   }
 
   old_len = strlen(val);
@@ -312,8 +380,8 @@ int ini_set(ini_t *ini, const char *section, const char *key, const char *value)
 
   /* Need more space */
   off_val  = (size_t)(val - ini->data);
-  tail_off = off_val + old_len + 1;
-  tail_sz  = (size_t)(ini->end - (ini->data + tail_off));
+  tail_off = off_val + old_len;
+  tail_sz  = (size_t)(ini->end - (ini->data + tail_off)) + 1;
 
   if (!_ini_grow(ini, new_len - old_len))
   {
@@ -381,39 +449,44 @@ int ini_save(ini_t *ini, const char *filename)
     return 0;
   }
 
-  if (*(ini->data) == '\0')
-  {
-    /* First token may be empty (file started with blank line) */
-    char *tmp = ini->data;
-    while (tmp < ini->end && *tmp == '\0')
-    {
-      tmp++;
-    }
-    ini->data = tmp;
-  }
-
   p = ini->data;
+  while (p < ini->end && !*p)
+  {
+    ++p;
+  }
   while (p < ini->end)
   {
     if (*p == '[')
     {
       /* Section header token: write “[…]”                      */
-      if (fprintf(fp, "%s]\n", p) < 0) goto io_fail;
+      if (fprintf(fp, "%s]\n", p) < 0)
+      {
+        goto io_fail;
+      }
     }
     else
     {
       char *val = next(ini, p);
-      if (fprintf(fp, "%s=", p) < 0) goto io_fail;
+      if (fprintf(fp, "%s=", p) < 0)
+      {
+        goto io_fail;
+      }
       fput_escaped_value(fp, val);
-      if (fputc('\n', fp) == EOF) goto io_fail;
+      if (fputc('\n', fp) == EOF)
+      {
+        goto io_fail;
+      }
       p = val;
     }
 
     p = next(ini, p);
   }
 
-  fclose(fp);
-  return 1;
+  if (ferror(fp))
+  {
+    goto io_fail;
+  }
+  return fclose(fp) == 0;
 
 io_fail:
   fclose(fp);
