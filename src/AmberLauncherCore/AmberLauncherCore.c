@@ -649,12 +649,10 @@ AmberLauncher_Start(AppCore* pAppCore)
 
     /* Prepare the selected game before dispatching its initialization handlers. */
     if (!SLuaState_CallReferencedFunction(
-            pAppCore->pLuaState, SLUA_FUNC_APP_SCRIPTS_LOADED, &tScriptsLoaded))
+            pAppCore->pLuaState, SLUA_FUNC_APP_SCRIPTS_LOADED, &tScriptsLoaded) ||
+        !SVAR_IS_BOOL(tScriptsLoaded) || !SVAR_GET_BOOL(tScriptsLoaded))
     {
-        return;
-    }
-    if (!SVAR_IS_BOOL(tScriptsLoaded) || !SVAR_GET_BOOL(tScriptsLoaded))
-    {
+        SLuaState_CallReferencedFunction(pAppCore->pLuaState, SLUA_FUNC_GAME_RESET, NULL);
         return;
     }
 
@@ -717,6 +715,7 @@ AmberLauncher_DeactivateGame(AppCore* pAppCore)
         &tGameID,
         1
     );
+    SLuaState_CallReferencedFunction(pAppCore->pLuaState, SLUA_FUNC_GAME_RESET, NULL);
     pAppCore->dActiveGameID = 0;
     pAppCore->bChangingGame = CFALSE;
     return CTRUE;
@@ -756,6 +755,11 @@ CAPI void
 AmberLauncher_ConfigureStart(AppCore* pAppCore)
 {
     SVar tRetVal;
+
+    if (pAppCore->dActiveGameID == 0)
+    {
+        return;
+    }
 
     SLuaState_CallEvent(
         pAppCore->pLuaState, 
@@ -800,6 +804,10 @@ CAPI void
 AmberLauncher_Play(AppCore* pAppCore)
 {
     SVar tDestination;
+    if (pAppCore->dActiveGameID == 0)
+    {
+        return;
+    }
     SLuaState_CallEvent(
         pAppCore->pLuaState, 
         ELuaFunctionEventTypeStrings[SLUA_EVENT_PLAY]

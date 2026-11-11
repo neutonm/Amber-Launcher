@@ -1,7 +1,7 @@
 -- COMMAND:     RegistryTweaks
 -- DESCRIPTION: Tweaks MM vars in Windows Registry for best gameplay experience
 
-_GameRegistryValues = {
+local _GameRegistryValues = {
 
     { key = "2dacceloff",         value = 0 },
     { key = "3DSoundAvailable",   value = 1 },

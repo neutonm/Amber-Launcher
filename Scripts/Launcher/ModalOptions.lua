@@ -63,71 +63,6 @@ function AL_UnregisterOption(id)
     return true
 end
 
--- Lazy, path-keyed handles let all callbacks share a single version of each INI.
-local function _NewContext(modPath, gamePath)
-
-    local files       = {}
-    local context     = {}
-    local paths       = {mod = modPath, game = gamePath}
-    local writeFailed = false
-
-    local function open(scope)
-        assert(scope == "mod" or scope == "game", "Unknown option INI scope")
-        local path = paths[scope]
-        if not path then
-            return nil
-        end
-        if files[path] == nil then
-            local handle = AL.INILoad(path)
-            files[path]  = {handle = handle, dirty = false}
-            if not handle then
-                AL_print("[Error]: failed to open settings: "..path)
-            end
-        end
-        return files[path]
-    end
-
-    function context:Get(scope, section, key, fallback)
-        local file  = open(scope)
-        local value = file and file.handle and AL.INIGet(file.handle, section, key)
-        if value == nil or value == false or value == "" then
-            return fallback
-        end
-        return value
-    end
-
-    function context:Set(scope, section, key, value)
-        local file = open(scope)
-        if not file or not file.handle then
-            writeFailed = true
-            return false
-        end
-        AL.INISet(file.handle, section, key, tostring(value))
-        file.dirty = true
-        return true
-    end
-
-    function context:Close(save)
-        local success = not writeFailed
-        for path, file in pairs(files) do
-            if file.handle then
-                if save and file.dirty then
-                    local ok, result = pcall(AL.INISave, file.handle, path)
-                    if not ok or not result then
-                        AL_print("[Error]: failed to save settings: "..path)
-                        success = false
-                    end
-                end
-                AL.INIClose(file.handle)
-                file.handle = nil
-            end
-        end
-        return success
-    end
-
-    return context
-end
-
 local function _BuildOptions(context)
 
     local sections  = {}
@@ -171,9 +106,7 @@ function ModalShowOptions()
 
     local game       = GAME_CURRENT
     local generation = _Generation
-    local modPath    = INI_PATH_MOD
-    local gamePath   = INI_PATH_GAME
-    local context    = _NewContext(modPath, gamePath)
+    local context    = AL_ConfigContext()
     local ok, data, displayed = pcall(_BuildOptions, context)
     context:Close(false)
     if not ok then
@@ -187,7 +120,6 @@ function ModalShowOptions()
     end
 
     -- Reopen after the modal, so unrelated edits made while it was open survive.
-    context = _NewContext(modPath, gamePath)
     local success = true
     local applied, err = pcall(function()
         for _, shown in ipairs(displayed) do
@@ -230,11 +162,11 @@ function events.InitLauncher()
         title    = "Launch arguments:",
         type     = UIWIDGET.EDIT,
         read     = function(context)
-            return context:Get("mod", GAME_SETTINGS_SECTION, "LaunchCommand", AL.GetLaunchCommand())
+            return context:Get("project", "Settings", "LaunchCommand", AL.GetLaunchCommand())
         end,
         callback = function(option, context)
             AL.SetLaunchCommand(option.value)
-            context:Set("mod", GAME_SETTINGS_SECTION, "LaunchCommand", option.value)
+            context:Set("project", "Settings", "LaunchCommand", option.value)
         end
     })
     AL_RegisterOption({
@@ -243,10 +175,10 @@ function events.InitLauncher()
         title    = "Close App On Game Launch:",
         type     = UIWIDGET.CHECKBOX,
         read     = function(context)
-            return tonumber(context:Get("mod", "Settings", "CloseOnLaunch", "0")) == 1 and 1 or 0
+            return tonumber(context:Get("launcher", "Settings", "CloseOnLaunch", "0")) == 1 and 1 or 0
         end,
         callback = function(option, context)
-            context:Set("mod", "Settings", "CloseOnLaunch", option.value)
+            context:Set("launcher", "Settings", "CloseOnLaunch", option.value)
         end
     })
 end

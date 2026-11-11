@@ -1,61 +1,36 @@
 -- FILE:        GamesOptions.lua
 -- DESCRIPTION: Shared game option definitions.
 
-local function _LocaleNames(which)
+local function _LocaleNames(context, which)
 
     local names = {}
-    for _, locale in ipairs(AL_TLocales or {}) do
-        if locale[which] then
-            names[#names + 1] = locale.name
-        end
+    for _, locale in ipairs(context.locales) do
+        if locale[which.."Available"] then names[#names + 1] = locale.name end
     end
     return names
 end
 
 local function _Language(which, title)
 
-    local configKey = which == "core" and "Core" or "Mod"
+    local key = which == "core" and "Core" or "Mod"
     return {
         id       = "language"..which,
         section  = "General",
         title    = title,
         type     = UIWIDGET.POPUP,
-        optTitle = function()
-            return _LocaleNames(which)
+        optTitle = function(context)
+            return _LocaleNames(context, which)
         end,
         read     = function(context)
-            local name     = context:Get("mod", "Localisation", configKey, "English")
-            local fallback = 0
-            for i, available in ipairs(_LocaleNames(which)) do
-                if available == name then
-                    return i - 1
-                end
-                if available == "English" then
-                    fallback = i - 1
-                end
+            local name = context:Get("project", "Localisation", "Applied"..key,
+                context:Get("project", "Localisation", key, "English"))
+            for i, available in ipairs(_LocaleNames(context, which)) do
+                if available == name then return i - 1 end
             end
-            return fallback
+            return 0
         end,
         callback = function(option, context)
-            local name = option.optTitle[option.value + 1]
-            for _, locale in ipairs(AL_TLocales or {}) do
-                if locale.name == name and locale[which] then
-                    if which == "core" and type(AL_LocaliseCoreFreeAll) == "function" then
-                        AL_LocaliseCoreFreeAll()
-                    end
-                    local cleanup = locale[which.."FreeCb"]
-                    local apply   = locale[which.."Cb"]
-                    if cleanup then
-                        cleanup(locale)
-                    end
-                    if apply and apply(locale) then
-                        return context:Set("mod", "Localisation", configKey, locale.name)
-                    end
-                    AL_print("Failed to initialize "..which.." localisation.")
-                    return false
-                end
-            end
-            return false
+            return AL_SetLocalisation(context, which, option.optTitle[option.value + 1])
         end
     }
 end

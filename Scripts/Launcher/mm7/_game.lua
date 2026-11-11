@@ -1,5 +1,6 @@
 return {
     key             = "MM7",
+    baseGame        = "MM7",
     name            = "mm7",
     title           = "Might and Magic VII",
     exeName         = "mm7.exe",
@@ -48,6 +49,6 @@ return {
     end,
     isConfigured    = function()
         return not not FS.PathResolveCaseInsensitive(GAME_DESTINATION_PATH, "MM7patch.dll") and
-            FS.IsFilePresent(INI_PATH_GAME) and FS.IsFilePresent(INI_PATH_MOD)
+            FS.IsFilePresent(INI_PATH_GAME)
     end
 }

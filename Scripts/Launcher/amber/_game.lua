@@ -1,5 +1,7 @@
 return {
     key             = "AMBER",
+    baseGame        = "MM7",
+    requiresMod     = true,
     name            = "amber",
     title           = "Amber Island",
     exeName         = "mm7.exe",
@@ -42,6 +44,10 @@ return {
         end
 
         return {}
+    end,
+    isConfigured    = function()
+        return not not FS.PathResolveCaseInsensitive(GAME_DESTINATION_PATH, "MM7patch.dll") and
+            FS.IsFilePresent(INI_PATH_GAME)
     end,
     detectInstalled = function(root)
         if not FS.PathResolveCaseInsensitive(root, "mm7.exe") then

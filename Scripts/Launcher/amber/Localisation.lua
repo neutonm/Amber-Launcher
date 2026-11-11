@@ -1,254 +1,39 @@
--- COMMAND:     Localisation
--- DESCRIPTION: Provides localisation api + defines behavior for localisation 
---              modal window during autoconfig
+-- FILE:        amber/Localisation.lua
 
-local archivesDir      = FS.PathJoin("Data", "Launcher", "Archives")
-local localizationDir  = FS.PathJoin(GAME_DESTINATION_PATH, "Scripts", "Localization")
+local function _LocaliseMod(locale, root)
 
--------------------------------------------------------------------------------
----
-local function _DeleteResolved(base, rel)
-    local actual = FS.PathResolveCaseInsensitive(base, rel)
-    if not actual then return false end
-    local ok = os.remove(actual)
-    if ok then print("Deleted: " .. actual) end
-    return ok
-end
-
-local function _DeleteList(base, files)
-
-    local ok = true
-
-    for _, f in ipairs(files) do
-        local deleteSuccess
-        deleteSuccess = _DeleteResolved(base, f)
-        if deleteSuccess == false then
-            ok = false
+    local directory = FS.PathJoin(root, "Scripts", "Localization")
+    if locale.code == "en_en" then
+        for _, name in ipairs({"Quests.lua", "Common.lua", "Scripts.lua"}) do
+            local path = FS.PathResolveCaseInsensitive(directory, name)
+            if path and not os.remove(path) then return false end
         end
-    end
-
-    return ok
-end
-
-local function _FindArchive(prefix, code)
-    local name = prefix .. "-" .. code .. ".zip"
-    return FS.PathResolveCaseInsensitive(archivesDir, name) or FS.PathJoin(archivesDir, name)
-end
-
-local function _LocaliseMod(t)
-
-    local files             = {
-        "Quests.lua",
-        "Common.lua",
-        "Scripts.lua"
-    }
-
-    AL_print("Mod localisation: "..(t.code).."\n")
-
-    -- Reset localisation if it's english
-    if t.code == "en_en" then
-        _DeleteList(localizationDir, files)
         return true
     end
-
-    local archivePath = _FindArchive("mod", t.code)
-    FS.DirectoryEnsure(localizationDir)
-
-    if not AL.ArchiveExtract(archivePath, localizationDir) then
-        AL_print("Failed to extract mod-"..(t.code)..".zip")
-        return false
-    end
-
-    return true
-end
-
---- Clear all previously installed **core** localisation assets.
--- Removes icon/event/audio localisation files from the game destination folder.
--- Missing files are ignored; successful deletions are logged.
--- @return bool success
-function AL_LocaliseCoreFreeAll()
-
-    local files = {
-        FS.PathJoin("Data",   "loc.ICONS.LOD"),
-        FS.PathJoin("Data",   "loc.Events.lod"),
-        FS.PathJoin("SOUNDS", "loc.Audio.snd"),
-    }
-
-    return _DeleteList(GAME_DESTINATION_PATH, files)
-end
-
-local function _LocaliseCore(t)
-
-    AL_print("Core game localisation: "..(t.code).."\n")
-
-    local archivePath = _FindArchive("core", t.code)
-    if not AL.ArchiveExtract(archivePath, GAME_DESTINATION_PATH) then
-        AL_print("Failed to extract core-"..(t.code)..".zip")
-        return false
-    end
-
-    return true
-end
-
--------------------------------------------------------------------------------
-AL_TLocales = {
-    {
-        name        = "English",
-        code        = "en_en",
-        core        = FS.PathJoin("Data", "Launcher", "local-en-core.png"),
-        mod         = FS.PathJoin("Data", "Launcher", "local-en-mod.png"),
-        coreCb      = function(t)
-                        return true
-                    end,
-        coreFreeCb  = function(t)
-
-                        local files = {
-                            "mm6text.cas",
-                            "mm6text.non",
-                            "mm7text.dll"
-                        }
-
-                        _DeleteList(GAME_DESTINATION_PATH, files)
-                        
-                        return true
-                    end,
-        modCb       = _LocaliseMod,
-    },
-    {
-        name        = "Polish",
-        code        = "pl_pl",
-        core        = FS.PathJoin("Data", "Launcher", "local-pl-core.png"),
-        mod         = "",
-        --mod         = FS.PathJoin("Data", "Launcher", "local-pl-mod.png"),
-        coreCb      = _LocaliseCore,
-        modCb       = _LocaliseMod,
-    },
-    {
-        name        = "Russian",
-        code        = "ru_ru",
-        core        = FS.PathJoin("Data", "Launcher", "local-ru-core.png"),
-        mod         = "",
-        --mod         = FS.PathJoin("Data", "Launcher", "local-ru-mod.png"),
-        coreCb      = _LocaliseCore,
-        coreFreeCb  = function(t)
-
-                        local files = {
-                            "mm6text.cas",
-                            "mm6text.non",
-                            "mm7text.dll"
-                        }
-
-                        _DeleteList(GAME_DESTINATION_PATH, files)
-
-                        return true
-                    end,
-        modCb       = _LocaliseMod,
-    },
-    {
-        name        = "German",
-        code        = "de_de",
-        core        = FS.PathJoin("Data", "Launcher", "local-de-core.png"),
-        mod         = "",
-        --mod         = FS.PathJoin("Data", "Launcher", "local-de-mod.png"),
-        coreCb      = _LocaliseCore,
-        modCb       = _LocaliseMod,
-    },
-    {
-        name        = "French",
-        code        = "fr_fr",
-        core        = FS.PathJoin("Data", "Launcher", "local-fr-core.png"),
-        mod         = "",
-        --mod         = FS.PathJoin("Data", "Launcher", "local-fr-mod.png"),
-        coreCb      = _LocaliseCore,
-        modCb       = _LocaliseMod,
-    },
-}
-
-function AL_WriteConfigLocalisationNames(langCore, langMod)
-
-    if langCore == nil and langMod == nil then
-        return
-    end
-
-    local ini     = AL.INILoad(INI_PATH_MOD)
-    if not ini then
-        AL_print("[Error]: failed to open localisation settings: "..INI_PATH_MOD)
-        return false
-    end
-    if (langCore ~= nil) then
-        AL.INISet(ini, "Localisation", "Core", langCore)
-    end
-    if (langMod ~= nil) then
-        AL.INISet(ini, "Localisation", "Mod", langMod)
-    end
-    local saved = AL.INISave(ini, INI_PATH_MOD)
-    AL.INIClose(ini)
-    if not saved then
-        AL_print("[Error]: failed to save localisation settings: "..INI_PATH_MOD)
-        return false
-    end
-    return true
-end
-
-local function _Localisation()
-
-    local langCore = nil
-    local langMod  = nil
-
-    AL_print("Setting up localisation for the game...")
-
-    FS.DirectoryEnsure(localizationDir)
-
-    local uiResponse = AL.UICall(UIEVENT.MODAL_LOCALISATION, AL_TLocales)
-    if uiResponse and uiResponse.status == true then
-
-        -- cleanup core first
-        if type(AL_LocaliseCoreFreeAll) == "function" then
-            AL_LocaliseCoreFreeAll()
-        end
-        for _, locale in ipairs(AL_TLocales) do
-            if locale.coreFreeCb then locale.coreFreeCb(locale) end
-        end
-
-        -- install localisations
-        for _, locale in ipairs(AL_TLocales) do
-            if uiResponse.core == locale.code then
-                if locale.coreCb then
-                    local coreSuccess = locale.coreCb(locale)
-                    if not coreSuccess then
-                        AL_print("Failed to initialize core localisation.")
-                        return false
-                    end
-                    langCore = locale.name
-                end
-            end
-            if uiResponse.mod == locale.code then
-                local modSuccess = locale.modCb(locale)
-                if not modSuccess then
-                    AL_print("Failed to initialize mod localisation.")
-                    return false
-                end
-                langMod = locale.name
-            end
-        end
-    end
-
-    if AL_WriteConfigLocalisationNames(langCore, langMod) == false then
-        return false
-    end
-    AL_print("Localisation adjusted!")
-
-    return true
+    local archive = AL_LocalisationArchive("mod", locale.code)
+    return archive and FS.DirectoryEnsure(directory) and AL.ArchiveExtract(archive, directory) or false
 end
 
 function events.GameActivated(gameID)
 
     if gameID ~= MODID.AMBER then return end
-    AL.CommandAdd("Localisation", _Localisation, -40)
+    GAME_LOCALES = AL_CreateGameLocales(GAME_CURRENT.baseGame)
+    for _, locale in ipairs(GAME_LOCALES) do
+        if locale.code == "en_en" or AL_LocalisationArchive("mod", locale.code) then
+            locale.modCb        = _LocaliseMod
+            locale.modAvailable = true
+            locale.mod          = ""
+            if locale.code == "en_en" then
+                locale.mod = FS.PathJoin(LAUNCHER_PATH, "Data", "Launcher", "local-en-mod.png")
+            end
+        end
+    end
+    AL.CommandAdd("Localisation", AL_ConfigureLocalisation, -40)
 end
 
 function events.GameDeactivated(gameID)
 
     if gameID ~= MODID.AMBER then return end
     AL.CommandRemove("Localisation")
+    GAME_LOCALES = {}
 end

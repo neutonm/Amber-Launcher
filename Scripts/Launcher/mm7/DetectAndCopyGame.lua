@@ -1,12 +1,12 @@
 -- FILE:        DetectAndCopyGame.lua
 
-function AL_DetectGame(searchFolder, bIgnoreWav)
+local function _DetectGame(searchFolder, flags)
 
     return AL_DetectGameFiles({
         destination = GAME_DESTINATION_PATH,
         exeName     = MM7_GAME_FILES.exeName,
         searchPaths = searchFolder and {searchFolder} or GAME_EXECUTABLE_FOLDERS,
-        files       = bIgnoreWav and MM7_GAME_FILES.copyFiles or MM7_GAME_FILES.detectFiles
+        files       = flags.ignoreWav and MM7_GAME_FILES.copyFiles or MM7_GAME_FILES.detectFiles
     })
 end
 
@@ -23,6 +23,7 @@ end
 function events.GameActivated(gameID)
 
     if gameID ~= MODID.MM7 then return end
+    GAME_CURRENT.detectGame = _DetectGame
     AL.CommandAdd("DetectAndCopyGame", _DetectAndCopyGame, -100)
 end
 
@@ -30,4 +31,5 @@ function events.GameDeactivated(gameID)
 
     if gameID ~= MODID.MM7 then return end
     AL.CommandRemove("DetectAndCopyGame")
+    GAME_CURRENT.detectGame = nil
 end

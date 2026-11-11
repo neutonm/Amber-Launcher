@@ -38,9 +38,9 @@ local function _ConfigTweaks()
 
     AL_print("Tweaking mm7 config...")
 
-    local ini = AL.INILoad(INI_PATH_MM7)
+    local ini = AL.INILoad(INI_PATH_GAME)
     if not ini then
-        AL_print("Failed to load INI file: "..iniPath)
+        AL_print("Failed to load INI file: "..INI_PATH_GAME)
         return false
     end
 
@@ -92,7 +92,7 @@ local function _ConfigTweaks()
         end
     end
 
-    AL.INISave(ini, INI_PATH_MM7)
+    AL.INISave(ini, INI_PATH_GAME)
 
     AL_print("Tweaking done!")
     AL.INIClose(ini)

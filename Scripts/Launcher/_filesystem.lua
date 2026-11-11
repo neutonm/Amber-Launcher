@@ -195,16 +195,33 @@ function fs.FileCopy(srcRoot, dstRoot, rel)
         print("Error: Source file not found: "..rel)
         return false
     end
-    local dest       = fs.PathJoin(dstRoot, src:sub(#srcRoot + 2))
+    local dest       = fs.PathResolveCaseInsensitive(dstRoot, rel) or
+        fs.PathJoin(dstRoot, src:sub(#srcRoot + 2))
     local destDir, _ = fs.PathSplit(dest)
 
-    fs.DirectoryEnsure(destDir)
+    if not fs.DirectoryEnsure(destDir) then return false end
 
     local r = io.open(src,  "rb"); if not r then return false end
     local w = io.open(dest, "wb"); if not w then r:close(); return false end
 
-    w:write(r:read("*all"))
-    r:close(); w:close()
+    local success = true
+    while true do
+        local chunk, err = r:read(65536)
+        if not chunk then
+            success = err == nil
+            break
+        end
+        if not w:write(chunk) then
+            success = false
+            break
+        end
+    end
+    local readClosed  = r:close()
+    local writeClosed = w:close()
+    if not success or not readClosed or not writeClosed then
+        os.remove(dest)
+        return false
+    end
     print("Copied: "..rel)
     return true
 end

@@ -1037,6 +1037,8 @@ static void
 _LocalisationFillPopup(AppGUI *pApp, PopUp *pPop, ELocTier eTier)
 {
     size_t i;
+    uint32_t dChoice   = 0;
+    uint32_t dSelected = 0;
 
     popup_clear(pPop);
     for (i = 0; i < pApp->pLocalizations->dLocaleCount; ++i)
@@ -1048,11 +1050,18 @@ _LocalisationFillPopup(AppGUI *pApp, PopUp *pPop, ELocTier eTier)
         if (bOk)
         {
             popup_add_elem(pPop, li->sCode, NULL);
+            if (i == pApp->pLocalizations->dLocaleSelected[eTier])
+            {
+                dSelected = dChoice;
+            }
+            ++dChoice;
         }
     }
-    pApp->pLocalizations->dLocaleSelected[eTier] = _LocalisationIndex(pApp, eTier, 0);
+    pApp->pLocalizations->dLocaleSelected[eTier] = _LocalisationIndex(pApp, eTier, dSelected);
     if (pApp->pLocalizations->dLocaleSelected[eTier] != UINT32_MAX)
-        popup_selected(pPop, 0);
+    {
+        popup_selected(pPop, dSelected);
+    }
 }
 
 Panel*
@@ -2567,10 +2576,16 @@ Callback_OnDrawLocalisation(AppGUI *pApp, Event *e)
     const uint32_t dCore = pLocs->dLocaleSelected[LOC_CORE];
     const uint32_t dMod  = pLocs->dLocaleSelected[LOC_MOD];
 
-    if (dCore < pLocs->dLocaleCount && pLocs->tLocale[dCore].bCore)
+    if (dCore < pLocs->dLocaleCount && pLocs->tLocale[dCore].bCore &&
+        !str_empty_c(pLocs->tLocale[dCore].sCorePath))
+    {
         pImageBG = image_from_file(pLocs->tLocale[dCore].sCorePath, &eError1);
-    if (dMod < pLocs->dLocaleCount && pLocs->tLocale[dMod].bMod)
+    }
+    if (dMod < pLocs->dLocaleCount && pLocs->tLocale[dMod].bMod &&
+        !str_empty_c(pLocs->tLocale[dMod].sModPath))
+    {
         pImageFG = image_from_file(pLocs->tLocale[dMod].sModPath, &eError2);
+    }
 
     draw_clear(pCtx, color_rgb(0, 0, 0));
 
@@ -3644,6 +3659,10 @@ _Callback_UIEvent(
                     const char_t *sCode     = NULL;
                     const char_t *sCorePath = "";
                     const char_t *sModPath  = "";
+                    int dCoreAvailable     = -1;
+                    int dModAvailable      = -1;
+                    bool_t bCoreSelected   = FALSE;
+                    bool_t bModSelected    = FALSE;
 
                     if (pTable->pEntries[i].tValue.eType != CTYPE_LUATABLE)
                     {
@@ -3660,11 +3679,33 @@ _Callback_UIEvent(
                             SVAR_GET_CONSTCHAR(pLoc->pEntries[k].tKey);
 
                         if (strcmp(key, "code") == 0)
+                        {
                             sCode = SVAR_GET_CONSTCHAR(pLoc->pEntries[k].tValue);
+                        }
                         else if (strcmp(key, "core") == 0)
+                        {
                             sCorePath = SVAR_GET_CONSTCHAR(pLoc->pEntries[k].tValue);
+                        }
                         else if (strcmp(key, "mod") == 0)
+                        {
                             sModPath = SVAR_GET_CONSTCHAR(pLoc->pEntries[k].tValue);
+                        }
+                        else if (strcmp(key, "coreAvailable") == 0)
+                        {
+                            dCoreAvailable = SVAR_GET_BOOL(pLoc->pEntries[k].tValue);
+                        }
+                        else if (strcmp(key, "modAvailable") == 0)
+                        {
+                            dModAvailable = SVAR_GET_BOOL(pLoc->pEntries[k].tValue);
+                        }
+                        else if (strcmp(key, "coreSelected") == 0)
+                        {
+                            bCoreSelected = SVAR_GET_BOOL(pLoc->pEntries[k].tValue);
+                        }
+                        else if (strcmp(key, "modSelected") == 0)
+                        {
+                            bModSelected = SVAR_GET_BOOL(pLoc->pEntries[k].tValue);
+                        }
                     }
 
                     if (sCode)
@@ -3675,8 +3716,16 @@ _Callback_UIEvent(
                         dst->sCode      = sCode;
                         dst->sCorePath  = sCorePath;
                         dst->sModPath   = sModPath;
-                        dst->bCore      = !str_empty_c(sCorePath);
-                        dst->bMod       = !str_empty_c(sModPath);
+                        dst->bCore      = dCoreAvailable < 0 ? !str_empty_c(sCorePath) : (bool_t)dCoreAvailable;
+                        dst->bMod       = dModAvailable < 0 ? !str_empty_c(sModPath) : (bool_t)dModAvailable;
+                        if (dst->bCore && bCoreSelected)
+                        {
+                            pApp->pLocalizations->dLocaleSelected[LOC_CORE] = pApp->pLocalizations->dLocaleCount - 1;
+                        }
+                        if (dst->bMod && bModSelected)
+                        {
+                            pApp->pLocalizations->dLocaleSelected[LOC_MOD] = pApp->pLocalizations->dLocaleCount - 1;
+                        }
 
                         _al_printf(pApp,
                             "Language detected: %s\n\tCore path: %s\n\tMod Path: %s\n",

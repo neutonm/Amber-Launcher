@@ -1,47 +1,21 @@
+-- FILE:        DetectAndInstallMod.lua
 
-function AL_DetectMod(destinationFolder, bSetModVersion)
+local function _DetectMod(destination)
 
-    local approxCustomDungeonScriptSize = 4
-    bSetModVersion = bSetModVersion or false
-    
-    local modManifestLua   = FS.PathJoin(destinationFolder, "Scripts", "manifest.lua")
-    local modManifestTable = {}
-
-    -- Latest iteration
-    if FS.IsFilePresent(modManifestLua) then
-        local ok, t = pcall(dofile, modManifestLua)
-        if ok and type(t) == "table" then
-            modManifestTable = t
-            print(string.format("Detected Amber Island Mod.\n"..
-            "\t• Name: \t%s (%s)\n\t• Version: \t%s\n\t• Last update: \t%s",
-            t.name, t.game, t.version, t.updated))
-            if bSetModVersion then
-                local maj, min, pat  = AL_ParseVersion(t.version)
-                GAME_MOD_VERSION_STR = t.version
-                GAME_MOD_VERSION     = maj * 2^24 + min * 2^12 + pat
-            end
-            return true, AL_ParseVersion(t.version)
+    local manifest = FS.PathResolveCaseInsensitive(destination, "Scripts/manifest.lua")
+    if manifest then
+        local ok, info = pcall(dofile, manifest)
+        if ok and type(info) == "table" and info.name == "Amber Island" and
+            type(info.version) == "string" then
+            AL_print("Detected Amber Island "..info.version)
+            return true, info.version
         end
     end
 
-    -- Original Public release
-    local modLuaName = FS.PathJoin(destinationFolder, "Scripts", "General", "Mod.lua")
-    local file, err  = io.open(modLuaName, "rb")
-    if not file then
-        --print("Couldn't open file, assuming there's no mod installed: "..err)
-        return false, 0.0
-    end
-
-    local fileSizeInKb = file:seek("end") / 1024
-    file:close()
-
-    if fileSizeInKb > approxCustomDungeonScriptSize then
-        print("Detected first official release of Amber Island Mod.")
-        return true, 1.0
-    end
-
-    print("Detected Custom Dungeon Mod.")
-    return true, 0.0
+    local legacy = FS.PathResolveCaseInsensitive(destination, "Scripts/General/Mod.lua")
+    local attr   = legacy and lfs.attributes(legacy)
+    if not attr or attr.mode ~= "file" then return false end
+    return true, attr.size > 4 * 1024 and "1.0.0" or "0.0.0"
 end
 
 local function InstallMod(destinationFolder)
@@ -65,27 +39,13 @@ local function InstallMod(destinationFolder)
         AL_print("Failed to extract _grayfacePatch257")
         return false
     end
-    -- The bundled mod.ini must not overwrite shared launcher preferences when
-    -- configuring an installation beside the launcher.
-    local originalConfig = nil
-    if GAME_LAYOUT == "local" then
-        local file = io.open(INI_PATH_MOD, "rb")
-        if file then
-            originalConfig = file:read("*all")
-            file:close()
-        end
-    end
-    local extracted = AL.ArchiveExtract(modZip, destinationFolder)
-    if originalConfig then
-        local file = io.open(INI_PATH_MOD, "wb")
-        if not file then return false end
-        local written = file:write(originalConfig)
-        local closed  = file:close()
-        if not written or not closed then return false end
-    end
-    if not extracted then
+    if not AL.ArchiveExtract(modZip, destinationFolder) then
         AL_print("Failed to extract _mod.zip")
         return false
+    end
+    local obsolete = FS.PathResolveCaseInsensitive(destinationFolder, "mod.ini")
+    if obsolete and not os.remove(obsolete) then
+        AL_print("Failed to remove obsolete config: "..obsolete)
     end
 
     return true
@@ -93,17 +53,11 @@ end
 
 local function _DetectAndInstallMod()
 
-    print("Detecting mod...")
-
-    if AL_DetectMod(GAME_DESTINATION_PATH) then
-        -- return true
-		-- autoconfig should reinstall it
-    end
-
-    AL_print("Amber Island mod is not detected. Installing it now...")
+    AL_print("Installing Amber Island...")
     if not InstallMod(GAME_DESTINATION_PATH) then
         return false
     end
+    if not AL_DetectMod(GAME_DESTINATION_PATH, true) then return false end
 
     AL_print("Done!")
 
@@ -113,6 +67,7 @@ end
 function events.GameActivated(gameID)
 
     if gameID ~= MODID.AMBER then return end
+    GAME_CURRENT.detectMod = _DetectMod
     AL.CommandAdd("DetectAndInstallMod", _DetectAndInstallMod, -90)
 end
 
@@ -120,4 +75,5 @@ function events.GameDeactivated(gameID)
 
     if gameID ~= MODID.AMBER then return end
     AL.CommandRemove("DetectAndInstallMod")
+    GAME_CURRENT.detectMod = nil
 end

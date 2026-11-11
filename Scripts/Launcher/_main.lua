@@ -87,12 +87,14 @@ function OnAppInit()
 end
 
 function OnAppScriptsLoaded()
+    if not AL_InitLauncherConfig() then return false end
     AL_DiscoverGames()
     if not AL_SelectCurrentGame() then
         return false
     end
 
     AL_ApplyCurrentGame()
+    if not AL_InitProjectConfig() then return false end
     if not AL_LoadGameScripts(GAME_CURRENT.scriptsPath) then
         return false
     end
@@ -111,18 +113,22 @@ function OnPostAppInit()
         return
     end
 
-    local src, how = AL_DetectGame(nil, false) -- "."
+    local src, how = AL_DetectGame()
+    local modFound = AL_DetectMod(GAME_DESTINATION_PATH, true)
     if not src or how ~= "local" or
-        (GAME_CURRENT.isConfigured and not GAME_CURRENT.isConfigured()) then
+        (GAME_CURRENT.isConfigured and not GAME_CURRENT.isConfigured()) or
+        (GAME_CURRENT.requiresMod and not modFound) then
         AL.UICall(UIEVENT.AUTOCONFIG)
         return
     end
-
-    -- Set GAME_MOD_VERSION during check (second argument)
-    if type(AL_DetectMod) == "function" then
-        AL_DetectMod(GAME_DESTINATION_PATH, true)
-        print("MOD VERSION: "..tostring(GAME_MOD_VERSION_STR))
+    if not AL_SyncLocalisation() then
+        AL_print("Failed to apply the selected localisation.")
     end
+end
+
+function OnGameReset()
+
+    AL_ResetCurrentGame()
 end
 
 function OnAppDestroy()
@@ -167,23 +173,18 @@ end
 function OnPostAppConfigure(configSuccessful)
     AL_print("Configuration "..(configSuccessful and "is succesful!" or "failed."))
     if configSuccessful then
+        AL_DetectMod(GAME_DESTINATION_PATH, true)
         AL.UICall(UIEVENT.AUTOCONFIG,true)
     end
 end
 
 function OnPlay()
 
-    local ini            = AL.INILoad(INI_PATH_MOD)
-    local closeOnLaunch  = 0
-    local command        = GAME_EXECUTABLE_NAME
-    if ini then
-        closeOnLaunch = tonumber(AL.INIGet(ini, "Settings", "CloseOnLaunch")) or 0
-        local saved   = AL.INIGet(ini, GAME_SETTINGS_SECTION, "LaunchCommand")
-        if saved and saved ~= "" then
-            command = saved
-        end
-        AL.INIClose(ini)
-    end
+    if GAME_CURRENT == GAME_NULL then return end
+    local context       = AL_ConfigContext()
+    local closeOnLaunch = tonumber(context:Get("launcher", "Settings", "CloseOnLaunch", "0")) or 0
+    local command       = context:Get("project", "Settings", "LaunchCommand", GAME_EXECUTABLE_NAME)
+    context:Close(false)
 
     local executable = FS.PathResolveCaseInsensitive(GAME_DESTINATION_PATH, GAME_EXECUTABLE_NAME) or
         FS.PathJoin(GAME_DESTINATION_PATH, GAME_EXECUTABLE_NAME)

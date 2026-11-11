@@ -23,6 +23,7 @@ local function _ValidateGameDef(def, sourcePath)
 
     local requiredStrings = {
         "key",
+        "baseGame",
         "name",
         "title",
         "exeName",
@@ -116,10 +117,10 @@ function AL_IsGameCompatible(games, game)
     return compatible
 end
 
--- Select a discovered game using [Settings] CurrentGame in mod.ini.
+-- Select a discovered game using launcher.ini.
 function AL_SelectCurrentGame()
 
-    GAME_CURRENT = GAME_NULL
+    GAME_CURRENT            = GAME_NULL
 
     -- An installed game beside the launcher takes precedence over a saved choice.
     -- Specific expansions are checked before their base games in MODID order.
@@ -135,10 +136,10 @@ function AL_SelectCurrentGame()
             end
         end
     end
-    GAME_LAYOUT = "managed"
+    GAME_LAYOUT             = "managed"
 
     local configuredKey
-    local ini = AL.INILoad(INI_PATH_MOD)
+    local ini = AL.INILoad(INI_PATH_LAUNCHER)
     if ini then
         configuredKey = AL.INIGet(ini, "Settings", "CurrentGame")
         AL.INIClose(ini)
@@ -186,7 +187,6 @@ function AL_ApplyCurrentGame()
     GAME_DESTINATION_FOLDER = GAME_LAYOUT == "local" and "" or FS.PathJoin("Games", game.name)
     GAME_DESTINATION_PATH   = GAME_LAYOUT == "local" and LAUNCHER_PATH or
         FS.PathJoin(LAUNCHER_PATH, GAME_DESTINATION_FOLDER)
-    GAME_SETTINGS_SECTION   = GAME_LAYOUT == "local" and "Settings" or "Game."..game.key
 
     GAME_MOD_ID             = MODID[game.key]
     GAME_MOD_ID_NAME        = game.name
@@ -206,35 +206,76 @@ function AL_ApplyCurrentGame()
         end
     end
 
-    INI_PATH_GAME               = FS.PathJoin(GAME_DESTINATION_PATH, game.iniName)
-    INI_PATH_MM7                = INI_PATH_GAME -- Compatibility with existing options and tweaks.
-    MOD_ACTIVE_PATH            = FS.PathJoin(GAME_DESTINATION_PATH, "Data", "Launcher", "Mods", "_active.lua")
-    URL_UPDATER_MOD_MANIFEST    = URL_UPDATER_ROOT..game.manifestName
+    INI_PATH_GAME           = FS.PathJoin(GAME_DESTINATION_PATH, game.iniName)
+    INI_PATH_MOD            = game.modIniName and FS.PathJoin(GAME_DESTINATION_PATH, game.modIniName) or nil
+    INI_PATH_PROJECT        = FS.PathJoin(LAUNCHER_PATH, "al_"..game.name..".ini")
+    MOD_ACTIVE_PATH         = FS.PathJoin(GAME_DESTINATION_PATH, "Data", "Launcher", "Mods", "_active.lua")
+    URL_UPDATER_MOD_MANIFEST = URL_UPDATER_ROOT..game.manifestName
 
     AL.SetLaunchCommand(game.exeName)
 end
 
--- Root preferences are shared; managed launch overrides live in Game.<KEY> sections.
+function AL_ResetCurrentGame()
+
+    GAME_CURRENT.detectGame = nil
+    GAME_CURRENT.detectMod  = nil
+    GAME_CURRENT            = GAME_NULL
+    GAME_LAYOUT             = nil
+    GAME_DESTINATION_FOLDER = nil
+    GAME_DESTINATION_PATH   = nil
+    GAME_MOD_ID             = MODID.NULL
+    GAME_MOD_ID_NAME        = GAME_NULL.name
+    GAME_MOD_ID_TITLE       = GAME_NULL.title
+    GAME_MOD_VERSION        = 0
+    GAME_MOD_VERSION_STR    = "0.0.0"
+    GAME_EXECUTABLE_NAME    = GAME_NULL.exeName
+    GAME_FOLDER_NAME        = {}
+    GAME_BASE_PATHS         = {}
+    GAME_EXECUTABLE_FOLDERS = {}
+    GAME_LOCALES            = {}
+    INI_PATH_GAME           = nil
+    INI_PATH_MOD            = nil
+    INI_PATH_PROJECT        = nil
+    MOD_ACTIVE_PATH         = nil
+    URL_UPDATER_MOD_MANIFEST = nil
+    AL.SetLaunchCommand("")
+end
+
+function AL_DetectGame(searchFolder, flags)
+
+    flags = flags or {}
+    assert(type(flags) == "table", "Detection flags must be a table")
+    if not GAME_CURRENT.detectGame then return nil, "notfound" end
+    return GAME_CURRENT.detectGame(searchFolder, flags)
+end
+
+function AL_DetectMod(destination, bSetModVersion)
+
+    destination = destination or GAME_DESTINATION_PATH
+    if bSetModVersion then
+        GAME_MOD_VERSION     = 0
+        GAME_MOD_VERSION_STR = "0.0.0"
+    end
+    if not destination or not GAME_CURRENT.detectMod then return false, 0, 0, 0 end
+    local found, version = GAME_CURRENT.detectMod(destination)
+    if not found then return false, 0, 0, 0 end
+    version = type(version) == "string" and version or "0.0.0"
+    local major, minor, patch = AL_ParseVersion(version)
+    if bSetModVersion then
+        GAME_MOD_VERSION     = major * 2^24 + minor * 2^12 + patch
+        GAME_MOD_VERSION_STR = version
+    end
+    return true, major, minor, patch
+end
+
 function AL_SaveCurrentGame()
 
-    if not FS.IsFilePresent(INI_PATH_MOD) then
-        local file, err = io.open(INI_PATH_MOD, "wb")
-        if not file then
-            AL_print("Failed to create launcher config: "..tostring(err))
-            return false
-        end
-        local written = file:write("[Settings]\nCloseOnLaunch=1\n[Localisation]\nCore=English\nMod=English\n")
-        local closed  = file:close()
-        if not written or not closed then
-            return false
-        end
-    end
-    local ini = AL.INILoad(INI_PATH_MOD)
+    local ini = AL.INILoad(INI_PATH_LAUNCHER)
     if not ini then
         return false
     end
-    AL.INISet(ini, "Settings", "CurrentGame", GAME_CURRENT.key)
-    local saved = AL.INISave(ini, INI_PATH_MOD)
+    local saved = AL.INISet(ini, "Settings", "CurrentGame", GAME_CURRENT.key) and
+        AL.INISave(ini, INI_PATH_LAUNCHER)
     AL.INIClose(ini)
     return saved and true or false
 end

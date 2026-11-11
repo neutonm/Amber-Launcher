@@ -162,7 +162,7 @@ end
 --- Loads the active mods table
 -- @treturn table Active mods table (empty if missing/invalid)
 function AL_LoadActiveMods()
-    if FS.IsFilePresent(MOD_ACTIVE_PATH) then
+    if MOD_ACTIVE_PATH and FS.IsFilePresent(MOD_ACTIVE_PATH) then
         local ok, t = pcall(dofile, MOD_ACTIVE_PATH)
         if ok and type(t) == "table" then
             return t
@@ -298,6 +298,7 @@ end
 local modsTable = {}
 
 function ModalShowModManager()
+    if GAME_CURRENT == GAME_NULL then return false end
     local mods         = AL_ScanMods()
     local storedSeq    = AL_LoadActiveMods()
     local activeSeq    = {}

@@ -123,8 +123,8 @@ GAME_EXECUTABLE_NAME    = GAME_NULL.exeName
 GAME_MOD_ID             = MODID.NULL
 GAME_MOD_ID_NAME        = GAME_NULL.name
 GAME_MOD_ID_TITLE       = GAME_NULL.title
-GAME_MOD_VERSION        = GAME_MOD_VERSION or 0
-GAME_MOD_VERSION_STR    = GAME_MOD_VERSION_STR or "0.0.0"
+GAME_MOD_VERSION        = 0
+GAME_MOD_VERSION_STR    = "0.0.0"
 
 LAUNCHER_PATH           = lfs.currentdir() or ""
 LAUNCHER_NAME           = LAUNCHER_NAME or "AmberLauncher"
@@ -133,7 +133,7 @@ LAUNCHER_VERSION        = LAUNCHER_VERSION or 100
 
 URL_UPDATER_ROOT              = "https://mightandmagicmod.com/updater/"
 URL_UPDATER_LAUNCHER_MANIFEST = URL_UPDATER_ROOT.."al_manifest.json"
-URL_UPDATER_MOD_MANIFEST      = URL_UPDATER_ROOT..GAME_NULL.manifestName
+URL_UPDATER_MOD_MANIFEST      = nil
 
 -- OS Separator
 if OS_NAME == "Windows" then 
@@ -142,56 +142,13 @@ else
     OS_FILE_SEPARATOR = '/'
 end
 
-GAME_CURRENT_FOLDER_OS  = OS_NAME == "Windows" and "" or "."
-GAME_DESTINATION_FOLDER = ""
-GAME_DESTINATION_PATH   = LAUNCHER_PATH
-GAME_SETTINGS_SECTION   = "Settings"
+GAME_LAYOUT             = nil
+GAME_DESTINATION_FOLDER = nil
+GAME_DESTINATION_PATH   = nil
+GAME_LOCALES            = {}
+MOD_ACTIVE_PATH         = nil
 
--- Common system-specific folders for the game
-if OS_NAME == "Windows" then
-    GAME_BASE_PATHS = {
-        os.getenv("PROGRAMFILES(X86)") .. '\\GOG Galaxy\\Games\\',
-        os.getenv("PROGRAMFILES(X86)") .. '\\',
-        os.getenv("PROGRAMFILES") .. '\\',
-        "C:\\GOG Galaxy\\Games\\",
-        "C:\\Program Files (x86)\\",
-        "C:\\Program Files\\",
-        "C:\\",
-        os.getenv("SYSTEMDRIVE") .. "\\Games\\",
-        os.getenv("SYSTEMDRIVE") .. "\\",
-        "D:\\Program Files (x86)\\",
-        "D:\\Program Files\\",
-        "D:\\Games\\",
-        "D:\\GOG Galaxy\\Games\\",
-    }
-elseif OS_NAME == "Linux" then
-    local homePath  = os.getenv("HOME")
-    GAME_BASE_PATHS = {
-        homePath.."/Games/Windows/",
-        homePath.."/.wine/drive_c/Program Files (x86)/GOG Galaxy/Games/",
-        homePath.."/.wine/drive_c/Program Files (x86)/",
-        homePath.."/.wine/drive_c/Program Files/",
-        homePath.."/.wine/drive_c/Games/",
-        homePath.."/Games/Heroic/",
-        homePath.."/Games/",
-    }
-end
-
--- Mods
-MOD_ROOT_FOLDER         = (LAUNCHER_PATH .. OS_FILE_SEPARATOR ..
-                          table.concat({ "Data", "Launcher", "Mods" }, OS_FILE_SEPARATOR))
-MOD_ACTIVE_PATH         = MOD_ROOT_FOLDER..OS_FILE_SEPARATOR.."_active.lua"
-
--- Common files
-INI_PATH_GAME           = GAME_DESTINATION_PATH..OS_FILE_SEPARATOR..GAME_NULL.iniName
-INI_PATH_MM7            = INI_PATH_GAME
-INI_PATH_MOD            = LAUNCHER_PATH..OS_FILE_SEPARATOR.."mod.ini"
-
--- Generate the combinations of base paths and game folder names
-for _, basePath in ipairs(GAME_BASE_PATHS) do
-    for _, folderName in ipairs(GAME_FOLDER_NAME) do
-        local entry = basePath..folderName..OS_FILE_SEPARATOR..GAME_EXECUTABLE_NAME
-        table.insert(GAME_EXECUTABLE_FOLDERS, entry)
-    end
-end
-
+INI_PATH_LAUNCHER       = LAUNCHER_PATH..OS_FILE_SEPARATOR.."launcher.ini"
+INI_PATH_PROJECT        = nil
+INI_PATH_GAME           = nil
+INI_PATH_MOD            = nil

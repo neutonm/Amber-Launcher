@@ -5,6 +5,7 @@
 const char* ELuaFunctionRefTypeStrings[] = {
     "OnAppInit",
     "OnAppScriptsLoaded",
+    "OnGameReset",
     "OnPostAppInit",
     "OnAppDestroy",
     "OnPostAppDestroy",
