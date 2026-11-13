@@ -7,6 +7,7 @@
 #include <string.h>
 #include <assert.h>
 #include <errno.h>
+#include <limits.h>
 
 #include <core/common.h>
 #include <core/observer.h>
@@ -551,12 +552,31 @@ _LUA_SystemCall(struct lua_State* L)
     return 1;
 }
 
+static int
+_LUA_SwitchGame(lua_State* L)
+{
+    lua_Integer dGameID = luaL_checkinteger(L, 1);
+    AppCore* pAppCore   = NULL;
+
+    if (dGameID <= 0 || (lua_Unsigned)dGameID > UINT_MAX)
+    {
+        lua_pushboolean(L, CFALSE);
+        return 1;
+    }
+    lua_getfield(L, LUA_REGISTRYINDEX, STR_AL_APPCORE);
+    pAppCore = (AppCore*)lua_touserdata(L, -1);
+    lua_pop(L, 1);
+    lua_pushboolean(L, AmberLauncher_SwitchGame(pAppCore, (unsigned int)dGameID));
+    return 1;
+}
+
 static const 
 luaL_Reg AL[] = 
 {
     {"SystemCall",                  _LUA_SystemCall             },
     {"CommandAdd",                  _LUA_CommandAdd             },
     {"CommandRemove",               _LUA_CommandRemove          },
+    {"SwitchGame",                  _LUA_SwitchGame             },
     {"CommandCall",                 _LUA_CommandCall            },
     {"GetTableOfCommands",          _LUA_GetTableOfCommands     },
     {"EventCall",                   _LUA_EventCall              },
@@ -661,6 +681,7 @@ AmberLauncher_Start(AppCore* pAppCore)
     if (!SVAR_IS_DOUBLE(tGameID) ||
         !AmberLauncher_ActivateGame(pAppCore, (unsigned int)SVAR_GET_DOUBLE(tGameID)))
     {
+        AmberLauncher_DeactivateGame(pAppCore);
         return;
     }
     SLuaState_CallReferencedFunction(pAppCore->pLuaState, SLUA_FUNC_POST_APPINIT,NULL);
@@ -670,6 +691,7 @@ CAPI CBOOL
 AmberLauncher_ActivateGame(AppCore* pAppCore, unsigned int dGameID)
 {
     SVar tGameID;
+    CBOOL bSuccess;
 
     if (pAppCore->bChangingGame || dGameID == 0)
     {
@@ -687,20 +709,21 @@ AmberLauncher_ActivateGame(AppCore* pAppCore, unsigned int dGameID)
     pAppCore->dActiveGameID = dGameID;
     pAppCore->bChangingGame = CTRUE;
     SVAR_UINT(tGameID, dGameID);
-    SLuaState_CallEventArgs(
+    bSuccess = SLuaState_CallEventArgs(
         pAppCore->pLuaState,
         ELuaFunctionEventTypeStrings[SLUA_EVENT_GAME_ACTIVATED],
         &tGameID,
         1
     );
     pAppCore->bChangingGame = CFALSE;
-    return CTRUE;
+    return bSuccess;
 }
 
 CAPI CBOOL
 AmberLauncher_DeactivateGame(AppCore* pAppCore)
 {
     SVar tGameID;
+    CBOOL bSuccess;
 
     if (pAppCore->bChangingGame || pAppCore->dActiveGameID == 0)
     {
@@ -709,16 +732,89 @@ AmberLauncher_DeactivateGame(AppCore* pAppCore)
 
     pAppCore->bChangingGame = CTRUE;
     SVAR_UINT(tGameID, pAppCore->dActiveGameID);
-    SLuaState_CallEventArgs(
+    bSuccess = SLuaState_CallEventArgs(
         pAppCore->pLuaState,
         ELuaFunctionEventTypeStrings[SLUA_EVENT_GAME_DEACTIVATED],
         &tGameID,
         1
     );
-    SLuaState_CallReferencedFunction(pAppCore->pLuaState, SLUA_FUNC_GAME_RESET, NULL);
+    if (!SLuaState_CallReferencedFunction(pAppCore->pLuaState, SLUA_FUNC_GAME_RESET, NULL))
+    {
+        bSuccess = CFALSE;
+    }
     pAppCore->dActiveGameID = 0;
     pAppCore->bChangingGame = CFALSE;
-    return CTRUE;
+    return bSuccess;
+}
+
+static CBOOL
+_CallGameFunction(AppCore* pAppCore, ELuaFunctionRefType eFunction, unsigned int dGameID)
+{
+    SVar tGameID;
+    SVar tResult;
+    CBOOL bSuccess;
+
+    SVAR_UINT(tGameID, dGameID);
+    pAppCore->bChangingGame = CTRUE;
+    bSuccess = SLuaState_CallReferencedFunctionArgs(pAppCore->pLuaState, eFunction, &tResult, &tGameID, 1);
+    pAppCore->bChangingGame = CFALSE;
+    return bSuccess && SVAR_IS_BOOL(tResult) && SVAR_GET_BOOL(tResult);
+}
+
+CAPI CBOOL
+AmberLauncher_SwitchGame(AppCore* pAppCore, unsigned int dGameID)
+{
+    unsigned int dPrevious = pAppCore->dActiveGameID;
+
+    if (pAppCore->bChangingGame || dGameID == 0)
+    {
+        return CFALSE;
+    }
+    if (dPrevious == dGameID)
+    {
+        return CTRUE;
+    }
+    if (!_CallGameFunction(pAppCore, SLUA_FUNC_GAME_LOAD, dGameID))
+    {
+        return CFALSE;
+    }
+    if (dPrevious != 0 && !AmberLauncher_DeactivateGame(pAppCore))
+    {
+        return CFALSE;
+    }
+    if (_CallGameFunction(pAppCore, SLUA_FUNC_GAME_PREPARE, dGameID) &&
+        AmberLauncher_ActivateGame(pAppCore, dGameID) &&
+        _CallGameFunction(pAppCore, SLUA_FUNC_GAME_READY, dGameID))
+    {
+        return CTRUE;
+    }
+
+    if (pAppCore->dActiveGameID != 0)
+    {
+        if (!AmberLauncher_DeactivateGame(pAppCore))
+        {
+            return CFALSE;
+        }
+    }
+    else
+    {
+        SLuaState_CallReferencedFunction(pAppCore->pLuaState, SLUA_FUNC_GAME_RESET, NULL);
+    }
+    if (dPrevious != 0 && _CallGameFunction(pAppCore, SLUA_FUNC_GAME_PREPARE, dPrevious) &&
+        AmberLauncher_ActivateGame(pAppCore, dPrevious))
+    {
+        _CallGameFunction(pAppCore, SLUA_FUNC_GAME_READY, dPrevious);
+        return CFALSE;
+    }
+    if (pAppCore->dActiveGameID != 0)
+    {
+        AmberLauncher_DeactivateGame(pAppCore);
+    }
+    else
+    {
+        SLuaState_CallReferencedFunction(pAppCore->pLuaState, SLUA_FUNC_GAME_RESET, NULL);
+    }
+    return CFALSE;
 }
 
 CAPI void

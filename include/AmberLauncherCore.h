@@ -28,6 +28,9 @@ AmberLauncher_ActivateGame(struct AppCore* pApp, unsigned int dGameID);
 extern CAPI CBOOL
 AmberLauncher_DeactivateGame(struct AppCore* pApp);
 
+extern CAPI CBOOL
+AmberLauncher_SwitchGame(struct AppCore* pApp, unsigned int dGameID);
+
 extern CAPI void
 AmberLauncher_Test(struct AppCore* pApp);
 

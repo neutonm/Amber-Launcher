@@ -472,6 +472,7 @@ SLuaState_CallReferencedFunctionArgs(
     size_t              dNumArgs)
 {
     unsigned int i;
+    int dErrorHandler;
     const SLuaFunctionRef* pLuaFuncRef;
 
     if (!IS_VALID(pLuaState) || !IS_VALID(pLuaState->pState))
@@ -493,6 +494,8 @@ SLuaState_CallReferencedFunctionArgs(
     }
 
     pLuaFuncRef = (SLuaFunctionRef*)SVector_Get(&pLuaState->tRefFunctions, eRefType);
+    lua_pushcfunction(pLuaState->pState, _LuaTraceback);
+    dErrorHandler = lua_gettop(pLuaState->pState);
     lua_rawgeti(
         pLuaState->pState, 
         LUA_REGISTRYINDEX, 
@@ -503,7 +506,7 @@ SLuaState_CallReferencedFunctionArgs(
         SLuaState_PushVariable(pLuaState, &pArgs[i]);
     }
 
-    if (lua_pcall(pLuaState->pState, (int)dNumArgs, IS_VALID(pRetOut) ? 1 : 0, dTracebackFunc) != LUA_OK) 
+    if (lua_pcall(pLuaState->pState, (int)dNumArgs, IS_VALID(pRetOut) ? 1 : 0, dErrorHandler) != LUA_OK)
     {
         const char *sErrorMessage = lua_tostring(pLuaState->pState, -1);
 
@@ -517,35 +520,37 @@ SLuaState_CallReferencedFunctionArgs(
             sErrorMessage
         );
 
-        lua_pop(pLuaState->pState, 1);
+        lua_pop(pLuaState->pState, 2);
         return CFALSE;
     }
 
     if (!IS_VALID(pRetOut))
     {
+        lua_pop(pLuaState->pState, 1);
         return CTRUE;
     }
 
     if (!_LuaObjectToSVar(pLuaState->pState,pRetOut,-1,0))
     {
-        lua_pop(pLuaState->pState, 1);
+        lua_pop(pLuaState->pState, 2);
         return CFALSE;
     }
 
-    lua_pop(pLuaState->pState, 1);
+    lua_pop(pLuaState->pState, 2);
     return CTRUE;
 }
 
-CAPI void
+CAPI CBOOL
 SLuaState_CallEvent(SLuaState* pLuaState, const char* sEventName)
 {
-    SLuaState_CallEventArgs(pLuaState, sEventName, NULL, 0);
+    return SLuaState_CallEventArgs(pLuaState, sEventName, NULL, 0);
 }
 
-CAPI void
+CAPI CBOOL
 SLuaState_CallEventArgs(SLuaState* pLuaState, const char* sEventName, const SVar* pArgs, size_t dNumArgs)
 {
     size_t i;
+    int dErrorHandler;
     lua_State *L = pLuaState->pState;
 
     /* Call it as function events.<functionName>() */
@@ -553,15 +558,18 @@ SLuaState_CallEventArgs(SLuaState* pLuaState, const char* sEventName, const SVar
     if (!lua_istable(L, -1))
     {
         lua_pop(L, 1);
-        return;
+        return CFALSE;
     }
 
     lua_getfield(L, -1, sEventName);
     if (!lua_isfunction(L, -1))
     {
         lua_pop(L, 2);
-        return;
+        return CTRUE;
     }
+    lua_pushcfunction(L, _LuaTraceback);
+    lua_insert(L, -2);
+    dErrorHandler = lua_gettop(L) - 1;
 
     /* Process and push arguments */
     for (i = 0; i < dNumArgs; i++)
@@ -570,7 +578,7 @@ SLuaState_CallEventArgs(SLuaState* pLuaState, const char* sEventName, const SVar
     }
 
     /* Execute function */
-    if (lua_pcall(L, (int)dNumArgs, 0, dTracebackFunc) != LUA_OK)
+    if (lua_pcall(L, (int)dNumArgs, 0, dErrorHandler) != LUA_OK)
     {
         fprintf
         (
@@ -578,10 +586,12 @@ SLuaState_CallEventArgs(SLuaState* pLuaState, const char* sEventName, const SVar
             "Error calling event handler '%s': %s\n",
             sEventName, lua_tostring(L, -1)
         );
-        lua_pop(L, 1);
+        lua_pop(L, 3);
+        return CFALSE;
     }
 
-    lua_pop(L, 1);
+    lua_pop(L, 2);
+    return CTRUE;
 }
 
 CAPI void

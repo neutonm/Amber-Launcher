@@ -197,7 +197,7 @@ SLuaState_CallReferencedFunctionArgs(
  * @param           pLuaState
  * @param           sEventName
  */
-extern CAPI void 
+extern CAPI CBOOL
 SLuaState_CallEvent(SLuaState* pLuaState, const char* sEventName);
 
 /**
@@ -209,7 +209,7 @@ SLuaState_CallEvent(SLuaState* pLuaState, const char* sEventName);
  * @param           pArgs
  * @param           dNumArgs
  */
-extern CAPI void
+extern CAPI CBOOL
 SLuaState_CallEventArgs(SLuaState* pLuaState, const char* sEventName, const SVar* pArgs, size_t dNumArgs);
 
 /**

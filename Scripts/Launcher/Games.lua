@@ -4,6 +4,7 @@
 
 local launcherScriptsRoot = FS.PathJoin("Scripts", "Launcher")
 local loadedGameScripts   = {}
+local localGameKey
 
 local function _RegisterGame(def)
 
@@ -122,6 +123,7 @@ end
 function AL_SelectCurrentGame()
 
     GAME_CURRENT            = GAME_NULL
+    localGameKey            = nil
 
     -- An installed game beside the launcher takes precedence over a saved choice.
     -- Specific expansions are checked before their base games in MODID order.
@@ -131,6 +133,7 @@ function AL_SelectCurrentGame()
             if modID == id and game and type(game.detectInstalled) == "function" and
                 game.detectInstalled(LAUNCHER_PATH) then
                 GAME_CURRENT = game
+                localGameKey = game.key
                 GAME_LAYOUT  = "local"
                 AL_print(("Selected local game: %s (%s)"):format(game.title, game.key))
                 return true
@@ -185,6 +188,7 @@ function AL_ApplyCurrentGame()
     local game  = GAME_CURRENT
     assert(game ~= GAME_NULL, "No game selected")
 
+    GAME_LAYOUT             = game.key == localGameKey and "local" or "managed"
     GAME_DESTINATION_FOLDER = GAME_LAYOUT == "local" and "" or FS.PathJoin("Games", game.name)
     GAME_DESTINATION_PATH   = GAME_LAYOUT == "local" and LAUNCHER_PATH or
         FS.PathJoin(LAUNCHER_PATH, GAME_DESTINATION_FOLDER)

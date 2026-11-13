@@ -98,9 +98,51 @@ function OnAppScriptsLoaded()
     if not AL_LoadGameScripts(GAME_CURRENT.scriptsPath) then
         return false
     end
+    return true
+end
+
+local function _GameByModID(gameID)
+
+    if gameID <= MODID.NULL or gameID >= MODID.MAX then return nil end
+    for key, id in pairs(MODID) do
+        if id == gameID then return GAMEID[key] end
+    end
+end
+
+function OnGameLoad(gameID)
+
+    local game = _GameByModID(gameID)
+    return game ~= nil and AL_LoadGameScripts(game.scriptsPath)
+end
+
+function OnGamePrepare(gameID)
+
+    local game = _GameByModID(gameID)
+    if not game then return false end
+    GAME_CURRENT = game
+    AL_ApplyCurrentGame()
+    return AL_InitProjectConfig()
+end
+
+function OnGameReady()
+
+    if GAME_CURRENT == GAME_NULL then return false end
+    local src, how = AL_DetectGame()
+    local modFound = AL_DetectMod(GAME_DESTINATION_PATH, true)
     if not AL_SaveCurrentGame() then
         AL_print("Failed to save launcher preferences.")
         return false
+    end
+
+    AL_print(("Active game: %s (%s)"):format(GAME_CURRENT.title, GAME_CURRENT.key))
+    if not src or how ~= "local" or
+        (GAME_CURRENT.isConfigured and not GAME_CURRENT.isConfigured()) or
+        (GAME_CURRENT.requiresMod and not modFound) then
+        AL.UICall(UIEVENT.AUTOCONFIG)
+        return true
+    end
+    if not AL_SyncLocalisation() then
+        AL_print("Failed to apply the selected localisation.")
     end
     return true
 end
@@ -108,22 +150,7 @@ end
 function OnPostAppInit()
 
     print("Post App Init")
-
-    if GAME_CURRENT == GAME_NULL then
-        return
-    end
-
-    local src, how = AL_DetectGame()
-    local modFound = AL_DetectMod(GAME_DESTINATION_PATH, true)
-    if not src or how ~= "local" or
-        (GAME_CURRENT.isConfigured and not GAME_CURRENT.isConfigured()) or
-        (GAME_CURRENT.requiresMod and not modFound) then
-        AL.UICall(UIEVENT.AUTOCONFIG)
-        return
-    end
-    if not AL_SyncLocalisation() then
-        AL_print("Failed to apply the selected localisation.")
-    end
+    return OnGameReady()
 end
 
 function OnGameReset()

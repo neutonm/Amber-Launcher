@@ -28,7 +28,7 @@ Table Of Contents:
 - [X] App and scripts must be based on specified game (Amber Island by default)
 - - It's step into the future, providing app usage for multiple mods
 - - partially done, check _const.lua > GAME_MOD_XXX vars
-- - [ ] Realtime game/mod/expansion switch
+- - [X] Realtime game/mod/expansion switch
 - - [ ] website: rearrange update files, place them in proper game folders on a server, update manifests
 - [x] Update LICENSE file
 - [ ] Write code style document
