@@ -144,6 +144,7 @@ function OnGameReady()
     if not AL_SyncLocalisation() then
         AL_print("Failed to apply the selected localisation.")
     end
+    AL.UICall(UIEVENT.MAIN)
     return true
 end
 
