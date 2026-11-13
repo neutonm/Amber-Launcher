@@ -3,6 +3,7 @@
 ------------------------------------------------------------------------
 
 local launcherScriptsRoot = FS.PathJoin("Scripts", "Launcher")
+local loadedGameScripts   = {}
 
 local function _RegisterGame(def)
 
@@ -131,7 +132,7 @@ function AL_SelectCurrentGame()
                 game.detectInstalled(LAUNCHER_PATH) then
                 GAME_CURRENT = game
                 GAME_LAYOUT  = "local"
-                print(("Selected local game: %s (%s)"):format(game.title, game.key))
+                AL_print(("Selected local game: %s (%s)"):format(game.title, game.key))
                 return true
             end
         end
@@ -153,7 +154,7 @@ function AL_SelectCurrentGame()
                 gamesByModID[id] = game
                 if key == configuredKey then
                     GAME_CURRENT = game
-                    print(("Selected game: %s (%s)"):format(GAME_CURRENT.title, GAME_CURRENT.key))
+                    AL_print(("Selected game: %s (%s)"):format(GAME_CURRENT.title, GAME_CURRENT.key))
                     return true
                 end
             end
@@ -163,14 +164,14 @@ function AL_SelectCurrentGame()
     local defaultGame = gamesByModID[MODID[GAME_DEFAULT_KEY]]
     if defaultGame then
         GAME_CURRENT = defaultGame
-        print(("Selected game: %s (%s)"):format(GAME_CURRENT.title, GAME_CURRENT.key))
+        AL_print(("Selected game: %s (%s)"):format(GAME_CURRENT.title, GAME_CURRENT.key))
         return true
     end
 
     for id = MODID.NULL + 1, MODID.MAX - 1 do
         if gamesByModID[id] then
             GAME_CURRENT = gamesByModID[id]
-            print(("Selected game: %s (%s)"):format(GAME_CURRENT.title, GAME_CURRENT.key))
+            AL_print(("Selected game: %s (%s)"):format(GAME_CURRENT.title, GAME_CURRENT.key))
             return true
         end
     end
@@ -282,7 +283,20 @@ end
 
 function AL_LoadGameScripts(folder)
 
-    local files = FS.FilesList(folder)
+    if loadedGameScripts[folder] ~= nil then
+        if not loadedGameScripts[folder] then
+            AL_print("Game scripts unavailable until launcher restart: "..folder)
+        end
+        return loadedGameScripts[folder]
+    end
+
+    -- A failed load may already have registered handlers; never retry it.
+    loadedGameScripts[folder] = false
+    local listed, files = pcall(FS.FilesList, folder)
+    if not listed then
+        AL_print("Failed to read "..folder..": "..tostring(files))
+        return false
+    end
     table.sort(files)
 
     for _, file in ipairs(files) do
@@ -291,20 +305,19 @@ function AL_LoadGameScripts(folder)
 
             local chunk, err = loadfile(full)
             if not chunk then
-                print("Failed to load "..full..": "..tostring(err))
+                AL_print("Failed to load "..full..": "..tostring(err))
                 return false
-            else
-                local ok, runtimeErr = pcall(chunk)
-                if not ok then
-                    print("Error running "..full..": "..tostring(runtimeErr))
-                    return false
-                else
-                    print("Loaded script: "..full)
-                end
             end
+            local ok, runtimeErr = pcall(chunk)
+            if not ok then
+                AL_print("Error running "..full..": "..tostring(runtimeErr))
+                return false
+            end
+            AL_print("Loaded script: "..full)
         end
     end
 
+    loadedGameScripts[folder] = true
     return true
 end
 
@@ -321,21 +334,21 @@ function AL_DiscoverGames()
             local gameFile = FS.PathJoin(fullDir, "_game.lua")
 
             if FS.IsFilePresent(gameFile) == false then
-                print("Skipping "..fullDir..": missing _game.lua")
+                AL_print("Skipping "..fullDir..": missing _game.lua")
             else
                 local def, loadErr = _LoadGameDef(gameFile)
                 if not def then
-                    print(("Skipping %s: %s"):format(gameFile, loadErr))
+                    AL_print(("Skipping %s: %s"):format(gameFile, loadErr))
                 else
                     local ok, why = _ValidateGameDef(def, gameFile)
                     if not ok then
-                        print(("Skipping %s: invalid _game.lua (%s)"):format(gameFile, why))
+                        AL_print(("Skipping %s: invalid _game.lua (%s)"):format(gameFile, why))
                     elseif GAMEID[def.key] ~= nil then
-                        print(("Skipping %s: duplicate key '%s'"):format(gameFile, def.key))
+                        AL_print(("Skipping %s: duplicate key '%s'"):format(gameFile, def.key))
                     else
                         def.scriptsPath = fullDir
                         local idx = _RegisterGame(def)
-                        print(("Loaded GAMEID[%d] / GAMEID['%s'] from %s"):format(idx, def.key, gameFile))
+                        AL_print(("Loaded GAMEID[%d] / GAMEID['%s'] from %s"):format(idx, def.key, gameFile))
                     end
                 end
             end
