@@ -83,7 +83,7 @@ GAME_OPTIONS = {
         type     = UIWIDGET.RADIO,
         optTitle = {"Software", "Hardware"},
         read     = function()
-            return tonumber(AL.GetRegistryKey("2dacceloff")) == 1 and 1 or 0
+            return tonumber(AL.GetRegistryKey("Use D3D")) == 1 and 1 or 0
         end,
         callback = function(option)
             AL.SetRegistryKey("2dacceloff", option.value)
