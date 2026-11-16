@@ -2000,12 +2000,34 @@ _AutoUpdate_LoadManifest(AppGUI *pApp, const char *sURL)
     return pJson;
 }
 
+static void
+_AutoUpdate_CheckVersions(
+    AppGUI *pApp,
+    const InetUpdaterJSONData *pLauncher,
+    const InetUpdaterJSONData *pMod,
+    bool_t *bLauncherUpdate,
+    bool_t *bModUpdate)
+{
+    const SVar tLauncherVersion = AmberLauncher_GetGlobalVariable(pApp->pAppCore, _sLua_LAUNCHER_VERSION);
+    const SVar tModVersion      = AmberLauncher_GetGlobalVariable(pApp->pAppCore, _sLua_MOD_VERSION);
+
+    const int32_t dLauncherVersion = SVAR_IS_DOUBLE(tLauncherVersion) ? (int32_t)SVAR_GET_DOUBLE(tLauncherVersion) : 0;
+    const int32_t dModVersion      = SVAR_IS_DOUBLE(tModVersion) ? (int32_t)SVAR_GET_DOUBLE(tModVersion) : 0;
+    const int32_t dLauncherBuild   = str_to_i32(BUILD_NUMBER, 10, NULL);
+
+    *bLauncherUpdate = dLauncherVersion < pLauncher->launcher->version ||
+        (dLauncherVersion == pLauncher->launcher->version && dLauncherBuild < pLauncher->launcher->build);
+    *bModUpdate      = pMod != NULL && dModVersion < pMod->launcher->version;
+}
+
 bool_t
 AutoUpdate_CheckForUpdates(AppGUI *pApp)
 {
     bool_t              bUpdateRequired = FALSE;
-    InetUpdaterJSONData *pJsonLauncher  = NULL;
-    InetUpdaterJSONData *pJsonMod       = NULL;
+    bool_t              bLauncherUpdate = FALSE;
+    bool_t              bModUpdate      = FALSE;
+    InetUpdaterJSONData *pJsonLauncher   = NULL;
+    InetUpdaterJSONData *pJsonMod        = NULL;
 
     const SVar tLuaLauncherVersion     = AmberLauncher_GetGlobalVariable(pApp->pAppCore, _sLua_LAUNCHER_VERSION);
     const SVar tLuaModVersion          = AmberLauncher_GetGlobalVariable(pApp->pAppCore, _sLua_MOD_VERSION);
@@ -2031,9 +2053,8 @@ AutoUpdate_CheckForUpdates(AppGUI *pApp)
             "[Updater] Warning: mod manifest unavailable. Checking launcher updates only.\n");
     }
 
-    bUpdateRequired = (dLauncherBuild < pJsonLauncher->launcher->build ||
-                        dLauncherVersion < pJsonLauncher->launcher->version ||
-                        (pJsonMod != NULL && dModVersion < pJsonMod->launcher->version));
+    _AutoUpdate_CheckVersions(pApp, pJsonLauncher, pJsonMod, &bLauncherUpdate, &bModUpdate);
+    bUpdateRequired = bLauncherUpdate || bModUpdate;
 
     _al_printf(pApp, "[Updater] Update required: %s\n", bUpdateRequired ? "true" : "false");
     _al_printf(pApp, "• App version: \t\t%d\n", dLauncherVersion);
@@ -2174,11 +2195,13 @@ _AutoUpdate_Update_DownloadFiles(
 bool_t
 AutoUpdate_Update(AppGUI *pApp, bool_t bForceDownload)
 {
-    InetUpdaterJSONData *pJsonLauncher = NULL;
-    InetUpdaterJSONData *pJsonMod      = NULL;
-    real32_t            fProgressIndex = 0.0f;
-    real32_t            fProgressMax   = 0.0f;
-    bool_t              bSuccess       = FALSE;
+    InetUpdaterJSONData *pJsonLauncher   = NULL;
+    InetUpdaterJSONData *pJsonMod        = NULL;
+    real32_t            fProgressIndex  = 0.0f;
+    real32_t            fProgressMax    = 0.0f;
+    bool_t              bSuccess        = TRUE;
+    bool_t              bLauncherUpdate = FALSE;
+    bool_t              bModUpdate      = FALSE;
 
     const SVar tLuaLauncherManifestURL = AmberLauncher_GetGlobalVariable(pApp->pAppCore, _sLua_URL_UPDATER_LAUNCHER_MANIFEST);
     const SVar tLuaModManifestURL      = AmberLauncher_GetGlobalVariable(pApp->pAppCore, _sLua_URL_UPDATER_MOD_MANIFEST);
@@ -2210,11 +2233,25 @@ AutoUpdate_Update(AppGUI *pApp, bool_t bForceDownload)
             "[Updater] Warning: mod manifest unavailable. Updating launcher only; mod update skipped.\n");
     }
 
-    /* The launcher manifest is required; the mod manifest is optional. */
+    _AutoUpdate_CheckVersions(pApp, pJsonLauncher, pJsonMod, &bLauncherUpdate, &bModUpdate);
+    if (!bLauncherUpdate && !bModUpdate)
+    {
+        json_destroy(&pJsonLauncher, InetUpdaterJSONData);
+        if (pJsonMod != NULL)
+        {
+            json_destroy(&pJsonMod, InetUpdaterJSONData);
+        }
+        _al_printf(pApp, "[Updater] No updates required.\n");
+        return TRUE;
+    }
+
     AmberLauncher_Update(pApp->pAppCore, CFALSE);
 
-    fProgressMax = (real32_t)arrst_size(pJsonLauncher->files, InetUpdaterFile);
-    if (pJsonMod != NULL)
+    if (bLauncherUpdate)
+    {
+        fProgressMax += (real32_t)arrst_size(pJsonLauncher->files, InetUpdaterFile);
+    }
+    if (bModUpdate)
     {
         fProgressMax += (real32_t)arrst_size(pJsonMod->files, InetUpdaterFile);
     }
@@ -2223,9 +2260,12 @@ AutoUpdate_Update(AppGUI *pApp, bool_t bForceDownload)
         progress_value(pApp->pWidgets->pProgressbar, 0.0f);
     }
 
-    bSuccess = _AutoUpdate_Update_DownloadFiles(
-        pApp, pJsonLauncher, sLauncherManifestURL, sLauncherPath, &fProgressIndex, fProgressMax, bForceDownload);
-    if (bSuccess && pJsonMod != NULL)
+    if (bLauncherUpdate)
+    {
+        bSuccess = _AutoUpdate_Update_DownloadFiles(
+            pApp, pJsonLauncher, sLauncherManifestURL, sLauncherPath, &fProgressIndex, fProgressMax, bForceDownload);
+    }
+    if (bSuccess && bModUpdate)
     {
         bSuccess = _AutoUpdate_Update_DownloadFiles(
             pApp, pJsonMod, sModManifestURL, sGamePath, &fProgressIndex, fProgressMax, bForceDownload);
