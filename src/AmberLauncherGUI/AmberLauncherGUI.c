@@ -1944,6 +1944,31 @@ _AutoUpdate_IsRelativePath(const char *sPath)
     return TRUE;
 }
 
+static const char *
+_AutoUpdate_NetworkError(ierror_t eError)
+{
+    switch (eError)
+    {
+        case ekINONET:
+            return "No network connection";
+        case ekINOHOST:
+            return "Host unavailable";
+        case ekITIMEOUT:
+            return "Request timed out";
+        case ekISTREAM:
+            return "Stream error";
+        case ekISERVER:
+            return "Request failed";
+        case ekINOIMPL:
+            return "Not implemented";
+        case ekIOK:
+            return "None";
+        case ekIUNDEF:
+        default:
+            return "Unknown error";
+    }
+}
+
 static InetUpdaterJSONData *
 _AutoUpdate_LoadManifest(AppGUI *pApp, const char *sURL)
 {
@@ -1964,8 +1989,8 @@ _AutoUpdate_LoadManifest(AppGUI *pApp, const char *sURL)
     {
         _al_printf(pApp,
             "[Updater] Couldn't fetch manifest: %s\n"
-            "\tHTTP status: %u\n\tNetwork error: %d\n",
-            sURL, dResult, eInetError);
+            "\tHTTP status: %u\n\tNetwork error: %s\n",
+            sURL, dResult, _AutoUpdate_NetworkError(eInetError));
         if (pStream != NULL)
         {
             stm_close(&pStream);
@@ -2153,8 +2178,8 @@ _AutoUpdate_Update_DownloadFiles(
             if (pDownloadFile == NULL || eInetError != ekIOK || dResult < 200 || dResult >= 300)
             {
                 _al_printf(pApp,
-                    "[Updater] Couldn't download %s (HTTP %u, network error %d).\n",
-                    tc(sDownloadLink), dResult, eInetError);
+                    "[Updater] Couldn't download %s (HTTP %u, network error: %s).\n",
+                    tc(sDownloadLink), dResult, _AutoUpdate_NetworkError(eInetError));
                 bSuccess = FALSE;
             }
             else
