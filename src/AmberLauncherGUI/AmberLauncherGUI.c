@@ -55,15 +55,9 @@ _Win32_SetupConsole(void)
  * CONSTANTS
  ******************************************************************************/
 
-static const char *
-_sDefaultUpdaterRemoteRootURL = 
-    "https://mightandmagicmod.com/updater/";
-
 static const char *_sDefaultUpdaterLauncherManifestURL = 
     "https://mightandmagicmod.com/updater/al_manifest.json";
 
-static const char *_sLua_URL_UPDATER_ROOT =
-    "URL_UPDATER_ROOT";
 static const char *_sLua_URL_UPDATER_LAUNCHER_MANIFEST =
     "URL_UPDATER_LAUNCHER_MANIFEST";
 static const char *_sLua_URL_UPDATER_MOD_MANIFEST =
@@ -1924,20 +1918,28 @@ _AutoUpdate_IsRelativePath(const char *sPath)
 {
     const char *p = sPath;
     if (p == NULL || *p == '\0' || *p == '/' || *p == '\\')
+    {
         return FALSE;
+    }
     while (*p != '\0')
     {
         const char *sPart = p;
         while (*p != '\0' && *p != '/' && *p != '\\')
         {
             if (*p == ':')
+            {
                 return FALSE;
+            }
             ++p;
         }
         if (p == sPart || (p - sPart == 2 && sPart[0] == '.' && sPart[1] == '.'))
+        {
             return FALSE;
+        }
         if (*p != '\0')
+        {
             ++p;
+        }
     }
     return TRUE;
 }
@@ -2060,7 +2062,9 @@ _AutoUpdate_EnsureDirectory(const char *sPath)
     bool_t bSuccess;
 
     if (sPath[0] == '\0' || hfile_dir(sPath))
+    {
         return TRUE;
+    }
     str_split_pathname(sPath, &sParent, NULL);
     bSuccess = strcmp(tc(sParent), sPath) != 0 && _AutoUpdate_EnsureDirectory(tc(sParent));
     str_destroy(&sParent);
@@ -2071,19 +2075,26 @@ static bool_t
 _AutoUpdate_Update_DownloadFiles(
     AppGUI *pApp,
     InetUpdaterJSONData *pJson,
-    const char *sRootURL,
+    const char *sManifestURL,
     const char *sDestination,
     real32_t *fProgressIndex,
     real32_t fProgressMax,
     bool_t bForceDownload)
 {
+    const char *sRootEnd = sManifestURL + strcspn(sManifestURL, "?#");
+    while (sRootEnd > sManifestURL && sRootEnd[-1] != '/')
+    {
+        --sRootEnd;
+    }
+
     arrst_foreach(elem, pJson->files, InetUpdaterFile)
         String  *sLocalPath    = str_cpath("%s/%s", sDestination, tc(elem->path));
         String  *sParent       = NULL;
         bool_t  bFileExists    = hfile_exists(tc(sLocalPath), 0);
         bool_t  bSuccess       = TRUE;
         char    *sSHA256Hash   = AmberLauncher_SHA256_HashFile(tc(sLocalPath));
-        String  *sDownloadLink = str_printf("%s%s", sRootURL, tc(elem->path));
+        String  *sDownloadLink = str_printf("%.*s%s",
+            (int)(sRootEnd - sManifestURL), sManifestURL, tc(elem->path));
         Stream  *pDownloadFile = NULL;
         Stream  *pOutputFile   = NULL;
         uint32_t dResult       = 0;
@@ -2115,7 +2126,9 @@ _AutoUpdate_Update_DownloadFiles(
                     bfile_delete(tc(sLocalPath), NULL);
                 }
                 if (bSuccess)
+                {
                     pOutputFile = stm_to_file(tc(sLocalPath), NULL);
+                }
                 if (pOutputFile == NULL)
                 {
                     _al_printf(pApp, "[Updater] Couldn't open file for writing: %s\n", tc(elem->path));
@@ -2169,27 +2182,27 @@ AutoUpdate_Update(AppGUI *pApp, bool_t bForceDownload)
 
     const SVar tLuaLauncherManifestURL = AmberLauncher_GetGlobalVariable(pApp->pAppCore, _sLua_URL_UPDATER_LAUNCHER_MANIFEST);
     const SVar tLuaModManifestURL      = AmberLauncher_GetGlobalVariable(pApp->pAppCore, _sLua_URL_UPDATER_MOD_MANIFEST);
-    const SVar tLuaRootURL             = AmberLauncher_GetGlobalVariable(pApp->pAppCore, _sLua_URL_UPDATER_ROOT);
-    const char *sRootURL               = SVAR_IS_CONSTCHAR(tLuaRootURL) ?
-                                            SVAR_GET_CONSTCHAR(tLuaRootURL) : _sDefaultUpdaterRemoteRootURL;
+
+    const char *sLauncherManifestURL = SVAR_IS_CONSTCHAR(tLuaLauncherManifestURL) ?
+        SVAR_GET_CONSTCHAR(tLuaLauncherManifestURL) : _sDefaultUpdaterLauncherManifestURL;
+    const char *sModManifestURL      = SVAR_IS_CONSTCHAR(tLuaModManifestURL) ?
+        SVAR_GET_CONSTCHAR(tLuaModManifestURL) : NULL;
 
     const SVar tLauncherPath = AmberLauncher_GetGlobalVariable(pApp->pAppCore, "LAUNCHER_PATH");
     const SVar tGamePath     = AmberLauncher_GetGlobalVariable(pApp->pAppCore, "GAME_DESTINATION_PATH");
+
     const char *sLauncherPath = SVAR_IS_CONSTCHAR(tLauncherPath) ? SVAR_GET_CONSTCHAR(tLauncherPath) : ".";
     const char *sGamePath     = SVAR_IS_CONSTCHAR(tGamePath) ? SVAR_GET_CONSTCHAR(tGamePath) : sLauncherPath;
 
     pApp->bUpdaterModSkipped = FALSE;
 
-    pJsonLauncher = _AutoUpdate_LoadManifest(pApp,
-        SVAR_IS_CONSTCHAR(tLuaLauncherManifestURL) ?
-            SVAR_GET_CONSTCHAR(tLuaLauncherManifestURL) : _sDefaultUpdaterLauncherManifestURL);
+    pJsonLauncher = _AutoUpdate_LoadManifest(pApp, sLauncherManifestURL);
     if (pJsonLauncher == NULL)
     {
         return FALSE;
     }
 
-    pJsonMod = _AutoUpdate_LoadManifest(pApp,
-        SVAR_IS_CONSTCHAR(tLuaModManifestURL) ? SVAR_GET_CONSTCHAR(tLuaModManifestURL) : NULL);
+    pJsonMod = _AutoUpdate_LoadManifest(pApp, sModManifestURL);
     if (pJsonMod == NULL)
     {
         pApp->bUpdaterModSkipped = TRUE;
@@ -2210,13 +2223,12 @@ AutoUpdate_Update(AppGUI *pApp, bool_t bForceDownload)
         progress_value(pApp->pWidgets->pProgressbar, 0.0f);
     }
 
-    _al_printf(pApp, "[Updater] Remote Updater Server: %s\n", sRootURL);
     bSuccess = _AutoUpdate_Update_DownloadFiles(
-        pApp, pJsonLauncher, sRootURL, sLauncherPath, &fProgressIndex, fProgressMax, bForceDownload);
+        pApp, pJsonLauncher, sLauncherManifestURL, sLauncherPath, &fProgressIndex, fProgressMax, bForceDownload);
     if (bSuccess && pJsonMod != NULL)
     {
         bSuccess = _AutoUpdate_Update_DownloadFiles(
-            pApp, pJsonMod, sRootURL, sGamePath, &fProgressIndex, fProgressMax, bForceDownload);
+            pApp, pJsonMod, sModManifestURL, sGamePath, &fProgressIndex, fProgressMax, bForceDownload);
     }
 
     json_destroy(&pJsonLauncher, InetUpdaterJSONData);

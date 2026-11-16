@@ -1,11 +1,9 @@
 return {
     key             = "MM7",
     baseGame        = "MM7",
-    name            = "mm7",
     title           = "Might and Magic VII",
     exeName         = "mm7.exe",
     iniName         = "mm7.ini",
-    manifestName    = "mm7_manifest.json",
     folderNames     = function()
         return {
             "Might and Magic 7",

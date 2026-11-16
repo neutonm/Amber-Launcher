@@ -2,11 +2,9 @@ return {
     key             = "AMBER",
     baseGame        = "MM7",
     requiresMod     = true,
-    name            = "amber",
     title           = "Amber Island",
     exeName         = "mm7.exe",
     iniName         = "mm7.ini",
-    manifestName    = "amber_manifest.json",
     folderNames     = function()
         return {
             "Might and Magic 7",

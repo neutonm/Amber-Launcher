@@ -17,7 +17,7 @@ function AL_DetectGameFiles(options)
     local searchPaths = options.searchPaths or {}
 
     AL_print("Detecting game...")
-    print("Search path: "..dump(searchPaths))
+    AL_print("Search path: "..dump(searchPaths))
 
     if FS.PathResolveCaseInsensitive(destination, options.exeName) then
         if FS.FilesCheck(destination, files) then

@@ -58,7 +58,6 @@ GAME_NULL = {
     title           = "(null)",
     exeName         = "null.exe",
     iniName         = "null.ini",
-    manifestName    = "null.json",
     folderNames     = function()
         return {
             "(null)",
@@ -77,6 +76,7 @@ GAMEID[GAME_NULL.key]   = GAME_NULL
 GAME_NULL.id            = idx
 GAME_CURRENT            = GAME_NULL
 GAME_DEFAULT_KEY        = "AMBER"
+GAMES_FOLDER            = "Games"
 
 MODID = {
     NULL                = 0,
@@ -131,9 +131,10 @@ LAUNCHER_NAME           = LAUNCHER_NAME or "AmberLauncher"
 LAUNCHER_BUILD          = LAUNCHER_BUILD or _BUILD_NUMBER
 LAUNCHER_VERSION        = LAUNCHER_VERSION or 100
 
-URL_UPDATER_ROOT              = "https://mightandmagicmod.com/updater/"
+URL_UPDATER_ROOT             = "https://mightandmagicmod.com/updater/"
+URL_UPDATER_GAMES_ROOT       = URL_UPDATER_ROOT..GAMES_FOLDER.."/"
 URL_UPDATER_LAUNCHER_MANIFEST = URL_UPDATER_ROOT.."al_manifest.json"
-URL_UPDATER_MOD_MANIFEST      = nil
+URL_UPDATER_MOD_MANIFEST     = nil
 
 -- OS Separator
 if OS_NAME == "Windows" then 

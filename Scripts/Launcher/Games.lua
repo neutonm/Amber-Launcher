@@ -13,6 +13,7 @@ local function _RegisterGame(def)
     GAMEID[idx]     = def
     GAMEID[def.key] = def
     def.id          = idx
+    def.name        = MODID_NAMES[MODID[def.key]]
 
     return idx
 end
@@ -26,11 +27,9 @@ local function _ValidateGameDef(def, sourcePath)
     local requiredStrings = {
         "key",
         "baseGame",
-        "name",
         "title",
         "exeName",
-        "iniName",
-        "manifestName"
+        "iniName"
     }
 
     for _, k in ipairs(requiredStrings) do
@@ -39,8 +38,9 @@ local function _ValidateGameDef(def, sourcePath)
         end
     end
 
-    if not def.name:match("^[%w_-]+$") then
-        return false, "name must be a single directory name"
+    local modID = MODID[def.key]
+    if not modID or modID <= MODID.NULL or modID >= MODID.MAX or not MODID_NAMES[modID] then
+        return false, "key must identify a supported game"
     end
 
     if type(def.folderNames) ~= "function" then
@@ -189,7 +189,7 @@ function AL_ApplyCurrentGame()
     assert(game ~= GAME_NULL, "No game selected")
 
     GAME_LAYOUT             = game.key == localGameKey and "local" or "managed"
-    GAME_DESTINATION_FOLDER = GAME_LAYOUT == "local" and "" or FS.PathJoin("Games", game.name)
+    GAME_DESTINATION_FOLDER = GAME_LAYOUT == "local" and "" or FS.PathJoin(GAMES_FOLDER, game.name)
     GAME_DESTINATION_PATH   = GAME_LAYOUT == "local" and LAUNCHER_PATH or
         FS.PathJoin(LAUNCHER_PATH, GAME_DESTINATION_FOLDER)
 
@@ -215,7 +215,7 @@ function AL_ApplyCurrentGame()
     INI_PATH_MOD            = game.modIniName and FS.PathJoin(GAME_DESTINATION_PATH, game.modIniName) or nil
     INI_PATH_PROJECT        = FS.PathJoin(LAUNCHER_PATH, "al_"..game.name..".ini")
     MOD_ACTIVE_PATH         = FS.PathJoin(GAME_DESTINATION_PATH, "Data", "Launcher", "Mods", "_active.lua")
-    URL_UPDATER_MOD_MANIFEST = URL_UPDATER_ROOT..game.manifestName
+    URL_UPDATER_MOD_MANIFEST = URL_UPDATER_GAMES_ROOT..game.name.."/"..game.name.."_manifest.json"
 
     AL.SetLaunchCommand(game.exeName)
 end
