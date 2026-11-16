@@ -14,6 +14,7 @@
 #include <inet/inet.h>
 #include <inet/httpreq.h>
 #include <encode/json.h>
+#include <encode/url.h>
 #include <core/common.h>
 #include <core/appcore.h>
 #include <osbs/bmutex.h>
@@ -142,6 +143,12 @@ typedef struct GUIOperation
     unsigned int        dUIArgs;
     SVarKeyBundle       tUIResult;
 } GUIOperation;
+
+typedef struct
+{
+    Http               *pHttp;
+    String             *sOrigin;
+} InetUpdaterSession;
 
 /******************************************************************************
  * STATIC DECLARATIONS
@@ -2019,8 +2026,59 @@ _AutoUpdate_NetworkError(ierror_t eError)
     }
 }
 
+static Stream *
+_AutoUpdate_Get(InetUpdaterSession *pSession, const char *sURL,
+    uint32_t *pStatus, ierror_t *pError)
+{
+    Url        *pURL     = url_parse(sURL);
+    const char *sScheme  = url_scheme(pURL);
+    const char *sHost    = url_host(pURL);
+    bool_t      bSecure  = str_equ_nocase(sScheme, "https");
+    uint16_t    dPort    = url_port(pURL);
+    String     *sOrigin;
+    String     *sResource;
+    Stream     *pStream  = NULL;
+
+    *pStatus = 0;
+    *pError  = ekIOK;
+    if (str_empty_c(sHost) || (!bSecure && !str_equ_nocase(sScheme, "http")))
+    {
+        *pError = ekINOHOST;
+        url_destroy(&pURL);
+        return NULL;
+    }
+    if (dPort == UINT16_MAX)
+    {
+        dPort = bSecure ? 443 : 80;
+    }
+    sOrigin = str_printf("%s://%s:%u", sScheme, sHost, (unsigned int)dPort);
+    if (pSession->pHttp == NULL || !str_equ_nocase(tc(pSession->sOrigin), tc(sOrigin)))
+    {
+        if (pSession->pHttp != NULL)
+        {
+            http_destroy(&pSession->pHttp);
+        }
+        str_upd(&pSession->sOrigin, tc(sOrigin));
+        pSession->pHttp = bSecure ? http_secure(sHost, dPort) : http_create(sHost, dPort);
+    }
+    sResource = url_resource(pURL);
+    if (http_get(pSession->pHttp, tc(sResource), NULL, 0, pError))
+    {
+        *pStatus = http_response_status(pSession->pHttp);
+        pStream  = stm_memory(2048);
+        if (!http_response_body(pSession->pHttp, pStream, pError))
+        {
+            stm_close(&pStream);
+        }
+    }
+    str_destroy(&sResource);
+    str_destroy(&sOrigin);
+    url_destroy(&pURL);
+    return pStream;
+}
+
 static InetUpdaterJSONData *
-_AutoUpdate_LoadManifest(AppGUI *pApp, const char *sURL)
+_AutoUpdate_LoadManifest(AppGUI *pApp, InetUpdaterSession *pSession, const char *sURL)
 {
     uint32_t            dResult    = 0;
     ierror_t            eInetError = ekIOK;
@@ -2034,7 +2092,7 @@ _AutoUpdate_LoadManifest(AppGUI *pApp, const char *sURL)
     }
 
     _al_printf(pApp, "[Updater] Fetching manifest:\n\t%s\n", sURL);
-    pStream = http_dget(sURL, &dResult, &eInetError);
+    pStream = _AutoUpdate_Get(pSession, sURL, &dResult, &eInetError);
     if (pStream == NULL || eInetError != ekIOK || dResult < 200 || dResult >= 300)
     {
         _al_printf(pApp,
@@ -2095,8 +2153,8 @@ _AutoUpdate_CheckVersions(
     *bModUpdate      = pMod != NULL && dModVersion < pMod->launcher->version;
 }
 
-bool_t
-AutoUpdate_CheckForUpdates(AppGUI *pApp)
+static bool_t
+_AutoUpdate_CheckForUpdates(AppGUI *pApp, InetUpdaterSession *pSession)
 {
     bool_t              bUpdateRequired = FALSE;
     bool_t              bLauncherUpdate = FALSE;
@@ -2112,7 +2170,7 @@ AutoUpdate_CheckForUpdates(AppGUI *pApp)
     const int32_t dLauncherVersion     = SVAR_IS_DOUBLE(tLuaLauncherVersion) ? (int32_t)SVAR_GET_DOUBLE(tLuaLauncherVersion) : 0;
     const int32_t dModVersion          = SVAR_IS_DOUBLE(tLuaModVersion) ? (int32_t)SVAR_GET_DOUBLE(tLuaModVersion) : 0;
 
-    pJsonLauncher = _AutoUpdate_LoadManifest(pApp,
+    pJsonLauncher = _AutoUpdate_LoadManifest(pApp, pSession,
         SVAR_IS_CONSTCHAR(tLuaLauncherManifestURL) ?
             SVAR_GET_CONSTCHAR(tLuaLauncherManifestURL) : _sDefaultUpdaterLauncherManifestURL);
     if (pJsonLauncher == NULL)
@@ -2120,7 +2178,7 @@ AutoUpdate_CheckForUpdates(AppGUI *pApp)
         return FALSE;
     }
 
-    pJsonMod = _AutoUpdate_LoadManifest(pApp,
+    pJsonMod = _AutoUpdate_LoadManifest(pApp, pSession,
         SVAR_IS_CONSTCHAR(tLuaModManifestURL) ? SVAR_GET_CONSTCHAR(tLuaModManifestURL) : NULL);
     if (pJsonMod == NULL)
     {
@@ -2201,6 +2259,7 @@ _AutoUpdate_FileURL(const char *sManifestURL, const char *sPath)
 static bool_t
 _AutoUpdate_Update_DownloadFiles(
     AppGUI *pApp,
+    InetUpdaterSession *pSession,
     InetUpdaterJSONData *pJson,
     const char *sManifestURL,
     const char *sDestination,
@@ -2224,7 +2283,7 @@ _AutoUpdate_Update_DownloadFiles(
             str_cmp(elem->sha256, sSHA256Hash) != 0)
         {
             _al_printf(pApp, "[Updater] Downloading %s...\n", tc(sDownloadLink));
-            pDownloadFile = http_dget(tc(sDownloadLink), &dResult, &eInetError);
+            pDownloadFile = _AutoUpdate_Get(pSession, tc(sDownloadLink), &dResult, &eInetError);
             if (pDownloadFile == NULL || eInetError != ekIOK || dResult < 200 || dResult >= 300)
             {
                 _al_printf(pApp,
@@ -2288,8 +2347,8 @@ _AutoUpdate_Update_DownloadFiles(
     return TRUE;
 }
 
-bool_t
-AutoUpdate_Update(AppGUI *pApp, bool_t bForceDownload)
+static bool_t
+_AutoUpdate_Update(AppGUI *pApp, InetUpdaterSession *pSession, bool_t bForceDownload)
 {
     InetUpdaterJSONData *pJsonLauncher   = NULL;
     InetUpdaterJSONData *pJsonMod        = NULL;
@@ -2316,13 +2375,13 @@ AutoUpdate_Update(AppGUI *pApp, bool_t bForceDownload)
     pApp->bUpdaterModSkipped      = FALSE;
     pApp->bUpdaterLauncherUpdated = FALSE;
 
-    pJsonLauncher = _AutoUpdate_LoadManifest(pApp, sLauncherManifestURL);
+    pJsonLauncher = _AutoUpdate_LoadManifest(pApp, pSession, sLauncherManifestURL);
     if (pJsonLauncher == NULL)
     {
         return FALSE;
     }
 
-    pJsonMod = _AutoUpdate_LoadManifest(pApp, sModManifestURL);
+    pJsonMod = _AutoUpdate_LoadManifest(pApp, pSession, sModManifestURL);
     if (pJsonMod == NULL)
     {
         pApp->bUpdaterModSkipped = TRUE;
@@ -2357,12 +2416,12 @@ AutoUpdate_Update(AppGUI *pApp, bool_t bForceDownload)
     if (bLauncherUpdate)
     {
         bSuccess = _AutoUpdate_Update_DownloadFiles(
-            pApp, pJsonLauncher, sLauncherManifestURL, sLauncherPath, &fProgressIndex, fProgressMax, bForceDownload);
+            pApp, pSession, pJsonLauncher, sLauncherManifestURL, sLauncherPath, &fProgressIndex, fProgressMax, bForceDownload);
     }
     if (bSuccess && bModUpdate)
     {
         bSuccess = _AutoUpdate_Update_DownloadFiles(
-            pApp, pJsonMod, sModManifestURL, sGamePath, &fProgressIndex, fProgressMax, bForceDownload);
+            pApp, pSession, pJsonMod, sModManifestURL, sGamePath, &fProgressIndex, fProgressMax, bForceDownload);
     }
 
     json_destroy(&pJsonLauncher, InetUpdaterJSONData);
@@ -2384,6 +2443,36 @@ AutoUpdate_Update(AppGUI *pApp, bool_t bForceDownload)
     AmberLauncher_Update(pApp->pAppCore, CTRUE);
 
     return TRUE;
+}
+
+static bool_t
+_AutoUpdate_Run(AppGUI *pApp, bool_t bDownload, bool_t bForceDownload)
+{
+    InetUpdaterSession tSession = {NULL, NULL};
+    bool_t             bSuccess = _AutoUpdate_CheckForUpdates(pApp, &tSession);
+
+    if (bSuccess && bDownload)
+    {
+        bSuccess = _AutoUpdate_Update(pApp, &tSession, bForceDownload);
+    }
+    if (tSession.pHttp != NULL)
+    {
+        http_destroy(&tSession.pHttp);
+    }
+    str_destopt(&tSession.sOrigin);
+    return bSuccess;
+}
+
+bool_t
+AutoUpdate_CheckForUpdates(AppGUI *pApp)
+{
+    return _AutoUpdate_Run(pApp, FALSE, FALSE);
+}
+
+bool_t
+AutoUpdate_Update(AppGUI *pApp, bool_t bForceDownload)
+{
+    return _AutoUpdate_Run(pApp, TRUE, bForceDownload);
 }
 
 void
@@ -2820,10 +2909,6 @@ _Operation_Main(GUIOperation *pOperation)
             AmberLauncher_ConfigureStart(pApp->pAppCore);
             return 1;
         case GUIOP_UPDATE:
-            if (!AutoUpdate_CheckForUpdates(pApp))
-            {
-                return 0;
-            }
             return AutoUpdate_Update(pApp, FALSE) ? 1 : 0;
         case GUIOP_CHECK_UPDATES:
             return AutoUpdate_CheckForUpdates(pApp) ? 1 : 0;
