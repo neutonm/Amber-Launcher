@@ -18,6 +18,19 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <time.h>
+
+CAPI void
+AmberLauncher_Sleep(unsigned int dMilliseconds)
+{
+    struct timespec tDelay;
+
+    tDelay.tv_sec  = dMilliseconds / 1000;
+    tDelay.tv_nsec = (long)(dMilliseconds % 1000) * 1000000L;
+    while (nanosleep(&tDelay, &tDelay) != 0 && errno == EINTR)
+    {
+    }
+}
 
 #if _XOPEN_SOURCE >= 600 
 #include <spawn.h>

@@ -1,4 +1,5 @@
 #include <commands/music.h>
+#include <AmberLauncherCore.h>
 
 #include <core/command.h>
 
@@ -76,7 +77,7 @@ _ConstructFullPath(char *full_path, size_t size, const char *dir, const char *fi
 
 /* Function to process an MP3 file */
 static CBOOL
-_ConvertMP3ToWAV(const char *file_name) 
+_ConvertMP3ToWAV(struct AppCore *pApp, const char *file_name)
 {
     char base_name[MAX_PATH_LENGTH];
     char dir_name[MAX_PATH_LENGTH];
@@ -115,7 +116,7 @@ _ConvertMP3ToWAV(const char *file_name)
     {
         size_t dir_len = last_sep - file_name + 1; // Include the separator
         if (dir_len >= MAX_PATH_LENGTH) {
-            fprintf(stderr, "Directory path too long: %s\n", file_name);
+            AmberLauncher_Log(pApp, "Directory path too long: %s\n", file_name);
             return CFALSE;
         }
         strncpy(dir_name, file_name, dir_len);
@@ -143,7 +144,7 @@ _ConvertMP3ToWAV(const char *file_name)
         mp3_file = fopen(file_name, "rb");
         if (!mp3_file)
         {
-            fprintf(stderr, "Failed to open %s\n", file_name);
+            AmberLauncher_Log(pApp, "Failed to open %s\n", file_name);
             return CFALSE;
         }
 
@@ -156,7 +157,7 @@ _ConvertMP3ToWAV(const char *file_name)
         mp3_data = (unsigned char *)malloc(mp3_size);
         if (!mp3_data)
         {
-            fprintf(stderr, "Failed to allocate memory for %s\n", file_name);
+            AmberLauncher_Log(pApp, "Failed to allocate memory for %s\n", file_name);
             fclose(mp3_file);
             return CFALSE;
         }
@@ -166,7 +167,7 @@ _ConvertMP3ToWAV(const char *file_name)
         fclose(mp3_file);
         if (read_size != (size_t)mp3_size)
         {
-            fprintf(stderr, "Failed to read %s\n", file_name);
+            AmberLauncher_Log(pApp, "Failed to read %s\n", file_name);
             free(mp3_data);
             return CFALSE;
         }
@@ -177,14 +178,14 @@ _ConvertMP3ToWAV(const char *file_name)
         /* Construct WAV file name with directory path */
         if (snprintf(wav_name, MAX_PATH_LENGTH, "%s%s.wav", dir_name, base_name) > (int)sizeof(wav_name))
         {
-            fprintf(stderr, "wav_name sprintf path buffer overflow %s\n", wav_name);
+            AmberLauncher_Log(pApp, "wav_name sprintf path buffer overflow %s\n", wav_name);
             free(mp3_data);
             return CFALSE;
         }
         wav_file = fopen(wav_name, "wb");
         if (!wav_file)
         {
-            fprintf(stderr, "Failed to open %s\n", wav_name);
+            AmberLauncher_Log(pApp, "Failed to open %s\n", wav_name);
             free(mp3_data);
             return CFALSE;
         }
@@ -254,7 +255,7 @@ _ConvertMP3ToWAV(const char *file_name)
         /* Rename MP3 file to .bak.mp3 in the same directory */
         if (snprintf(bak_name, MAX_PATH_LENGTH, "%s%s.bak.mp3", dir_name, base_name) > (int)sizeof(bak_name))
         {
-            fprintf(stderr, "bak_name sprintf path buffer overflow %s\n", bak_name);
+            AmberLauncher_Log(pApp, "bak_name sprintf path buffer overflow %s\n", bak_name);
             return CFALSE;
         }
 #ifdef _WIN32
@@ -262,12 +263,12 @@ _ConvertMP3ToWAV(const char *file_name)
 #endif
         if (rename(file_name, bak_name) != 0)
         {
-            fprintf(stderr, "Failed to rename %s to %s\n", file_name, bak_name);
+            AmberLauncher_Log(pApp, "Failed to rename %s to %s\n", file_name, bak_name);
             return CFALSE;
         }
         else
         {
-            printf("Processed %s\n", file_name);
+            AmberLauncher_Log(pApp, "Processed %s\n", file_name);
         }
     }
 
@@ -306,7 +307,7 @@ static int _test(void)
                 fprintf(stderr, "full_path sprintf path buffer overflow %s\n", full_path);
                 return 1;
             }
-            _ConvertMP3ToWAV(full_path);
+            _ConvertMP3ToWAV(NULL, full_path);
         }
     } while (FindNextFileA(hFind, &find_data) != 0);
 
@@ -339,7 +340,7 @@ static int _test(void)
                     return 1;
                 }
                 printf("Processing: %s\n", full_path);
-                _ConvertMP3ToWAV(full_path);
+                _ConvertMP3ToWAV(NULL, full_path);
             }
         }
         closedir(d);
@@ -367,7 +368,7 @@ LUA_ConvertMP3ToWAV(struct lua_State* L)
     const char* sPath = luaL_checkstring(L, 1);
     CBOOL bResult;
 
-    bResult = _ConvertMP3ToWAV(sPath);
+    bResult = _ConvertMP3ToWAV(AmberLauncher_LuaAppCore(L), sPath);
 
     lua_pushboolean(L, (CBOOL)bResult);
 

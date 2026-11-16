@@ -9,6 +9,7 @@
  ******************************************************************************/
 
 struct AppCore;
+struct lua_State;
 
 /******************************************************************************
  * HEADER DECLARATIONS
@@ -63,6 +64,12 @@ AmberLauncher_ExecuteSVarLuaFunction(struct AppCore *pApp, const SVar *pVar);
 
 extern char *
 AmberLauncher_SHA256_HashFile(const char *sPath);
+
+extern CAPI struct AppCore *
+AmberLauncher_LuaAppCore(struct lua_State *L);
+
+extern CAPI void
+AmberLauncher_Log(struct AppCore *pApp, const char *sFormat, ...);
 
 __END_C
 

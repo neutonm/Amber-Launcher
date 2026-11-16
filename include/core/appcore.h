@@ -29,6 +29,7 @@ struct AppCore
     struct SLuaState* pLuaState;
     struct SSubject* pOnUserEventNotifier;
     UICallback cbUIEvent;
+    void (*cbLog)(AppCore *pAppCore, const char *sMessage);
     char *sLaunchCmd;
     unsigned int dActiveGameID;
     CBOOL bChangingGame;

@@ -13,6 +13,7 @@
 
 struct AppCore;
 struct SObserver;
+struct GUIOperation;
 
 /******************************************************************************
  * MACROS
@@ -203,6 +204,11 @@ typedef struct _AppGUIWidgets
     PopUp              *pPopupCore;
     PopUp              *pPopupMod;
     View               *pLocaleView;
+    Button             *pUpdateButton;
+    Cell               *pConfigureCell;
+    Cell               *pPlayCell;
+    Cell               *pUpdateCell;
+    Cell               *pUpdateCancelCell;
 } AppGUIWidgets;
 
 typedef struct _AppGUIElementDB
@@ -237,14 +243,14 @@ typedef struct _AppGUI
     EUIEventType        eCurrentUIEvent;
     bool_t              bUpdaterModSkipped;
     bool_t              bUpdaterLauncherUpdated;
+    struct GUIOperation *pOperation;
+    int                 dGUIThreadID;
+    EPanelType          ePendingPanel;
+    FPanelFlags         dPendingPanelFlags;
+    bool_t              bPanelPending;
+    bool_t              bCheckUpdates;
+    bool_t              bExitRequested;
 } AppGUI;
-
-typedef struct _GUIAsyncTaskData
-{
-    AppGUI             *pApp;
-    EPanelType          ePanelType;
-    FPanelFlags         dPanelFlags;
-} GUIAsyncTaskData;
 
 /******************************************************************************
  * STRUCTS (JSON)

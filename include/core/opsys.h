@@ -128,6 +128,9 @@ AmberLauncher_GetRegistryKey(const char* sValueName, uint32* pValueData);
 extern CAPI int
 AmberLauncher_RunSystemCommand(const char *sCmd);
 
+extern CAPI void
+AmberLauncher_Sleep(unsigned int dMilliseconds);
+
 __END_C
 
 #endif

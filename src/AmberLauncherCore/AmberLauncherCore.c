@@ -8,6 +8,7 @@
 #include <assert.h>
 #include <errno.h>
 #include <limits.h>
+#include <stdarg.h>
 
 #include <core/common.h>
 #include <core/observer.h>
@@ -581,6 +582,16 @@ _LUA_SHA256HashFile(lua_State* L)
     return 1;
 }
 
+static int
+_LUA_Sleep(lua_State* L)
+{
+    lua_Number fSeconds = luaL_checknumber(L, 1);
+
+    luaL_argcheck(L, fSeconds >= 0 && fSeconds <= (lua_Number)UINT_MAX / 1000, 1, "invalid duration");
+    AmberLauncher_Sleep((unsigned int)(fSeconds * 1000));
+    return 0;
+}
+
 static const 
 luaL_Reg AL[] = 
 {
@@ -598,6 +609,7 @@ luaL_Reg AL[] =
     {"GetRegistryKey",              LUA_GetRegistryKey          },
     {"ConvertMP3ToWAV",             LUA_ConvertMP3ToWAV         },
     {"SHA256HashFile",              _LUA_SHA256HashFile         },
+    {"Sleep",                       _LUA_Sleep                  },
     {"ArchiveExtract",              LUA_ArchiveExtract          },
     {"INILoad",                     LUA_INILoad                 },
     {"INISave",                     LUA_INISave                 },
@@ -1054,6 +1066,36 @@ AmberLauncher_ExecuteSVarLuaFunction(struct AppCore *pApp, const SVar *pVar)
     }
 
     return CTRUE;
+}
+
+CAPI AppCore *
+AmberLauncher_LuaAppCore(lua_State *L)
+{
+    AppCore *pApp;
+
+    lua_getfield(L, LUA_REGISTRYINDEX, STR_AL_APPCORE);
+    pApp = (AppCore*)lua_touserdata(L, -1);
+    lua_pop(L, 1);
+    return pApp;
+}
+
+CAPI void
+AmberLauncher_Log(AppCore *pApp, const char *sFormat, ...)
+{
+    char sMessage[2048];
+    va_list args;
+
+    va_start(args, sFormat);
+    vsnprintf(sMessage, sizeof(sMessage), sFormat, args);
+    va_end(args);
+    if (pApp != NULL && pApp->cbLog != NULL)
+    {
+        pApp->cbLog(pApp, sMessage);
+    }
+    else
+    {
+        fputs(sMessage, stdout);
+    }
 }
 
 char *

@@ -1,5 +1,6 @@
 #include "core/common.h"
 #include <commands/archive.h>
+#include <AmberLauncherCore.h>
 
 #include <core/command.h>
 
@@ -76,7 +77,7 @@ _join_paths(const char *path1, const char *path2, char *output, size_t size)
 }
 
 static CBOOL
-_ExtractArchive(const char* sArchivePath, const char* sExtractPath)
+_ExtractArchive(struct AppCore *pApp, const char* sArchivePath, const char* sExtractPath)
 {
     int dFileCount;
     int i;
@@ -87,7 +88,7 @@ _ExtractArchive(const char* sArchivePath, const char* sExtractPath)
     /* Initialize the Zip reader */
     if (!mz_zip_reader_init_file(&tZipArchive, sArchivePath, 0)) 
     {
-        fprintf(stderr, "Failed to initialize zip archive: %s\n", sArchivePath);
+        AmberLauncher_Log(pApp, "Failed to initialize zip archive: %s\n", sArchivePath);
         return CFALSE;
     }
 
@@ -95,7 +96,7 @@ _ExtractArchive(const char* sArchivePath, const char* sExtractPath)
     dFileCount = mz_zip_reader_get_num_files(&tZipArchive);
     if (dFileCount < 0) 
     {
-        fprintf(stderr, "Failed to get number of files in zip archive.\n");
+        AmberLauncher_Log(pApp, "Failed to get number of files in zip archive.\n");
         mz_zip_reader_end(&tZipArchive);
         return CFALSE;
     }
@@ -106,7 +107,7 @@ _ExtractArchive(const char* sArchivePath, const char* sExtractPath)
         char *last_slash;
         mz_zip_archive_file_stat file_stat;
         if (!mz_zip_reader_file_stat(&tZipArchive, i, &file_stat)) {
-            fprintf(stderr, "Failed to get file stat for index %d.\n", i);
+            AmberLauncher_Log(pApp, "Failed to get file stat for index %d.\n", i);
             continue;
         }
 
@@ -120,7 +121,7 @@ _ExtractArchive(const char* sArchivePath, const char* sExtractPath)
             /* Create the directory */
             if (_CreateDirectories(dir_path) != 0) 
             {
-                fprintf(stderr, "Failed to create directory: %s\n", dir_path);
+                AmberLauncher_Log(pApp, "Failed to create directory: %s\n", dir_path);
             }
 
             continue;
@@ -138,7 +139,7 @@ _ExtractArchive(const char* sArchivePath, const char* sExtractPath)
             /* Create the necessary directories */
             if (_CreateDirectories(file_path) != 0) 
             {
-                fprintf(stderr, "Failed to create directories for: %s\n", file_path);
+                AmberLauncher_Log(pApp, "Failed to create directories for: %s\n", file_path);
             }
 
             /* Restore the slash */
@@ -147,9 +148,9 @@ _ExtractArchive(const char* sArchivePath, const char* sExtractPath)
 
         /* Extract the file to the target path */
         if (!mz_zip_reader_extract_to_file(&tZipArchive, i, file_path, 0)) {
-            fprintf(stderr, "Failed to extract file: %s\n", file_path);
+            AmberLauncher_Log(pApp, "Failed to extract file: %s\n", file_path);
         } else {
-            printf("Extracted: %s\n", file_path);
+            AmberLauncher_Log(pApp, "Extracted: %s\n", file_path);
         }
     }
 
@@ -170,7 +171,7 @@ SCommand_Callback_Archive(const SCommand* pSelf, const SVar* pArgs, const unsign
     UNUSED(pArgs);
     UNUSED(dNumArgs);
 
-    bResult = _ExtractArchive(zip_filename, extract_path);
+    bResult = _ExtractArchive(NULL, zip_filename, extract_path);
 
     return bResult;
 }
@@ -182,7 +183,7 @@ LUA_ArchiveExtract(struct lua_State* L)
     const char* sExtractPath    = luaL_checkstring(L, 2);
     CBOOL bResult;
 
-    bResult = _ExtractArchive(sZipPath, sExtractPath);
+    bResult = _ExtractArchive(AmberLauncher_LuaAppCore(L), sZipPath, sExtractPath);
 
     lua_pushboolean(L, bResult);
 

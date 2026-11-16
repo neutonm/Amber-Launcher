@@ -54,8 +54,7 @@ end
 --- os.sleep for short delays only
 --- @param sec
 function sleep(sec)
-    local t0 = os.clock()
-    while os.clock() - t0 < sec do end
+    AL.Sleep(sec)
 end
 
 ---Prints to current textview and duplicates to stdout

@@ -8,6 +8,12 @@
 #include <windows.h>
 #include <direct.h>
 
+CAPI void
+AmberLauncher_Sleep(unsigned int dMilliseconds)
+{
+    Sleep(dMilliseconds);
+}
+
 /******************************************************************************
  * HEADER FUNCTION DEFINITIONS
  ******************************************************************************/

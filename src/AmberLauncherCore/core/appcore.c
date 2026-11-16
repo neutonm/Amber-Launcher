@@ -40,6 +40,9 @@ AppCore_init(AppCore *pAppCore)
         pAppCore->sLaunchCmd           = NULL;
         pAppCore->dActiveGameID        = 0;
         pAppCore->bChangingGame        = CFALSE;
+        pAppCore->pOwner               = NULL;
+        pAppCore->cbUIEvent            = NULL;
+        pAppCore->cbLog                = NULL;
 
         AppCore_SetLaunchCommand(pAppCore, AppCore_GetDefaultLaunchCommand());
 

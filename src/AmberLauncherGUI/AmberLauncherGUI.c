@@ -16,6 +16,8 @@
 #include <encode/json.h>
 #include <core/common.h>
 #include <core/appcore.h>
+#include <osbs/bmutex.h>
+#include <osbs/bthread.h>
 
 #include <nappgui.h>
 #include <res_app.h>
@@ -114,6 +116,33 @@ static const real32_t _fMinBtnWidth         = 128.f;
 #define MODAL_NEXT                          1035
 #define MODAL_UPDATE_APP                    1036
 
+typedef enum
+{
+    GUIOP_CONFIGURE,
+    GUIOP_UPDATE,
+    GUIOP_CHECK_UPDATES
+} EGUIOperation;
+
+typedef struct GUIOperation
+{
+    AppGUI             *pApp;
+    Mutex              *pMutex;
+    String             *sLog;
+    TextView           *pTextView;
+    Progress           *pProgress;
+    Window             *pWindow;
+    EGUIOperation       eType;
+    real32_t            fProgress;
+    bool_t              bProgressChanged;
+    bool_t              bUIWaiting;
+    bool_t              bUIProcessing;
+    bool_t              bUIReady;
+    EUIEventType        eUIEvent;
+    const SVar         *pUIArgs;
+    unsigned int        dUIArgs;
+    SVarKeyBundle       tUIResult;
+} GUIOperation;
+
 /******************************************************************************
  * STATIC DECLARATIONS
  ******************************************************************************/
@@ -127,6 +156,9 @@ static const real32_t _fMinBtnWidth         = 128.f;
   */
 static void
 _al_printf(AppGUI *pApp, const char* fmt, ...);
+
+static void
+_Callback_Log(AppCore *pAppCore, const char *sMessage);
 
 /**
  * @relatedalso Window
@@ -191,11 +223,14 @@ _Panel_TweakerButtons(AppGUI *pApp);
 static void
 _LocalisationFillPopup(AppGUI *pApp, PopUp *pPop, ELocTier eTier);
 
-static uint32_t
-_GUIThread_Main_Null(GUIAsyncTaskData *pThreadData);
+static bool_t
+_Operation_Start(AppGUI *pApp, EGUIOperation eType);
 
 static void
-_GUIThread_End_PanelSetMain(GUIAsyncTaskData *pThreadData, const uint32_t dRValue);
+_Operation_Progress(AppGUI *pApp, real32_t fProgress);
+
+static void
+_Nappgui_Update(AppGUI *pApp, const real64_t prtime, const real64_t crtime);
 
 static SVarTable*
 _SVar_TableNew(size_t dInitialCap);
@@ -255,6 +290,10 @@ _Callback_UIEvent(
     const SVar *pUserData,
     const unsigned int dNumArgs);
 
+static SVarKeyBundle
+_ProcessUIEvent(AppCore *pAppCore, EUIEventType eEventType,
+    const SVar *pUserData, const unsigned int dNumArgs);
+
 
 static void
 _Callback_LocalisationPopupSelector(AppGUI *pApp, Event *e);
@@ -268,6 +307,8 @@ Panel_Set(AppGUI *pApp, const EPanelType eType, FPanelFlags dFlags)
 {
     Panel *pPanel       = NULL;
 
+    pApp->pWidgets->pConfigureCell = NULL;
+    pApp->pWidgets->pPlayCell      = NULL;
     pApp->eCurrentPanel = eType;
 
     if (IS_VALID(pApp->pWindows->pLayoutWindow))
@@ -387,6 +428,7 @@ Panel_GetAutoConfigure(AppGUI* pApp, FPanelFlags dFlags)
     layout_layout(pLayoutMain, pLayoutTxt, 0, 0);
     layout_textview(pLayoutMain, pConsole, 0, 1);
     layout_button(pLayoutMain,pButtonCfg,0, 2);
+    pApp->pWidgets->pConfigureCell = layout_cell(pLayoutMain, 0, 2);
 
     /* Panel: Main */
     panel_layout(pPanelMain, pLayoutMain);
@@ -435,6 +477,7 @@ Panel_GetMain(AppGUI* pApp)
 
     layout_layout(pLayoutMain, pLayoutTxt, 0, 0);
     layout_button(pLayoutMain, pButtonPlay, 0, 2);
+    pApp->pWidgets->pPlayCell = layout_cell(pLayoutMain, 0, 2);
 
     panel_layout(pPanelMain, pLayoutMain);
 
@@ -1637,6 +1680,11 @@ Panel_GetModalModManager(AppGUI* pApp)
 static void
 _Callback_OnButtonModalToolsLuaCall(GUIToolElement *pElem, Event *e)
 {
+    AppGUI *pApp = (AppGUI*)pElem->pAppCore->pOwner;
+    if (pApp->pOperation != NULL)
+    {
+        return;
+    }
     AmberLauncher_ExecuteSVarLuaFunction(
         pElem->pAppCore,
         &pElem->tLuaRef
@@ -1882,6 +1930,8 @@ Panel_GetModalUpdater(AppGUI* pApp)
     layout_halign(pLayoutButtons, 3, 0, ekRIGHT);
     layout_button(pLayoutButtons, pButtonCancel, 0, 0);
     layout_button(pLayoutButtons, pButtonUpdate, 3, 0);
+    pApp->pWidgets->pUpdateCell       = layout_cell(pLayoutButtons, 3, 0);
+    pApp->pWidgets->pUpdateCancelCell = layout_cell(pLayoutButtons, 0, 0);
 
     /* Layout: Main */
     layout_layout(pLayoutMain, pLayoutHeader, 0, 0);
@@ -2232,10 +2282,7 @@ _AutoUpdate_Update_DownloadFiles(
         }
 
         *fProgressIndex += 1.0f;
-        if (pApp->pWidgets->pProgressbar)
-        {
-            progress_value(pApp->pWidgets->pProgressbar, *fProgressIndex / fProgressMax);
-        }
+        _Operation_Progress(pApp, *fProgressIndex / fProgressMax);
     arrst_end()
 
     return TRUE;
@@ -2305,10 +2352,7 @@ AutoUpdate_Update(AppGUI *pApp, bool_t bForceDownload)
     {
         fProgressMax += (real32_t)arrst_size(pJsonMod->files, InetUpdaterFile);
     }
-    if (pApp->pWidgets->pProgressbar)
-    {
-        progress_value(pApp->pWidgets->pProgressbar, 0.0f);
-    }
+    _Operation_Progress(pApp, 0.0f);
 
     if (bLauncherUpdate)
     {
@@ -2332,10 +2376,7 @@ AutoUpdate_Update(AppGUI *pApp, bool_t bForceDownload)
         return FALSE;
     }
 
-    if (pApp->pWidgets->pProgressbar)
-    {
-        progress_value(pApp->pWidgets->pProgressbar, 1.0f);
-    }
+    _Operation_Progress(pApp, 1.0f);
     _al_printf(pApp, pApp->bUpdaterModSkipped ?
         "[Updater] Launcher update done. Mod update was skipped.\n" :
         "[Updater] Update done!\n");
@@ -2348,6 +2389,10 @@ AutoUpdate_Update(AppGUI *pApp, bool_t bForceDownload)
 void
 Callback_OnWindowHotkeyF6(AppGUI* pApp, Event *e)
 {
+    if (pApp->pOperation != NULL)
+    {
+        return;
+    }
     _Callback_UIEvent(pApp->pAppCore, UIEVENT_DEBUG, NULL, 0);
     unref(e);
 }
@@ -2358,19 +2403,29 @@ Callback_OnButtonConfigure(AppGUI *pApp, Event *e)
     Button *pButton     = event_sender(e, Button);
     FPanelFlags dFlags  = button_get_tag(pButton);
 
+    if (pApp->pOperation != NULL)
+    {
+        return;
+    }
+
     if (FLAG_HAS(dFlags, FLAG_PANEL_STATE_END))
     {
         GUIThread_SchedulePanelSet(pApp, CPANEL_MAIN, FLAG_PANEL_NONE);
         return;
     }
 
-    AmberLauncher_ConfigureStart(pApp->pAppCore);
+    _Operation_Start(pApp, GUIOP_CONFIGURE);
 }
 
 void
 Callback_OnButtonModalDebug(AppGUI *pApp, Event *e)
 {
     const char *sEditText;
+
+    if (pApp->pOperation != NULL)
+    {
+        return;
+    }
 
     cassert_no_null(pApp->pDebugData->pConsoleTextView);
 
@@ -2617,31 +2672,19 @@ Callback_OnButtonModalUpdater(AppGUI* pApp, Event *e)
     Button *pButton     = event_sender(e, Button);
     uint32_t dButtonTag = button_get_tag(pButton);
 
-    switch(dButtonTag)
+    if (pApp->pOperation != NULL)
     {
-        case MODAL_UPDATE_APP:
-            {
-                const bool_t bUpdateAvailable = AutoUpdate_CheckForUpdates(pApp);
-                if (!bUpdateAvailable)
-                {
-                    break;
-                }
-
-                if (AutoUpdate_Update(pApp, FALSE))
-                {
-                    pApp->pWidgets->pTextView = NULL;
-                    window_stop_modal(pApp->pWindows->pWindowModal, dButtonTag);
-                }
-            }
-            break;
-
-        default:
-            pApp->pWidgets->pTextView = NULL;
-            window_stop_modal(pApp->pWindows->pWindowModal, dButtonTag);
-            break;
+        return;
     }
-
-    unref(pButton);
+    if (dButtonTag == MODAL_UPDATE_APP)
+    {
+        _Operation_Start(pApp, GUIOP_UPDATE);
+    }
+    else
+    {
+        pApp->pWidgets->pTextView = NULL;
+        window_stop_modal(pApp->pWindows->pWindowModal, dButtonTag);
+    }
     unref(e);
 }
 
@@ -2661,6 +2704,10 @@ Callback_OnButtonModalTools(AppGUI *pApp, Event *e)
 void 
 Callback_OnButtonPlay(AppGUI *pApp, Event *e)
 {
+    if (pApp->pOperation != NULL)
+    {
+        return;
+    }
     AmberLauncher_Play(pApp->pAppCore);
     unref(e);
 }
@@ -2706,53 +2753,241 @@ Callback_OnDrawLocalisation(AppGUI *pApp, Event *e)
 }
 
 
-static uint32_t
-_GUIThread_Main_Null(GUIAsyncTaskData *pThreadData)
+static void
+_Operation_DispatchUI(GUIOperation *pOperation, Event *e)
 {
-    unref(pThreadData);
-    bthread_sleep(64);
-    return 1;
+    AppGUI *pApp = pOperation->pApp;
+    SVarKeyBundle tResult = _ProcessUIEvent(pApp->pAppCore,
+        pOperation->eUIEvent, pOperation->pUIArgs, pOperation->dUIArgs);
+
+    bmutex_lock(pOperation->pMutex);
+    pOperation->tUIResult     = tResult;
+    pOperation->bUIProcessing = FALSE;
+    pOperation->bUIReady      = TRUE;
+    bmutex_unlock(pOperation->pMutex);
+    unref(e);
 }
 
-/* GUI thread (safe to touch UI) */
 static void
-_GUIThread_End_PanelSetMain(GUIAsyncTaskData *pThreadData, const uint32_t dRValue)
+_Operation_Update(GUIOperation *pOperation)
 {
-    Panel_Set(
-        pThreadData->pApp,
-        pThreadData->ePanelType,
-        pThreadData->dPanelFlags
-    );
-    heap_delete(&pThreadData, GUIAsyncTaskData);
+    String *sLog;
+    bool_t bProgressChanged;
+    real32_t fProgress;
+    bool_t bRequest;
 
-    unref(dRValue);
+    bmutex_lock(pOperation->pMutex);
+    sLog                        = pOperation->sLog;
+    pOperation->sLog             = NULL;
+    bProgressChanged            = pOperation->bProgressChanged;
+    fProgress                   = pOperation->fProgress;
+    pOperation->bProgressChanged = FALSE;
+    bRequest = pOperation->bUIWaiting && !pOperation->bUIProcessing && !pOperation->bUIReady;
+    if (bRequest)
+    {
+        pOperation->bUIProcessing = TRUE;
+    }
+    bmutex_unlock(pOperation->pMutex);
+
+    if (sLog != NULL)
+    {
+        if (pOperation->pTextView != NULL)
+        {
+            textview_printf(pOperation->pTextView, "%s", tc(sLog));
+            textview_scroll_caret(pOperation->pTextView);
+        }
+        str_destroy(&sLog);
+    }
+    if (bProgressChanged && pOperation->pProgress != NULL)
+    {
+        progress_value(pOperation->pProgress, fProgress);
+    }
+    if (bRequest)
+    {
+        /* Keep nested modal loops outside the task scheduler's timer callback. */
+        gui_OnIdle(listener(pOperation, _Operation_DispatchUI, GUIOperation));
+    }
+}
+
+static uint32_t
+_Operation_Main(GUIOperation *pOperation)
+{
+    AppGUI *pApp = pOperation->pApp;
+
+    switch (pOperation->eType)
+    {
+        case GUIOP_CONFIGURE:
+            AmberLauncher_ConfigureStart(pApp->pAppCore);
+            return 1;
+        case GUIOP_UPDATE:
+            if (!AutoUpdate_CheckForUpdates(pApp))
+            {
+                return 0;
+            }
+            return AutoUpdate_Update(pApp, FALSE) ? 1 : 0;
+        case GUIOP_CHECK_UPDATES:
+            return AutoUpdate_CheckForUpdates(pApp) ? 1 : 0;
+        default:
+            return 0;
+    }
+}
+
+static void
+_Operation_Controls(AppGUI *pApp, bool_t bEnabled)
+{
+    cell_enabled(layout_cell(pApp->pWindows->pLayoutWindow, 0, 0), bEnabled);
+    if (pApp->pWidgets->pConfigureCell != NULL)
+    {
+        cell_enabled(pApp->pWidgets->pConfigureCell, bEnabled);
+    }
+    if (pApp->pWidgets->pPlayCell != NULL)
+    {
+        cell_enabled(pApp->pWidgets->pPlayCell, bEnabled);
+    }
+    if (pApp->pWidgets->pUpdateCell != NULL)
+    {
+        cell_enabled(pApp->pWidgets->pUpdateCell, bEnabled);
+        cell_enabled(pApp->pWidgets->pUpdateCancelCell, bEnabled);
+    }
+}
+
+static void
+_Operation_End(GUIOperation *pOperation, const uint32_t dResult)
+{
+    AppGUI *pApp = pOperation->pApp;
+
+    _Operation_Update(pOperation);
+    _Operation_Controls(pApp, TRUE);
+    pApp->pOperation = NULL;
+    if (pOperation->eType == GUIOP_CHECK_UPDATES)
+    {
+        const Image *pIcon;
+        if (gui_dark_mode())
+        {
+            pIcon = dResult ? (const Image*)ICO_UPDATE_AVAILABLE_DARK_PNG : (const Image*)ICO_UPDATE_DARK_PNG;
+        }
+        else
+        {
+            pIcon = dResult ? (const Image*)ICO_UPDATE_AVAILABLE_PNG : (const Image*)ICO_UPDATE_PNG;
+        }
+        button_image(pApp->pWidgets->pUpdateButton, pIcon);
+    }
+    else if (pOperation->eType == GUIOP_UPDATE && (dResult != 0 || pApp->bExitRequested))
+    {
+        pApp->pWidgets->pTextView = NULL;
+        window_stop_modal(pOperation->pWindow, pApp->bExitRequested ? MODAL_CANCEL : MODAL_UPDATE_APP);
+    }
+    bmutex_close(&pOperation->pMutex);
+    heap_delete(&pOperation, GUIOperation);
+    if (pApp->bExitRequested)
+    {
+        osapp_finish();
+    }
+}
+
+static bool_t
+_Operation_Start(AppGUI *pApp, EGUIOperation eType)
+{
+    GUIOperation *pOperation;
+
+    if (pApp->pOperation != NULL || pApp->bExitRequested)
+    {
+        return FALSE;
+    }
+    pOperation            = heap_new0(GUIOperation);
+    pOperation->pApp      = pApp;
+    pOperation->pMutex    = bmutex_create();
+    pOperation->eType     = eType;
+    pOperation->pWindow   = pApp->pWindows->pWindowModal;
+    pOperation->pTextView = eType == GUIOP_CHECK_UPDATES ? NULL : pApp->pWidgets->pTextView;
+    pOperation->pProgress = eType == GUIOP_UPDATE ? pApp->pWidgets->pProgressbar : NULL;
+    pApp->pOperation      = pOperation;
+    _Operation_Controls(pApp, FALSE);
+    osapp_task(pOperation, .04f, _Operation_Main, _Operation_Update, _Operation_End, GUIOperation);
+    return TRUE;
+}
+
+static SVarKeyBundle
+_Operation_UIRequest(GUIOperation *pOperation, EUIEventType eEvent,
+    const SVar *pArgs, unsigned int dNumArgs)
+{
+    SVarKeyBundle tResult;
+
+    /* The worker retains the arguments until the GUI returns a response. */
+    bmutex_lock(pOperation->pMutex);
+    pOperation->eUIEvent   = eEvent;
+    pOperation->pUIArgs    = pArgs;
+    pOperation->dUIArgs    = dNumArgs;
+    pOperation->bUIWaiting = TRUE;
+    bmutex_unlock(pOperation->pMutex);
+    for (;;)
+    {
+        bmutex_lock(pOperation->pMutex);
+        if (pOperation->bUIReady)
+        {
+            tResult                  = pOperation->tUIResult;
+            pOperation->bUIReady      = FALSE;
+            pOperation->bUIWaiting    = FALSE;
+            bmutex_unlock(pOperation->pMutex);
+            return tResult;
+        }
+        bmutex_unlock(pOperation->pMutex);
+        bthread_sleep(10);
+    }
+}
+
+static void
+_Operation_Progress(AppGUI *pApp, real32_t fProgress)
+{
+    GUIOperation *pOperation = pApp->pOperation;
+
+    if (bthread_current_id() == pApp->dGUIThreadID)
+    {
+        if (pApp->pWidgets->pProgressbar != NULL)
+        {
+            progress_value(pApp->pWidgets->pProgressbar, fProgress);
+        }
+        return;
+    }
+    if (pOperation == NULL)
+    {
+        return;
+    }
+    bmutex_lock(pOperation->pMutex);
+    pOperation->fProgress        = fProgress;
+    pOperation->bProgressChanged = TRUE;
+    bmutex_unlock(pOperation->pMutex);
 }
 
 bool_t
 GUIThread_SchedulePanelSet(AppGUI *pApp, EPanelType eType, FPanelFlags dFlags)
 {
-    GUIAsyncTaskData *pData;
-
-    pData = heap_new(GUIAsyncTaskData);
-    if (!IS_VALID(pData))
-    {
-        return FALSE;
-    }
-
-    pData->pApp        = pApp;
-    pData->ePanelType  = eType;
-    pData->dPanelFlags = dFlags;
-
-    osapp_task(
-        pData,
-        0.0,
-        _GUIThread_Main_Null,
-        NULL,
-        _GUIThread_End_PanelSetMain,
-        GUIAsyncTaskData
-    );
-
+    cassert(bthread_current_id() == pApp->dGUIThreadID);
+    pApp->ePendingPanel      = eType;
+    pApp->dPendingPanelFlags = dFlags;
+    pApp->bPanelPending      = TRUE;
     return TRUE;
+}
+
+static void
+_Nappgui_Update(AppGUI *pApp, const real64_t prtime, const real64_t crtime)
+{
+    if (!pApp->bExitRequested && pApp->pOperation == NULL)
+    {
+        if (pApp->bPanelPending)
+        {
+            EPanelType ePanel = pApp->ePendingPanel;
+            pApp->bPanelPending = FALSE;
+            Panel_Set(pApp, ePanel, pApp->dPendingPanelFlags);
+        }
+        if (pApp->bCheckUpdates && pApp->pWindows->pWindowModal == NULL)
+        {
+            pApp->bCheckUpdates = FALSE;
+            _Operation_Start(pApp, GUIOP_CHECK_UPDATES);
+        }
+    }
+    unref(prtime);
+    unref(crtime);
 }
 
 /******************************************************************************
@@ -2770,6 +3005,29 @@ _al_printf(AppGUI *pApp, const char* fmt, ...)
 
     bstd_printf("%s", buffer);
 
+    if (bthread_current_id() != pApp->dGUIThreadID)
+    {
+        GUIOperation *pOperation = pApp->pOperation;
+        if (pOperation != NULL)
+        {
+            bmutex_lock(pOperation->pMutex);
+            if (pOperation->sLog == NULL)
+            {
+                pOperation->sLog = str_c(buffer);
+            }
+            else
+            {
+                str_cat(&pOperation->sLog, buffer);
+            }
+            if (buffer[0] != '\0' && buffer[strlen(buffer) - 1] != '\n')
+            {
+                str_cat(&pOperation->sLog, "\n");
+            }
+            bmutex_unlock(pOperation->pMutex);
+        }
+        return;
+    }
+
     cassert_no_null(pApp);
     cassert_no_null(pApp->pWidgets);
 
@@ -2778,6 +3036,12 @@ _al_printf(AppGUI *pApp, const char* fmt, ...)
         textview_printf(pApp->pWidgets->pTextView, "%s\n", buffer);
         textview_scroll_caret(pApp->pWidgets->pTextView);
     }
+}
+
+static void
+_Callback_Log(AppCore *pAppCore, const char *sMessage)
+{
+    _al_printf((AppGUI*)pAppCore->pOwner, "%s", sMessage);
 }
 
 static void
@@ -2822,7 +3086,7 @@ _Panel_GetRoot(AppGUI *pApp)
     Button      *pButtonWebDiscord  = button_flat();
     Button      *pButtonUpdate      = button_flat();
 
-    bool_t bUpdateAvailable = AutoUpdate_CheckForUpdates(pApp);
+    bool_t bUpdateAvailable = FALSE;
 
     static const real32_t dButtonIconWidth   = ICO_PNG_W + (ICO_PNG_W / 2);
     static const real32_t dButtonIconHeight  = ICO_PNG_H + (ICO_PNG_H / 2);
@@ -2874,6 +3138,7 @@ _Panel_GetRoot(AppGUI *pApp)
             (const Image*)ICO_UPDATE_PNG);
     }
 
+    pApp->pWidgets->pUpdateButton = pButtonUpdate;
     button_tag(pButtonUpdate, CSIDEBUTTON_UPDATE);
     button_tooltip(pButtonUpdate, TXT_TOOLTIP_UPDATE);
     button_OnClick(pButtonUpdate, listener(pApp, _Callback_OnButtonMainWindow, AppGUI) );
@@ -2960,6 +3225,8 @@ _Nappgui_Start(void)
     /* Core initialization */
     pApp = heap_new0(AppGUI);
     cassert_no_null(pApp);
+    pApp->dGUIThreadID  = bthread_current_id();
+    pApp->bCheckUpdates = TRUE;
 
     pApp->pAppCore            = AppCore_create();
     AppCore_init(pApp->pAppCore);
@@ -2976,6 +3243,7 @@ _Nappgui_Start(void)
 
     pApp->pWidgets       = heap_new0(AppGUIWidgets);
     cassert_no_null(pApp->pWidgets);
+    pApp->pAppCore->cbLog = _Callback_Log;
 
     pApp->pElementSets   = heap_new0(AppGUIElementDB);
     cassert_no_null(pApp->pElementSets);
@@ -3194,6 +3462,8 @@ static uint32_t
 _Nappgui_ShowModal( AppGUI *pApp, Panel *pPanel, const char* sTitle)
 {
     uint32_t dRet;
+    Window  *pParent      = pApp->pWindows->pWindowModal;
+    Panel   *pParentPanel = pApp->pWindows->pPanelModal;
 
     pApp->pWindows->pWindowModal = window_create(
         ekWINDOW_STD | ekWINDOW_CLOSE | ekWINDOW_ESC | ekWINDOW_RETURN);
@@ -3204,8 +3474,10 @@ _Nappgui_ShowModal( AppGUI *pApp, Panel *pPanel, const char* sTitle)
     window_OnClose(pApp->pWindows->pWindowModal,
                    listener(pApp, _Callback_OnCloseModalWindow, AppGUI));
     _window_center(pApp->pWindows->pWindowModal);
-    dRet = window_modal(pApp->pWindows->pWindowModal, pApp->pWindows->pWindow);
+    dRet = window_modal(pApp->pWindows->pWindowModal, pParent ? pParent : pApp->pWindows->pWindow);
     window_destroy(&pApp->pWindows->pWindowModal);
+    pApp->pWindows->pWindowModal = pParent;
+    pApp->pWindows->pPanelModal  = pParentPanel;
 
     return dRet;
 }
@@ -3220,6 +3492,11 @@ _Callback_OnButtonMainWindow(AppGUI* pApp, Event* e)
     Button *pButton     = event_sender(e, Button);
     ESidebarButton dTag = (ESidebarButton)button_get_tag(pButton);
     bool_t bVarRet;
+
+    if (pApp->pOperation != NULL)
+    {
+        return;
+    }
 
     bVarRet = (bool_t)AmberLauncher_ProcessUISideButton(pApp->pAppCore, dTag);
     if (bVarRet == FALSE)
@@ -3257,6 +3534,13 @@ static void
 _Callback_OnCloseMainWindow(AppGUI *pApp, Event *e)
 {
     const EvWinClose *p = event_params(e, EvWinClose);
+
+    if (pApp->pOperation != NULL)
+    {
+        bool_t *pResult = event_result(e, bool_t);
+        *pResult = FALSE;
+        return;
+    }
     cassert_no_null(pApp);
 
     switch (p->origin)
@@ -3266,6 +3550,7 @@ _Callback_OnCloseMainWindow(AppGUI *pApp, Event *e)
         case ekGUI_CLOSE_BUTTON:
         case ekGUI_CLOSE_DEACT:
         default:
+            pApp->bExitRequested = TRUE;
             osapp_finish();
             break;
     }
@@ -3278,6 +3563,12 @@ _Callback_OnCloseModalWindow(AppGUI *pApp, Event *e)
     bool_t *pResult     = event_result(e, bool_t);
     cassert_no_null(pApp);
 
+    if (pApp->pOperation != NULL &&
+        pApp->pWindows->pWindowModal == pApp->pOperation->pWindow)
+    {
+        *pResult = FALSE;
+        return;
+    }
     switch (p->origin)
     {
         case ekGUI_CLOSE_ESC:
@@ -3353,7 +3644,40 @@ _SVar_TableAdd(SVarTable *pTable, const char *sKey, const SVar *pVal)
 }
 
 static SVarKeyBundle
-_Callback_UIEvent(
+_Callback_UIEvent(AppCore *pAppCore, EUIEventType eEventType,
+    const SVar *pUserData, const unsigned int dNumArgs)
+{
+    AppGUI *pApp = (AppGUI*)pAppCore->pOwner;
+    SVarKeyBundle tResult;
+
+    SVARKEYB_INIT(tResult);
+    if (eEventType == UIEVENT_PRINT)
+    {
+        bool_t bValid = pUserData != NULL && dNumArgs > 0 && SVAR_IS_CONSTCHAR(pUserData[0]);
+        if (bValid)
+        {
+            _al_printf(pApp, "%s\n", SVAR_GET_CONSTCHAR(pUserData[0]));
+        }
+        SVARKEYB_BOOL(tResult, "status", bValid);
+        return tResult;
+    }
+    if (bthread_current_id() != pApp->dGUIThreadID)
+    {
+        if (pApp->pOperation == NULL || eEventType == UIEVENT_DEBUG ||
+            eEventType == UIEVENT_PLAY || eEventType == UIEVENT_MODAL_CLOSE ||
+            eEventType == UIEVENT_MODAL_TOOLS ||
+            eEventType == UIEVENT_MODAL_UPDATER)
+        {
+            SVARKEYB_BOOL(tResult, "status", CFALSE);
+            return tResult;
+        }
+        return _Operation_UIRequest(pApp->pOperation, eEventType, pUserData, dNumArgs);
+    }
+    return _ProcessUIEvent(pAppCore, eEventType, pUserData, dNumArgs);
+}
+
+static SVarKeyBundle
+_ProcessUIEvent(
     AppCore *pAppCore,
     EUIEventType eEventType,
     const SVar *pUserData,
@@ -3363,6 +3687,7 @@ _Callback_UIEvent(
     SVarKeyBundle tRetVal;
     uint32_t dModalRetVal;
     const char *sStatusKey = "status";
+    EUIEventType ePreviousEvent;
 
     SVARKEYB_INIT(tRetVal);
 
@@ -3383,6 +3708,8 @@ _Callback_UIEvent(
         str_destroy(&pApp->pWidgets->pString);
     }
 
+    cassert(bthread_current_id() == pApp->dGUIThreadID);
+    ePreviousEvent = pApp->eCurrentUIEvent;
     pApp->eCurrentUIEvent = eEventType;
 
     switch(eEventType)
@@ -3443,7 +3770,11 @@ _Callback_UIEvent(
             break;
         case UIEVENT_EXITAPP:
             {
-                osapp_finish();
+                pApp->bExitRequested = TRUE;
+                if (pApp->pOperation == NULL)
+                {
+                    osapp_finish();
+                }
             }
             break;
 
@@ -4453,6 +4784,10 @@ _Callback_UIEvent(
                     Panel_GetModalUpdater(pApp),
                     TXT_TITLE_UPDATER
                 );
+                pApp->pWidgets->pTextView         = NULL;
+                pApp->pWidgets->pProgressbar      = NULL;
+                pApp->pWidgets->pUpdateCell       = NULL;
+                pApp->pWidgets->pUpdateCancelCell = NULL;
                 switch (dModalRetVal)
                 {
                     case MODAL_UPDATE_APP:
@@ -4480,7 +4815,7 @@ _Callback_UIEvent(
             break;
     }
 
-    pApp->eCurrentUIEvent = UIEVENT_NULL;
+    pApp->eCurrentUIEvent = ePreviousEvent;
 
     UNUSED(pUserData);
 
@@ -4493,7 +4828,7 @@ _Callback_UIEvent(
  ******************************************************************************/
 
 #include <osapp/osmain.h>
-osmain(_Nappgui_Start, _Nappgui_End, "", AppGUI)
+osmain_sync(.04, _Nappgui_Start, _Nappgui_End, _Nappgui_Update, "", AppGUI)
 
 /* #include <osmain.h> */
 /* osmain(_Nappgui_Start, _Nappgui_End, "", AppGUI) */
