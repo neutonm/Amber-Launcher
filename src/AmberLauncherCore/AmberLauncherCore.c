@@ -570,6 +570,17 @@ _LUA_SwitchGame(lua_State* L)
     return 1;
 }
 
+static int
+_LUA_SHA256HashFile(lua_State* L)
+{
+    const char* sPath = luaL_checkstring(L, 1);
+    char* sHash       = AmberLauncher_SHA256_HashFile(sPath);
+
+    lua_pushstring(L, sHash);
+    free(sHash);
+    return 1;
+}
+
 static const 
 luaL_Reg AL[] = 
 {
@@ -586,6 +597,7 @@ luaL_Reg AL[] =
     {"SetRegistryKey",              LUA_SetRegistryKey          },
     {"GetRegistryKey",              LUA_GetRegistryKey          },
     {"ConvertMP3ToWAV",             LUA_ConvertMP3ToWAV         },
+    {"SHA256HashFile",              _LUA_SHA256HashFile         },
     {"ArchiveExtract",              LUA_ArchiveExtract          },
     {"INILoad",                     LUA_INILoad                 },
     {"INISave",                     LUA_INISave                 },
