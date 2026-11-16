@@ -2092,6 +2092,37 @@ _AutoUpdate_EnsureDirectory(const char *sPath)
     return bSuccess && bfile_dir_create(sPath, NULL);
 }
 
+static String *
+_AutoUpdate_FileURL(const char *sManifestURL, const char *sPath)
+{
+    const char          *sRootEnd = sManifestURL + strcspn(sManifestURL, "?#");
+    const unsigned char *p        = (const unsigned char *)sPath;
+    Stream              *pURL     = stm_memory(256);
+    String              *sURL     = NULL;
+
+    while (sRootEnd > sManifestURL && sRootEnd[-1] != '/')
+    {
+        --sRootEnd;
+    }
+    stm_write(pURL, (const byte_t *)sManifestURL, (uint32_t)(sRootEnd - sManifestURL));
+    while (*p != '\0')
+    {
+        if ((*p >= 'a' && *p <= 'z') || (*p >= 'A' && *p <= 'Z') ||
+            (*p >= '0' && *p <= '9') || strchr("-._~/", *p) != NULL)
+        {
+            stm_write_u8(pURL, *p);
+        }
+        else
+        {
+            stm_printf(pURL, "%%%02X", (unsigned int)*p);
+        }
+        ++p;
+    }
+    sURL = stm_str(pURL);
+    stm_close(&pURL);
+    return sURL;
+}
+
 static bool_t
 _AutoUpdate_Update_DownloadFiles(
     AppGUI *pApp,
@@ -2102,20 +2133,13 @@ _AutoUpdate_Update_DownloadFiles(
     real32_t fProgressMax,
     bool_t bForceDownload)
 {
-    const char *sRootEnd = sManifestURL + strcspn(sManifestURL, "?#");
-    while (sRootEnd > sManifestURL && sRootEnd[-1] != '/')
-    {
-        --sRootEnd;
-    }
-
     arrst_foreach(elem, pJson->files, InetUpdaterFile)
         String  *sLocalPath    = str_cpath("%s/%s", sDestination, tc(elem->path));
         String  *sParent       = NULL;
         bool_t  bFileExists    = hfile_exists(tc(sLocalPath), 0);
         bool_t  bSuccess       = TRUE;
         char    *sSHA256Hash   = AmberLauncher_SHA256_HashFile(tc(sLocalPath));
-        String  *sDownloadLink = str_printf("%.*s%s",
-            (int)(sRootEnd - sManifestURL), sManifestURL, tc(elem->path));
+        String  *sDownloadLink = _AutoUpdate_FileURL(sManifestURL, tc(elem->path));
         Stream  *pDownloadFile = NULL;
         Stream  *pOutputFile   = NULL;
         uint32_t dResult       = 0;
@@ -2217,7 +2241,8 @@ AutoUpdate_Update(AppGUI *pApp, bool_t bForceDownload)
     const char *sLauncherPath = SVAR_IS_CONSTCHAR(tLauncherPath) ? SVAR_GET_CONSTCHAR(tLauncherPath) : ".";
     const char *sGamePath     = SVAR_IS_CONSTCHAR(tGamePath) ? SVAR_GET_CONSTCHAR(tGamePath) : sLauncherPath;
 
-    pApp->bUpdaterModSkipped = FALSE;
+    pApp->bUpdaterModSkipped      = FALSE;
+    pApp->bUpdaterLauncherUpdated = FALSE;
 
     pJsonLauncher = _AutoUpdate_LoadManifest(pApp, sLauncherManifestURL);
     if (pJsonLauncher == NULL)
@@ -2289,6 +2314,7 @@ AutoUpdate_Update(AppGUI *pApp, bool_t bForceDownload)
     _al_printf(pApp, pApp->bUpdaterModSkipped ?
         "[Updater] Launcher update done. Mod update was skipped.\n" :
         "[Updater] Update done!\n");
+    pApp->bUpdaterLauncherUpdated = bLauncherUpdate;
     AmberLauncher_Update(pApp->pAppCore, CTRUE);
 
     return TRUE;
@@ -4407,6 +4433,7 @@ _Callback_UIEvent(
                     case MODAL_UPDATE_APP:
                         SVARKEYB_BOOL(tRetVal, sStatusKey, CTRUE);
                         SVARKEYB_BOOL(tRetVal, "modSkipped", pApp->bUpdaterModSkipped);
+                        SVARKEYB_BOOL(tRetVal, "launcherUpdated", pApp->bUpdaterLauncherUpdated);
                         break;
                     case ekGUI_CLOSE_BUTTON:
                     case ekGUI_CLOSE_ESC:

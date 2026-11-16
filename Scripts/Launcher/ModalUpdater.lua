@@ -39,17 +39,24 @@ function ModalShowUpdater()
     local uiResponse = AL.UICall(UIEVENT.MODAL_UPDATER)
     if uiResponse and uiResponse.status == true then
 
-        local message = "Update successful!\n\nLauncher will restart now..."
+        local message = "Update successful!"
         if uiResponse.modSkipped then
-            message = "Launcher updated successfully.\n\n"..
-                      "Warning: the mod manifest was unavailable, so the mod update was skipped.\n\n"..
-                      "Launcher will restart now..."
+            message = message.."\n\nWarning: the mod manifest was unavailable, so the mod update was skipped."
+        end
+        if uiResponse.launcherUpdated then
+            message = message.."\n\nLauncher will restart now..."
         end
 
         AL.UICall(
             UIEVENT.MODAL_MESSAGE,
             message
         )
+
+        if not uiResponse.launcherUpdated then
+            AL_DetectMod(GAME_DESTINATION_PATH, true)
+            AL.UICall(UIEVENT.MAIN)
+            return
+        end
 
         if OS_NAME == "Windows" then
             os.execute(LAUNCHER_NAME..".exe")
