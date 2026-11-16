@@ -29,7 +29,7 @@ Table Of Contents:
 - - It's step into the future, providing app usage for multiple mods
 - - partially done, check _const.lua > GAME_MOD_XXX vars
 - - [X] Realtime game/mod/expansion switch
-- - [ ] website: rearrange update files, place them in proper game folders on a server, update manifests
+- - [X] website: rearrange update files, place them in proper game folders on a server, update manifests
 - [x] Update LICENSE file
 - [ ] Write code style document
 - [ ] Clang format
