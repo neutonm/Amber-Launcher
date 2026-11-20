@@ -128,6 +128,13 @@ typedef struct _GUIOptElement
     unsigned int        dChoice;
 } GUIOptElement;
 
+typedef struct _GUIOptions
+{
+    struct _AppGUI     *pApp;
+    GUIOptElement       tElements[MAX_OPT_ELEMS];
+    unsigned int        dCount;
+} GUIOptions;
+
 typedef struct _GUIToolElement
 {
     SVar                tLuaRef;
@@ -149,12 +156,8 @@ typedef struct _GUIModElement
     String             *sDescription;
     String             *sVersion;
     String             *sWebsite;
-    String             *sRoot;
-    String             *sGame;
     String             *sScreenshot;
-    const SVar         *pOnInstallCb;
-    const SVar         *pOnUninstallCb;
-    SVarTable          *pOptionsTable;
+    GUIOptions         *pOptions;
 
     bool_t              bActive;
 } GUIModElement;
@@ -213,7 +216,6 @@ typedef struct _AppGUIWidgets
 
 typedef struct _AppGUIElementDB
 {
-    GUIOptElement      *pOptElementArray;
     GUIToolElement     *pToolElementArray;
     GUIModElement      *pModElementArray;
 } AppGUIElementDB;
@@ -409,7 +411,7 @@ Panel_GetModalLocalisation(AppGUI *pApp);
  * @return      Panel*
  */
 extern Panel *
-Panel_GetModalOptions(AppGUI *pApp);
+Panel_GetModalOptions(GUIOptions *pOptions);
 
 /**
  * @relatedalso Panel
@@ -581,7 +583,7 @@ Callback_OnDrawLocalisation(AppGUI *pApp, Event *e);
  * @param       e
  */
 extern void
-Callback_OnButtonModalOptions(AppGUI *pApp, Event *e);
+Callback_OnButtonModalOptions(GUIOptions *pOptions, Event *e);
 
 /**
  * @relatedalso Callback

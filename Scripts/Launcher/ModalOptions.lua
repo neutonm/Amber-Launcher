@@ -63,43 +63,6 @@ function AL_UnregisterOption(id)
     return true
 end
 
-local function _BuildOptions(context)
-
-    local sections  = {}
-    local byName    = {}
-    local displayed = {}
-
-    for _, option in ipairs(_Options) do
-        -- Match MAX_OPT_ELEMS in the native Settings modal.
-        if #displayed >= 32 then
-            break
-        end
-        local choices = option.optTitle
-        if type(choices) == "function" then
-            choices = choices(context)
-        end
-        -- Empty choice providers (e.g. no available languages) have no control.
-        if choices == nil or #choices > 0 then
-            local widget = {
-                id       = option.id,
-                title    = option.title,
-                type     = option.type,
-                optTitle = choices,
-                default  = option.read(context)
-            }
-            local section = byName[option.section]
-            if not section then
-                section                 = {sectionName = option.section}
-                byName[option.section]  = section
-                sections[#sections + 1] = section
-            end
-            section[#section + 1]     = widget
-            displayed[#displayed + 1] = {definition = option, widget = widget}
-        end
-    end
-    return sections, displayed
-end
-
 function ModalShowOptions()
 
     if GAME_CURRENT == GAME_NULL then return false end
@@ -107,7 +70,7 @@ function ModalShowOptions()
     local game       = GAME_CURRENT
     local generation = _Generation
     local context    = AL_ConfigContext()
-    local ok, data, displayed = pcall(_BuildOptions, context)
+    local ok, data, displayed = pcall(AL_BuildOptions, _Options, context)
     context:Close(false)
     if not ok then
         AL_print("[Error]: failed to read settings: "..tostring(data))
@@ -122,22 +85,16 @@ function ModalShowOptions()
     -- Reopen after the modal, so unrelated edits made while it was open survive.
     local success = true
     local applied, err = pcall(function()
+        local values = AL_ReadOptionValues(displayed, response.values)
         for _, shown in ipairs(displayed) do
             local option = shown.definition
             local widget = shown.widget
-            local value  = response[option.id]
+            local value  = values[option.id]
             if _OptionsByID[option.id] == option and
                 value ~= nil and tostring(value) ~= tostring(widget.default) then
-                local valid = option.type == UIWIDGET.EDIT and type(value) == "string"
-                if option.type ~= UIWIDGET.EDIT and type(value) == "number" then
-                    local count = widget.optTitle and #widget.optTitle or 2
-                    valid       = value % 1 == 0 and value >= 0 and value < count
-                end
-                if valid then
-                    widget.value = value
-                    if option.callback(widget, context) == false then
-                        success = false
-                    end
+                widget.value = value
+                if option.callback(widget, context) == false then
+                    success = false
                 end
             end
         end

@@ -24,12 +24,13 @@ local function _UpdateMods()
     for _, m in ipairs(newMods) do
         local prev = oldById[m.id]
         if prev and prev.version and m.version and
-            _isVersionNewer(m.version, prev.version) then
+            _isVersionNewer(m.version, prev.version) and AL_IsModActive(m.id) then
             AL_print(string.format(
                 "[Updater] %s upgraded %s → %s - reinstalling...",
                 m.id, tostring(prev.version), tostring(m.version)
             ))
-            AL_ReinstallMod(m.id)
+            local ok, err = AL_ReinstallMod(m.id)
+            if not ok then AL_print("[Updater] Failed to reinstall "..m.id..": "..tostring(err)) end
         end
     end
 end

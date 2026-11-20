@@ -373,6 +373,10 @@ typedef struct SVarKeyBundle
 #define SVARKEYB_LUATABLE(b, key, ptr)                                      \
     SVARKEYB_PUSH(b, key, SVAR_LUATABLE, ptr)
 
+/* Misc */
+#define SVAR_FLAG_OWNED   (1U << 31)
+#define SVAR_LUA_REF_NONE (-1)
+
 /******************************************************************************
  * COMMON PREPROCESSOR FUNCTIONALITY
  ******************************************************************************/

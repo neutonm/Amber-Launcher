@@ -21,20 +21,17 @@ This mod refreshes world map by replacing the base texture with a icon-rich vers
     },
   },
 
-  onInstall = function(ctx)
-  end,
-
-  onUninstall = function(ctx)
-  end,
-
-  onOption = function(ctx)
+  onApply = function(ctx)
   end,
 
   options = {
-    extramapicons = {
-      type    = "enum",
-      values  = {1},
-      default = 1
+    {
+      id       = "markers",
+      title    = "Map icons:",
+      type     = UIWIDGET.RADIO,
+      optTitle = {"Shops", "Teachers", "Everything"},
+      values   = {"shops", "teachers", "all"},
+      default  = "all"
     }
   }
 }

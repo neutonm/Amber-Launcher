@@ -120,6 +120,7 @@ static const real32_t _fMinBtnWidth         = 128.f;
 typedef enum
 {
     GUIOP_CONFIGURE,
+    GUIOP_MODS,
     GUIOP_UPDATE,
     GUIOP_CHECK_UPDATES
 } EGUIOperation;
@@ -241,9 +242,6 @@ _Nappgui_Update(AppGUI *pApp, const real64_t prtime, const real64_t crtime);
 
 static SVarTable*
 _SVar_TableNew(size_t dInitialCap);
-
-static void
-_SVar_TableDelete(SVarTable **pTable);
 
 static void
 _SVar_TableAdd(SVarTable *pTable, const char *sKey, const SVar *pVal);
@@ -1223,11 +1221,201 @@ Panel_GetModalLocalisation(AppGUI *pApp)
     return pPanelMain;
 }
 
+static const SVar *
+_SVar_Field(const SVarTable *pTable, const char *sKey)
+{
+    size_t i;
+    for (i = 0; i < pTable->dCount; ++i)
+    {
+        const SVarTableEntry *pEntry = &pTable->pEntries[i];
+        if (SVAR_IS_CONSTCHAR(pEntry->tKey) && strcmp(SVAR_GET_CONSTCHAR(pEntry->tKey), sKey) == 0)
+        {
+            return &pEntry->tValue;
+        }
+    }
+    return NULL;
+}
+
+static const SVar *
+_SVar_Index(const SVarTable *pTable, size_t dIndex)
+{
+    size_t i;
+    for (i = 0; i < pTable->dCount; ++i)
+    {
+        const SVarTableEntry *pEntry = &pTable->pEntries[i];
+        if (SVAR_IS_DOUBLE(pEntry->tKey) && SVAR_GET_DOUBLE(pEntry->tKey) == (double)dIndex)
+        {
+            return &pEntry->tValue;
+        }
+    }
+    return NULL;
+}
+
+static void
+_SVar_String(SVar *pValue, const char *sText)
+{
+    char *sCopy = (char*)malloc(strlen(sText) + 1);
+    cassert_no_null(sCopy);
+    strcpy(sCopy, sText);
+    SVAR_CONSTCHAR(*pValue, sCopy);
+    pValue->dFlags |= SVAR_FLAG_OWNED;
+}
+
+static void
+_Options_Free(GUIOptions **pOptions)
+{
+    unsigned int i, j;
+    if (*pOptions == NULL)
+    {
+        return;
+    }
+    for (i = 0; i < (*pOptions)->dCount; ++i)
+    {
+        GUIOptElement *pElem = &(*pOptions)->tElements[i];
+        str_destopt(&pElem->sKeyID);
+        str_destopt(&pElem->sTitle);
+        str_destopt(&pElem->sOutputString);
+        for (j = 0; j < APP_MAX_ELEMENTS; ++j)
+        {
+            str_destopt(&pElem->sOptTitle[j]);
+        }
+    }
+    heap_delete(pOptions, GUIOptions);
+}
+
+static GUIOptions *
+_Options_Load(AppGUI *pApp, const SVarTable *pTable)
+{
+    GUIOptions *pOptions = heap_new0(GUIOptions);
+    size_t i, j, k;
+    pOptions->pApp = pApp;
+    for (i = 1; i <= pTable->dCount; ++i)
+    {
+        const SVar *pSection = _SVar_Index(pTable, i);
+        const SVarTable *pGroup;
+        if (pSection == NULL || pSection->eType != CTYPE_LUATABLE)
+        {
+            continue;
+        }
+        pGroup = (SVarTable*)SVAR_GET_LUATABLE(*pSection);
+        for (j = 1; j <= pGroup->dCount; ++j)
+        {
+            const SVar *pEntry = _SVar_Index(pGroup, j);
+            const SVarTable *pWidget;
+            const SVar *pID, *pTitle, *pType, *pDefault, *pChoices;
+            GUIOptElement *pElem;
+            double fType, fValue;
+            unsigned int dLimit;
+            if (pEntry == NULL || pEntry->eType != CTYPE_LUATABLE)
+            {
+                continue;
+            }
+            if (pOptions->dCount == MAX_OPT_ELEMS)
+            {
+                goto invalid;
+            }
+            pWidget  = (SVarTable*)SVAR_GET_LUATABLE(*pEntry);
+            pID      = _SVar_Field(pWidget, "id");
+            pTitle   = _SVar_Field(pWidget, "title");
+            pType    = _SVar_Field(pWidget, "type");
+            pDefault = _SVar_Field(pWidget, "default");
+            pChoices = _SVar_Field(pWidget, "optTitle");
+            if (pID == NULL || !SVAR_IS_CONSTCHAR(*pID) || pTitle == NULL ||
+                !SVAR_IS_CONSTCHAR(*pTitle) || pType == NULL || !SVAR_IS_DOUBLE(*pType) || pDefault == NULL)
+            {
+                goto invalid;
+            }
+            fType = SVAR_GET_DOUBLE(*pType);
+            if (!(fType > UI_WIDGET_NULL && fType < UI_WIDGET_MAX) || fType != (unsigned int)fType)
+            {
+                goto invalid;
+            }
+            pElem         = &pOptions->tElements[pOptions->dCount++];
+            pElem->sKeyID = str_c(SVAR_GET_CONSTCHAR(*pID));
+            pElem->sTitle = str_c(SVAR_GET_CONSTCHAR(*pTitle));
+            pElem->eType  = (EUIWidgetType)fType;
+            if (pChoices != NULL && pChoices->eType == CTYPE_LUATABLE)
+            {
+                const SVarTable *pLabels = (SVarTable*)SVAR_GET_LUATABLE(*pChoices);
+                if (pLabels->dCount > APP_MAX_ELEMENTS)
+                {
+                    goto invalid;
+                }
+                for (k = 1; k <= pLabels->dCount; ++k)
+                {
+                    const SVar *pLabel = _SVar_Index(pLabels, k);
+                    if (pLabel == NULL || !SVAR_IS_CONSTCHAR(*pLabel))
+                    {
+                        goto invalid;
+                    }
+                    pElem->sOptTitle[pElem->dNumOfOptions++] = str_c(SVAR_GET_CONSTCHAR(*pLabel));
+                }
+            }
+            if (pElem->eType == UI_WIDGET_EDIT)
+            {
+                if (!SVAR_IS_CONSTCHAR(*pDefault))
+                {
+                    goto invalid;
+                }
+                pElem->sOutputString = str_c(SVAR_GET_CONSTCHAR(*pDefault));
+                continue;
+            }
+            if (!SVAR_IS_DOUBLE(*pDefault) ||
+                (pElem->eType != UI_WIDGET_CHECKBOX && pElem->dNumOfOptions == 0))
+            {
+                goto invalid;
+            }
+            dLimit = pElem->eType == UI_WIDGET_CHECKBOX ? 1 :
+                pElem->eType == UI_WIDGET_LISTBOX ? (1U << pElem->dNumOfOptions) - 1 : pElem->dNumOfOptions - 1;
+            fValue = SVAR_GET_DOUBLE(*pDefault);
+            if (!(fValue >= 0 && fValue <= dLimit) || fValue != (unsigned int)fValue)
+            {
+                goto invalid;
+            }
+            pElem->dChoice = (unsigned int)fValue;
+        }
+    }
+    return pOptions;
+
+invalid:
+    _al_printf(pApp, "Invalid settings form.\n");
+    _Options_Free(&pOptions);
+    return NULL;
+}
+
+static bool_t
+_Options_Show(GUIOptions *pOptions, const char *sTitle)
+{
+    return _Nappgui_ShowModal(pOptions->pApp, Panel_GetModalOptions(pOptions), sTitle) == MODAL_ACCEPT;
+}
+
+static SVarTable *
+_Options_Values(const GUIOptions *pOptions)
+{
+    SVarTable *pValues = _SVar_TableNew(pOptions->dCount);
+    unsigned int i;
+    for (i = 0; i < pOptions->dCount; ++i)
+    {
+        const GUIOptElement *pElem = &pOptions->tElements[i];
+        SVar tValue;
+        if (pElem->eType == UI_WIDGET_EDIT)
+        {
+            _SVar_String(&tValue, tc(pElem->sOutputString));
+        }
+        else
+        {
+            SVAR_INT(tValue, (int)pElem->dChoice);
+        }
+        _SVar_TableAdd(pValues, tc(pElem->sKeyID), &tValue);
+    }
+    return pValues;
+}
+
 static Panel*
-_Panel_GetModalOptionSubpanel(AppGUI *pApp)
+_Panel_GetModalOptionSubpanel(GUIOptions *pOptions)
 {
     Panel       *pPanelMain  = panel_scroll(FALSE,TRUE);
-    Layout      *pLayoutMain = layout_create(1,MAX_OPT_ELEMS);
+    Layout      *pLayoutMain = layout_create(1, MAX_OPT_ELEMS * 2);
     Font        *pFontBold   = font_system(16, ekFBOLD | ekFPIXELS);
 
     unsigned int i      = 0;
@@ -1238,19 +1426,18 @@ _Panel_GetModalOptionSubpanel(AppGUI *pApp)
 
     GUIOptElement *pElem;
 
-    cassert_no_null(pApp->pElementSets->pOptElementArray);
 
     /* Layout: Main */
     layout_skcolor(pLayoutMain, gui_line_color());
     layout_margin4(pLayoutMain, _fDefMarg, _fDefMarg * 4.f, _fDefMarg, _fDefMarg);
 
-    for(i = 0; i < MAX_OPT_ELEMS; i ++)
+    for(i = 0; i < pOptions->dCount; i ++)
     {
         Label           *pLabel;
         Layout          *pLayoutLabelRow;
         unsigned int     dCurRow;
 
-        pElem = &pApp->pElementSets->pOptElementArray[i];
+        pElem = &pOptions->tElements[i];
         assert(IS_VALID(pElem));
 
         if (pElem->eType == UI_WIDGET_NULL)
@@ -1277,7 +1464,8 @@ _Panel_GetModalOptionSubpanel(AppGUI *pApp)
         {
             case UI_WIDGET_RADIO:
                 {
-                    Layout *pLayoutButton   = layout_create(pElem->dNumOfOptions*2, 1);
+                    unsigned int dColumns   = pElem->dNumOfOptions < 3 ? pElem->dNumOfOptions : 3;
+                    Layout *pLayoutButton   = layout_create(dColumns * 2, (pElem->dNumOfOptions + 2) / 3);
                     Layout *pLayoutExtraRow = layout_create(1,1);
 
                     /* Store layout instead of button because there are multiple buttons present there */
@@ -1289,7 +1477,8 @@ _Panel_GetModalOptionSubpanel(AppGUI *pApp)
                     {
                         Label *pLabelOpt    = label_create();
                         Button *pButton     = button_radio();
-                        unsigned int pos    = j * 2;
+                        unsigned int pos    = (j % 3) * 2;
+                        unsigned int row    = j / 3;
 
                         label_text(pLabelOpt, tc(pElem->sOptTitle[j]));
                         label_align(pLabelOpt, ekLEFT);
@@ -1300,13 +1489,13 @@ _Panel_GetModalOptionSubpanel(AppGUI *pApp)
                             button_state(pButton, ekGUI_ON);
                         }
 
-                        layout_label(pLayoutButton, pLabelOpt, pos, 0);
-                        layout_button(pLayoutButton, pButton, pos + 1, 0);
+                        layout_label(pLayoutButton, pLabelOpt, pos, row);
+                        layout_button(pLayoutButton, pButton, pos + 1, row);
 
                         layout_hexpand(pLayoutButton, pos);
                         layout_hexpand(pLayoutButton, pos+1);
-                        layout_halign(pLayoutButton, pos, 0, ekLEFT);
-                        layout_halign(pLayoutButton, pos+1, 0, ekLEFT);
+                        layout_halign(pLayoutButton, pos, row, ekLEFT);
+                        layout_halign(pLayoutButton, pos+1, row, ekLEFT);
                         layout_hsize(pLayoutButton, pos, 128);
                         layout_hsize(pLayoutButton, pos+1, 64);
                     }
@@ -1315,7 +1504,6 @@ _Panel_GetModalOptionSubpanel(AppGUI *pApp)
                     layout_margin(pLayoutButton, LAYOUT_DEFAULT_MARGIN);
                     layout_skcolor(pLayoutButton, gui_line_color());
 
-                    layout_hsize(pLayoutExtraRow, 0, 512);
                     layout_layout(pLayoutExtraRow, pLayoutButton, 0, 0);
                     layout_layout(pLayoutMain, pLayoutExtraRow, 0, dRow+1);
 
@@ -1365,7 +1553,7 @@ _Panel_GetModalOptionSubpanel(AppGUI *pApp)
 
                     pElem->pElement = pEdit;
 
-                    edit_text(pEdit, tc(pElem->sOptTitle[0]));
+                    edit_text(pEdit, tc(pElem->sOutputString));
 
                     layout_edit(pLayoutLabelRow, pEdit, 1, 0);
                     layout_hsize(pLayoutLabelRow, 1, 192.f);
@@ -1388,8 +1576,6 @@ _Panel_GetModalOptionSubpanel(AppGUI *pApp)
                         listbox_add_elem(pListbox, tc(pElem->sOptTitle[j]), NULL);
                         listbox_check(pListbox, j, bCheckbox);
                     }
-
-                    layout_listbox(pLayoutLabelRow, pListbox, 0, dRow+1);
 
                     layout_hsize(pLayoutExtraRow, 0, 256.f);
                     layout_listbox(pLayoutExtraRow, pListbox, 0, 0);
@@ -1423,10 +1609,10 @@ _Panel_GetModalOptionSubpanel(AppGUI *pApp)
 }
 
 Panel*
-Panel_GetModalOptions(AppGUI *pApp)
+Panel_GetModalOptions(GUIOptions *pOptions)
 {
     Panel       *pPanelMain         = panel_create();
-    Panel       *pPanelSubpanel     = _Panel_GetModalOptionSubpanel(pApp);
+    Panel       *pPanelSubpanel     = _Panel_GetModalOptionSubpanel(pOptions);
     Layout      *pLayoutMain        = layout_create(1,2);
     Layout      *pLayoutButtons     = layout_create(4,1);
     Button      *pButtonAccept      = button_push();
@@ -1435,13 +1621,13 @@ Panel_GetModalOptions(AppGUI *pApp)
     /* Button: Accept */
     button_text(pButtonAccept, TXT_BTN_ACCEPT);
     button_tag(pButtonAccept, MODAL_ACCEPT);
-    button_OnClick(pButtonAccept, listener(pApp, Callback_OnButtonModalOptions, AppGUI));
+    button_OnClick(pButtonAccept, listener(pOptions, Callback_OnButtonModalOptions, GUIOptions));
     button_min_width(pButtonAccept, 128.f);
 
     /* Button: Cancel */
     button_text(pButtonCancel, TXT_BTN_CANCEL);
     button_tag(pButtonCancel, MODAL_CANCEL);
-    button_OnClick(pButtonCancel, listener(pApp, Callback_OnButtonModalOptions, AppGUI));
+    button_OnClick(pButtonCancel, listener(pOptions, Callback_OnButtonModalOptions, GUIOptions));
     button_min_width(pButtonCancel, 128.f);
 
     /* Layout: Buttons */
@@ -1472,19 +1658,56 @@ _Callback_OnLabelModManagerSubpanel(String *pLabelText, Event *e)
     unref(e);
 }
 
+static void
+_Mods_Clear(AppGUI *pApp)
+{
+    unsigned int i;
+    for (i = 0; i < MAX_MOD_ELEMS; ++i)
+    {
+        GUIModElement *pMod = &pApp->pElementSets->pModElementArray[i];
+        str_destopt(&pMod->sID);
+        str_destopt(&pMod->sName);
+        str_destopt(&pMod->sAuthor);
+        str_destopt(&pMod->sDescription);
+        str_destopt(&pMod->sVersion);
+        str_destopt(&pMod->sWebsite);
+        str_destopt(&pMod->sScreenshot);
+        _Options_Free(&pMod->pOptions);
+    }
+    memset(pApp->pElementSets->pModElementArray, 0, sizeof(GUIModElement) * MAX_MOD_ELEMS);
+}
+
+static String *
+_Mod_Text(const SVarTable *pTable, const char *sKey)
+{
+    const SVar *pValue = _SVar_Field(pTable, sKey);
+    return str_c(pValue != NULL && SVAR_IS_CONSTCHAR(*pValue) ? SVAR_GET_CONSTCHAR(*pValue) : "");
+}
+
+static void
+_Callback_ModSettings(GUIModElement *pMod, Event *e)
+{
+    if (pMod->pOptions != NULL)
+    {
+        _Options_Show(pMod->pOptions, tc(pMod->sName));
+    }
+    unref(e);
+}
+
 static Panel*
 _Panel_GetModalModManagerSubpanel(AppGUI *pApp, const unsigned int dModIndex)
 {
     Panel       *pPanelMain         = panel_scroll(FALSE,TRUE);
     Layout      *pLayoutMain        = layout_create(1,1);
     Layout      *pLayoutScreen      = layout_create(1,1);
-    Layout      *pLayoutModPreview  = layout_create(1, 6);
+    Layout      *pLayoutModPreview  = layout_create(1, 7);
     Layout      *pLayoutDescription = layout_create(1,1);
     Label       *pLabelModTitle     = label_create();
     Label       *pLabelModAuthor    = label_create();
     Label       *pLabelModDesc      = label_create();
     Label       *pLabelModVersion   = label_create();
     Label       *pLabelModWebsite   = label_create();
+    Button      *pSettings         = button_push();
     ImageView   *pImageViewScreen   = imageview_create();
     Font        *pFontBold          = font_system(16, ekFBOLD | ekFPIXELS);
     Font        *pFontItalic        = font_system(16, ekFITALIC | ekFPIXELS );
@@ -1552,6 +1775,11 @@ _Panel_GetModalModManagerSubpanel(AppGUI *pApp, const unsigned int dModIndex)
     layout_label(pLayoutModPreview, pLabelModAuthor, 0, 3);
     layout_label(pLayoutModPreview, pLabelModWebsite, 0, 4);
     layout_layout(pLayoutModPreview, pLayoutDescription, 0, 5);
+
+    button_text(pSettings, "Settings");
+    button_OnClick(pSettings, listener(pElem, _Callback_ModSettings, GUIModElement));
+    layout_button(pLayoutModPreview, pSettings, 0, 6);
+    layout_show_row(pLayoutModPreview, 6, pElem->pOptions != NULL && pElem->pOptions->dCount > 0);
 
     /* Layout: Main */
     layout_margin4(pLayoutMain, 0, _fDefMarg, 0, _fDefMarg);
@@ -2659,7 +2887,7 @@ Callback_OnButtonModalLocalisation(AppGUI *pApp, Event *e)
 }
 
 void
-Callback_OnButtonModalOptions(AppGUI *pApp, Event *e)
+Callback_OnButtonModalOptions(GUIOptions *pOptions, Event *e)
 {
     Button *pButton             = event_sender(e, Button);
     const uint32_t dButtonTag   = button_get_tag(pButton);
@@ -2670,9 +2898,9 @@ Callback_OnButtonModalOptions(AppGUI *pApp, Event *e)
         if (dButtonTag == MODAL_ACCEPT)
         {
             unsigned int i;
-            for(i = 0; i < MAX_OPT_ELEMS; i++)
+            for(i = 0; i < pOptions->dCount; i++)
             {
-                GUIOptElement *pElem = &pApp->pElementSets->pOptElementArray[i];
+                GUIOptElement *pElem = &pOptions->tElements[i];
 
                 if (pElem->eType == UI_WIDGET_NULL)
                 {
@@ -2689,8 +2917,8 @@ Callback_OnButtonModalOptions(AppGUI *pApp, Event *e)
                             /* Layout because it contains multiple buttons */
                             for(j = 0; j < pElem->dNumOfOptions; j++)
                             {
-                                unsigned int pos           = j * 2;
-                                const Button *pRadioButton = layout_get_button(pLayout, pos + 1, 0);
+                                unsigned int pos           = (j % 3) * 2;
+                                const Button *pRadioButton = layout_get_button(pLayout, pos + 1, j / 3);
                                 const gui_state_t eState   = button_get_state(pRadioButton);
 
                                 if (eState == ekGUI_ON)
@@ -2750,7 +2978,7 @@ Callback_OnButtonModalOptions(AppGUI *pApp, Event *e)
             }
         }
 
-        window_stop_modal(pApp->pWindows->pWindowModal, dButtonTag);
+        window_stop_modal(pOptions->pApp->pWindows->pWindowModal, dButtonTag);
         return;
     }
 }
@@ -2907,6 +3135,9 @@ _Operation_Main(GUIOperation *pOperation)
     {
         case GUIOP_CONFIGURE:
             AmberLauncher_ConfigureStart(pApp->pAppCore);
+            return 1;
+        case GUIOP_MODS:
+            AmberLauncher_ProcessUISideButton(pApp->pAppCore, CSIDEBUTTON_MODS);
             return 1;
         case GUIOP_UPDATE:
             return AutoUpdate_Update(pApp, FALSE) ? 1 : 0;
@@ -3337,8 +3568,6 @@ _Nappgui_Start(void)
     cassert_no_null(pApp->pLocalizations);
 
     /* AppGUI > AppGUIElementDB */
-    pApp->pElementSets->pOptElementArray    = heap_new_n0(MAX_OPT_ELEMS, GUIOptElement);
-    cassert_no_null(pApp->pElementSets->pOptElementArray);
 
     pApp->pElementSets->pToolElementArray   = heap_new_n0(MAX_TOOL_ELEMS, GUIToolElement);
     cassert_no_null(pApp->pElementSets->pToolElementArray);
@@ -3403,7 +3632,8 @@ _Nappgui_Start(void)
             }
         }
 
-        _SVar_TableDelete(&pArgvTable);
+        free(pArgvTable->pEntries);
+        free(pArgvTable);
     }
 
     /* Main Window */
@@ -3464,21 +3694,6 @@ _Nappgui_End(AppGUI **pApp)
     /* AppGUI > Element Sets */
     if (IS_VALID((*pApp)->pElementSets))
     {
-        /* Options */
-        for (i = 0; i < MAX_OPT_ELEMS; ++i)
-        {
-            GUIOptElement *pElem = &(*pApp)->pElementSets->pOptElementArray[i];
-
-            str_destopt(&pElem->sKeyID);
-            str_destopt(&pElem->sOutputString);
-            str_destopt(&pElem->sTitle);
-
-            for (j = 0; j < APP_MAX_ELEMENTS; ++j)
-                str_destopt(&pElem->sOptTitle[j]);
-        }
-        heap_delete_n(&(*pApp)->pElementSets->pOptElementArray, MAX_OPT_ELEMS, GUIOptElement);
-        (*pApp)->pElementSets->pOptElementArray = NULL;
-
         /* Tools */
         for (i = 0; i < MAX_TOOL_ELEMS; ++i)
         {
@@ -3493,20 +3708,7 @@ _Nappgui_End(AppGUI **pApp)
         (*pApp)->pElementSets->pToolElementArray = NULL;
 
         /* Mods */
-        for (i = 0; i < MAX_MOD_ELEMS; ++i)
-        {
-            GUIModElement *pElem = &(*pApp)->pElementSets->pModElementArray[i];
-
-            str_destopt(&pElem->sID);
-            str_destopt(&pElem->sName);
-            str_destopt(&pElem->sAuthor);
-            str_destopt(&pElem->sDescription);
-            str_destopt(&pElem->sVersion);
-            str_destopt(&pElem->sWebsite);
-            str_destopt(&pElem->sRoot);
-            str_destopt(&pElem->sGame);
-            str_destopt(&pElem->sScreenshot);
-        }
+        _Mods_Clear(*pApp);
         heap_delete_n(&(*pApp)->pElementSets->pModElementArray, MAX_MOD_ELEMS, GUIModElement);
         (*pApp)->pElementSets->pModElementArray = NULL;
 
@@ -3583,6 +3785,11 @@ _Callback_OnButtonMainWindow(AppGUI* pApp, Event* e)
         return;
     }
 
+    if (dTag == CSIDEBUTTON_MODS)
+    {
+        _Operation_Start(pApp, GUIOP_MODS);
+        return;
+    }
     bVarRet = (bool_t)AmberLauncher_ProcessUISideButton(pApp->pAppCore, dTag);
     if (bVarRet == FALSE)
     {
@@ -3688,42 +3895,23 @@ _SVar_TableNew(size_t dInitialCap)
 {
     SVarTable *pTable = (SVarTable*)calloc(1, sizeof(SVarTable));
     assert(IS_VALID(pTable));
-
-    pTable->dCount    = 0;
-    pTable->pEntries  = (SVarTableEntry*)calloc(dInitialCap ? dInitialCap : 1,
-                          sizeof(SVarTableEntry));
+    pTable->dLuaRef  = SVAR_LUA_REF_NONE;
+    pTable->pEntries = (SVarTableEntry*)calloc(dInitialCap ? dInitialCap : 1, sizeof(SVarTableEntry));
     assert(IS_VALID(pTable->pEntries));
-
     return pTable;
-}
-
-static void
-_SVar_TableDelete(SVarTable **pTable)
-{
-    SVarTable *t;
-
-    assert(IS_VALID(pTable));
-    t = *pTable;
-    assert(IS_VALID(t));
-
-    free(t->pEntries);
-    t->pEntries = NULL;
-    t->dCount = 0;
-
-    free(t);
-    *pTable = NULL;
 }
 
 static void
 _SVar_TableAdd(SVarTable *pTable, const char *sKey, const SVar *pVal)
 {
-    const bool_t bIsKeyEmpty = (sKey == NULL || sKey[0] == '\0');
-
-    pTable->pEntries[pTable->dCount].tKey.eType            = CTYPE_CONST_CHAR;
-    pTable->pEntries[pTable->dCount].tKey.uData._constchar = sKey;
-    pTable->pEntries[pTable->dCount].tKey.dSize            = bIsKeyEmpty ? 0 : strlen(sKey)+1;
-
-    /* shallow-copy value */
+    if (sKey != NULL)
+    {
+        _SVar_String(&pTable->pEntries[pTable->dCount].tKey, sKey);
+    }
+    else
+    {
+        SVAR_NULL(pTable->pEntries[pTable->dCount].tKey);
+    }
     pTable->pEntries[pTable->dCount].tValue = *pVal;
     ++pTable->dCount;
 }
@@ -4284,474 +4472,92 @@ _ProcessUIEvent(
 
         case UIEVENT_MODAL_OPTIONS:
             {
-                static const char *sKeyTitle      = "title";
-                static const char *sKeyID         = "id";
-                static const char *sKeyType       = "type";
-                static const char *sKeyOptTitle   = "optTitle";
-                static const char *sKeyDefaultVal = "default";
-
-                SVarTable     *pRootTable;
-                size_t         dElemCount;
-                size_t         dSection;
-                unsigned int   i;
-                unsigned int   j;
-
-                /* pre-checks + init */
-                cassert_no_null(pUserData);
-                assert(dNumArgs == 1);
-                assert(pUserData[0].eType == CTYPE_LUATABLE);
-
-                pRootTable  = (SVarTable *)SVAR_GET_LUATABLE(pUserData[0]);
-                dElemCount  = 0U;
-
-                for (i = 0; i < MAX_OPT_ELEMS; ++i)
+                GUIOptions *pOptions = NULL;
+                SVARKEYB_BOOL(tRetVal, sStatusKey, CFALSE);
+                if (dNumArgs > 0 && pUserData[0].eType == CTYPE_LUATABLE)
                 {
-                    GUIOptElement *pElem = &pApp->pElementSets->pOptElementArray[i];
-
-                    str_destopt(&pElem->sKeyID);
-                    str_destopt(&pElem->sOutputString);
-                    str_destopt(&pElem->sTitle);
-
-                    for (j = 0; j < APP_MAX_ELEMENTS; ++j)
-                        str_destopt(&pElem->sOptTitle[j]);
+                    pOptions = _Options_Load(pApp, (SVarTable*)SVAR_GET_LUATABLE(pUserData[0]));
                 }
-                memset(pApp->pElementSets->pOptElementArray, 0, sizeof(GUIOptElement) * MAX_OPT_ELEMS);
-
-                /* root table */
-                for (dSection = 0;
-                    dSection < pRootTable->dCount && dElemCount < MAX_OPT_ELEMS;
-                    ++dSection)
+                if (pOptions != NULL && _Options_Show(pOptions, TXT_TITLE_OPTIONS))
                 {
-                    SVarTable *pSection;
-                    size_t     dEntry;
-
-                    if (pRootTable->pEntries[dSection].tValue.eType != CTYPE_LUATABLE)
-                    {
-                        continue;
-                    }
-
-                    pSection = (SVarTable *)SVAR_GET_LUATABLE(
-                                            pRootTable->pEntries[dSection].tValue);
-
-                    /* per-table sub entries processing */
-                    for (dEntry = 0;
-                        dEntry < pSection->dCount && dElemCount < MAX_OPT_ELEMS;
-                        ++dEntry)
-                    {
-                        SVarTable     *pElem;
-                        GUIOptElement *pDst;
-                        size_t         iField;
-                        size_t         dOptIndex;
-                        bool_t         bTypeWasSet;
-
-                        if (pSection->pEntries[dEntry].tValue.eType != CTYPE_LUATABLE)
-                        {
-                            continue;
-                        }
-
-                        pElem               = (SVarTable *)SVAR_GET_LUATABLE(
-                                                pSection->pEntries[dEntry].tValue);
-                        pDst                = &pApp->pElementSets->pOptElementArray[dElemCount];
-
-                        memset(pDst, 0, sizeof(GUIOptElement));
-                        dOptIndex   = 0U;
-                        bTypeWasSet = FALSE;
-
-                        /* walk through every key/value in the element table */
-                        for (iField = 0; iField < pElem->dCount; ++iField)
-                        {
-                            const char *sValKey;
-
-                            sValKey = SVAR_GET_CONSTCHAR(pElem->pEntries[iField].tKey);
-
-                            if (strcmp(sValKey, sKeyTitle) == 0)
-                            {
-                                pDst->sTitle =
-                                    str_c(SVAR_GET_CONSTCHAR(pElem->pEntries[iField].tValue));
-                            }
-                            else if (strcmp(sValKey, sKeyID) == 0)
-                            {
-                                pDst->sKeyID =
-                                    str_c(SVAR_GET_CONSTCHAR(pElem->pEntries[iField].tValue));
-                            }
-                            else if (strcmp(sValKey, sKeyType) == 0)
-                            {
-                                /* enum comes from Lua as a double */
-                                pDst->eType  = (EUIWidgetType)
-                                            SVAR_GET_DOUBLE(pElem->pEntries[iField].tValue);
-                                bTypeWasSet  = TRUE;
-                            }
-                            else if (strncmp(sValKey, sKeyOptTitle, 8) == 0)
-                            {
-                                switch (pElem->pEntries[iField].tValue.eType)
-                                {
-                                    case CTYPE_CONST_CHAR:
-                                        pDst->sOptTitle[dOptIndex++] =
-                                            str_c(SVAR_GET_CONSTCHAR(
-                                                    pElem->pEntries[iField].tValue));
-                                        break;
-
-                                    case CTYPE_DOUBLE:
-                                        pDst->sOptTitle[dOptIndex++] =
-                                            str_printf("%.4g",
-                                                    SVAR_GET_DOUBLE(
-                                                        pElem->pEntries[iField].tValue));
-                                        break;
-
-                                    case CTYPE_LUATABLE:
-                                    {
-                                        /* Handle optTitle = { "A", "B", ... } */
-                                        SVarTable *pOpts;
-                                        size_t     q;
-
-                                        pOpts = (SVarTable *)SVAR_GET_LUATABLE(
-                                                                pElem->pEntries[iField].tValue);
-
-                                        for (q = 0;
-                                            q < pOpts->dCount && dOptIndex < APP_MAX_ELEMENTS;
-                                            ++q)
-                                        {
-                                            if (pOpts->pEntries[q].tValue.eType == CTYPE_CONST_CHAR)
-                                            {
-                                                pDst->sOptTitle[dOptIndex++] =
-                                                    str_c(SVAR_GET_CONSTCHAR(
-                                                            pOpts->pEntries[q].tValue));
-                                            }
-                                        }
-                                    }
-                                    break;
-
-                                    case CTYPE_NULL:
-                                    case CTYPE_CHAR:
-                                    case CTYPE_UNSIGNED_CHAR:
-                                    case CTYPE_SHORT:
-                                    case CTYPE_UNSIGNED_SHORT:
-                                    case CTYPE_BOOL:
-                                    case CTYPE_INT:
-                                    case CTYPE_UNSIGNED_INT:
-                                    case CTYPE_LONG:
-                                    case CTYPE_FLOAT:
-                                    case CTYPE_LONG_DOUBLE:
-                                    case CTYPE_UNSIGNED_LONG:
-                                    case CTYPE_LONG_LONG:
-                                    case CTYPE_UNSIGNED_LONG_LONG:
-                                    case CTYPE_VOID:
-                                    case CTYPE_LUAREF:
-                                    case CTYPE_MAX:
-                                    default:
-                                        /* ignore unsupported types */
-                                        break;
-                                }
-                            }
-                            else if (strcmp(sValKey, sKeyDefaultVal) == 0)
-                            {
-                                const SVar *pVar = &pElem->pEntries[iField].tValue;
-
-                                if (SVAR_IS_DOUBLE(*pVar))
-                                {
-                                    pDst->dChoice =
-                                        (unsigned int)SVAR_GET_DOUBLE(*pVar);
-                                }
-                                else if (SVAR_IS_CONSTCHAR(*pVar))
-                                {
-                                    pDst->sOptTitle[0] =
-                                        str_c(SVAR_GET_CONSTCHAR(*pVar));
-                                    dOptIndex = 1U;
-                                }
-                            }
-                        }
-
-                        pDst->dNumOfOptions = (unsigned int)dOptIndex;
-                        if (!bTypeWasSet)
-                        {
-                            pDst->eType = UI_WIDGET_NULL;
-                        }
-
-#ifdef __DEBUG__
-                        _al_printf( pApp,
-                                    "Elem %zu: title='%s' type=%d opts=%u\n",
-                                    dElemCount,
-                                    (pDst->sTitle ? tc(pDst->sTitle) : "(null)"),
-                                    (int)pDst->eType,
-                                    pDst->dNumOfOptions);
-#endif
-
-                        ++dElemCount;
-                    }
+                    SVAR_BOOL(tRetVal.tKeys[0].tVar, CTRUE);
+                    SVARKEYB_LUATABLE(tRetVal, "values", _Options_Values(pOptions));
+                    tRetVal.tKeys[tRetVal.dCount - 1].tVar.dFlags |= SVAR_FLAG_OWNED;
                 }
-
-                /* Modal */
-                dModalRetVal = _Nappgui_ShowModal(
-                                pApp,
-                                Panel_GetModalOptions(pApp),
-                                TXT_TITLE_OPTIONS);
-
-                switch (dModalRetVal)
-                {
-                    case ekGUI_CLOSE_BUTTON:
-                    case ekGUI_CLOSE_ESC:
-                    case MODAL_CANCEL:
-                        SVARKEYB_BOOL(tRetVal, sStatusKey, CFALSE);
-                        break;
-
-                    default:
-                    {
-                        unsigned int u;
-
-                        SVARKEYB_BOOL(tRetVal, sStatusKey, CTRUE);
-
-                        for (u = 0; u < dElemCount; ++u)
-                        {
-                            const GUIOptElement *pElem   = &pApp->pElementSets->pOptElementArray[u];
-                            const char          *sOutKey =
-                                (pElem->sKeyID != NULL) ? tc(pElem->sKeyID) : tc(pElem->sTitle);
-
-                            switch (pElem->eType)
-                            {
-                                case UI_WIDGET_EDIT:
-                                {
-                                    const char *sVal =
-                                        (pElem->sOutputString != NULL) ? tc(pElem->sOutputString) :
-                                        (pElem->sOptTitle[0]  != NULL) ? tc(pElem->sOptTitle[0]) : "";
-                                    SVARKEYB_CONSTCHAR(tRetVal, sOutKey, sVal);
-                                }
-                                break;
-
-                                case UI_WIDGET_LISTBOX:
-                                case UI_WIDGET_POPUP:
-                                case UI_WIDGET_RADIO:
-                                case UI_WIDGET_CHECKBOX:
-                                    SVARKEYB_INT(tRetVal, sOutKey, (int)pElem->dChoice);
-                                    break;
-
-                                case UI_WIDGET_NULL:
-                                case UI_WIDGET_MAX:
-                                default:
-                                    break;
-                            }
-                        }
-                    }
-                    break;
-                }
+                _Options_Free(&pOptions);
             }
             break;
 
         case UIEVENT_MODAL_MODS:
             {
-                static const char *sKeyAvail     = "available";
-                static const char *sKeyActive    = "active";
-                static const char *sKeyID        = "id";
-                static const char *sKeyName      = "name";
-                static const char *sKeyAuthor    = "author";
-                static const char *sKeyDesc      = "description";
-                static const char *sKeyVersion   = "version";
-                static const char *sKeyWebsite   = "website";
-                static const char *sKeyRoot      = "root";
-                static const char *sKeyGame      = "game";
-                static const char *sKeyScreenshot= "screenshot";
-                static const char *sKeyOnInst    = "onInstall";
-                static const char *sKeyOnUninst  = "onUninstall";
-                static const char *sKeyOptions   = "options";
-
-                SVarTable *pRoot        = NULL;
-                SVarTable *pActive      = NULL;
-                unsigned int dModCount  = 0U;
+                const SVarTable *pMods;
+                unsigned int dCount = 0;
                 size_t i;
-
-                cassert_no_null(pUserData);
-                assert(dNumArgs == 1);
-                assert(pUserData[0].eType == CTYPE_LUATABLE);
-
-                pRoot = (SVarTable *)SVAR_GET_LUATABLE(pUserData[0]);
-
-                for (i = 0; i < MAX_MOD_ELEMS; ++i)
+                SVARKEYB_BOOL(tRetVal, sStatusKey, CFALSE);
+                if (dNumArgs != 1 || pUserData[0].eType != CTYPE_LUATABLE)
                 {
-                    GUIModElement *pElem = &pApp->pElementSets->pModElementArray[i];
-
-                    str_destopt(&pElem->sID);
-                    str_destopt(&pElem->sName);
-                    str_destopt(&pElem->sAuthor);
-                    str_destopt(&pElem->sDescription);
-                    str_destopt(&pElem->sVersion);
-                    str_destopt(&pElem->sWebsite);
-                    str_destopt(&pElem->sRoot);
-                    str_destopt(&pElem->sGame);
-                    str_destopt(&pElem->sScreenshot);
-                }
-                memset(pApp->pElementSets->pModElementArray, 0, sizeof(GUIModElement) * MAX_MOD_ELEMS);
-
-                /* locate active list first */
-                for (i = 0; i < pRoot->dCount; ++i)
-                {
-                    if (strcmp(SVAR_GET_CONSTCHAR(pRoot->pEntries[i].tKey), sKeyActive) == 0 &&
-                        pRoot->pEntries[i].tValue.eType == CTYPE_LUATABLE)
-                    {
-                        pActive = (SVarTable *)SVAR_GET_LUATABLE(pRoot->pEntries[i].tValue);
-                        break;
-                    }
-                }
-
-                /* process available mods */
-                for (i = 0; i < pRoot->dCount && dModCount < MAX_MOD_ELEMS; ++i)
-                {
-                    if (strcmp(SVAR_GET_CONSTCHAR(pRoot->pEntries[i].tKey), sKeyAvail) != 0 ||
-                        pRoot->pEntries[i].tValue.eType != CTYPE_LUATABLE)
-                        continue;
-
-                    {
-                        SVarTable *pAvail = (SVarTable *)SVAR_GET_LUATABLE(pRoot->pEntries[i].tValue);
-                        size_t     m;
-
-                        for (m = 0; m < pAvail->dCount && dModCount < MAX_MOD_ELEMS; ++m)
-                        {
-                            if (pAvail->pEntries[m].tValue.eType != CTYPE_LUATABLE)
-                                continue;
-
-                            {
-                                SVarTable      *pMod = (SVarTable *)SVAR_GET_LUATABLE(pAvail->pEntries[m].tValue);
-                                GUIModElement  *pDst = &pApp->pElementSets->pModElementArray[dModCount];
-                                size_t          k;
-
-                                memset(pDst, 0, sizeof(GUIModElement));
-
-                                for (k = 0; k < pMod->dCount; ++k)
-                                {
-                                    const char *sKey = SVAR_GET_CONSTCHAR(pMod->pEntries[k].tKey);
-
-                                    if (strcmp(sKey, sKeyID) == 0)
-                                        pDst->sID = str_c(SVAR_GET_CONSTCHAR(pMod->pEntries[k].tValue));
-                                    else if (strcmp(sKey, sKeyName) == 0)
-                                        pDst->sName = str_c(SVAR_GET_CONSTCHAR(pMod->pEntries[k].tValue));
-                                    else if (strcmp(sKey, sKeyAuthor) == 0)
-                                        pDst->sAuthor = str_c(SVAR_GET_CONSTCHAR(pMod->pEntries[k].tValue));
-                                    else if (strcmp(sKey, sKeyDesc) == 0)
-                                        pDst->sDescription = str_c(SVAR_GET_CONSTCHAR(pMod->pEntries[k].tValue));
-                                    else if (strcmp(sKey, sKeyVersion) == 0)
-                                        pDst->sVersion = str_c(SVAR_GET_CONSTCHAR(pMod->pEntries[k].tValue));
-                                    else if (strcmp(sKey, sKeyWebsite) == 0)
-                                        pDst->sWebsite = str_c(SVAR_GET_CONSTCHAR(pMod->pEntries[k].tValue));
-                                    else if (strcmp(sKey, sKeyRoot) == 0)
-                                        pDst->sRoot = str_c(SVAR_GET_CONSTCHAR(pMod->pEntries[k].tValue));
-                                    else if (strcmp(sKey, sKeyGame) == 0)
-                                        pDst->sGame = str_c(SVAR_GET_CONSTCHAR(pMod->pEntries[k].tValue));
-                                    else if (strcmp(sKey, sKeyScreenshot) == 0)
-                                        pDst->sScreenshot = str_c(SVAR_GET_CONSTCHAR(pMod->pEntries[k].tValue));
-                                    else if (strcmp(sKey, sKeyOnInst) == 0 &&
-                                            pMod->pEntries[k].tValue.eType == CTYPE_LUAREF)
-                                        pDst->pOnInstallCb = &pMod->pEntries[k].tValue;
-                                    else if (strcmp(sKey, sKeyOnUninst) == 0 &&
-                                            pMod->pEntries[k].tValue.eType == CTYPE_LUAREF)
-                                        pDst->pOnUninstallCb = &pMod->pEntries[k].tValue;
-                                    else if (strcmp(sKey, sKeyOptions) == 0 &&
-                                            pMod->pEntries[k].tValue.eType == CTYPE_LUATABLE)
-                                        pDst->pOptionsTable = (SVarTable *)SVAR_GET_LUATABLE(pMod->pEntries[k].tValue);
-                                }
-
-                                /* mark active */
-                                if (pActive && pDst->sID)
-                                {
-                                    size_t a;
-                                    for (a = 0; a < pActive->dCount; ++a)
-                                    {
-                                        if (pActive->pEntries[a].tValue.eType == CTYPE_CONST_CHAR &&
-                                            strcmp(tc(pDst->sID),
-                                                SVAR_GET_CONSTCHAR(pActive->pEntries[a].tValue)) == 0)
-                                        {
-                                            pDst->bActive = TRUE;
-                                            break;
-                                        }
-                                    }
-                                }
-#ifdef __DEBUG__
-                                _al_printf(pApp,
-                                    "Mod %zu: id='%s' active=%d\n",
-                                    dModCount,
-                                    pDst->sID ? tc(pDst->sID) : "(null)",
-                                    (int)pDst->bActive);
-#endif
-                                ++dModCount;
-                            }
-                        }
-                    }
-                }
-
-                dModalRetVal = _Nappgui_ShowModal(
-                                    pApp,
-                                    Panel_GetModalModManager(pApp),
-                                    TXT_TITLE_MODS);
-
-                switch (dModalRetVal)
-                {
-                    case ekGUI_CLOSE_BUTTON:
-                    case ekGUI_CLOSE_ESC:
-                    case MODAL_CANCEL:
-                        SVARKEYB_BOOL(tRetVal, sStatusKey, CFALSE);
-                        break;
-
-                    default:
-                    {
-                        size_t u;
-                        SVarTable *pActiveTbl;
-                        SVarTable *pOptionsTbl;
-
-                        SVARKEYB_BOOL(tRetVal, sStatusKey, CTRUE);
-
-                        pActiveTbl  = _SVar_TableNew(dModCount);
-                        pOptionsTbl = _SVar_TableNew(dModCount);
-                        
-                        /* populate temporary tables */
-                        for (u = 0; u < dModCount; ++u)
-                        {
-                            GUIModElement *pMod = &pApp->pElementSets->pModElementArray[u];
-                            if (!pMod->sID)
-                                continue;
-
-                            /* active[{id}] = bool */
-                            {
-                                SVar vBool;
-                                SVAR_BOOL(vBool, (CBOOL)pMod->bActive);
-                                _SVar_TableAdd(pActiveTbl, tc(pMod->sID), &vBool);
-                            }
-
-                            /* options[{id}] = <options table> */
-                            if (pMod->pOptionsTable)
-                            {
-                                const char *sid = tc(pMod->sID);
-                                SVar vTbl;
-
-                                /*--- new collapse logic ---*/
-                                if (   pMod->pOptionsTable->dCount == 1
-                                    && pMod->pOptionsTable->pEntries[0].tKey.eType == CTYPE_CONST_CHAR
-                                    && strcmp(SVAR_GET_CONSTCHAR(
-                                                pMod->pOptionsTable->pEntries[0].tKey), sid) == 0
-                                    && pMod->pOptionsTable->pEntries[0].tValue.eType == CTYPE_LUATABLE )
-                                {
-                                    /* use the inner table directly */
-                                    SVarTable *inner =
-                                        (SVarTable *)SVAR_GET_LUATABLE(
-                                            pMod->pOptionsTable->pEntries[0].tValue);
-                                    SVAR_LUATABLE(vTbl, inner);
-                                }
-                                else
-                                {
-                                    /* keep original structure (multi-group case) */
-                                    SVAR_LUATABLE(vTbl, pMod->pOptionsTable);
-                                }
-
-                                _SVar_TableAdd(pOptionsTbl, sid, &vTbl);
-                            }
-                        }
-
-                        /* Push lua tables into return variable */
-                        SVARKEYB_LUATABLE(tRetVal, "active",  pActiveTbl);
-
-                        if (pOptionsTbl->dCount > 0)
-                        {
-                            SVARKEYB_LUATABLE(tRetVal, "options", pOptionsTbl);
-                        }
-                    }
                     break;
                 }
+                _Mods_Clear(pApp);
+                pMods = (SVarTable*)SVAR_GET_LUATABLE(pUserData[0]);
+                for (i = 1; i <= pMods->dCount && dCount < MAX_MOD_ELEMS; ++i)
+                {
+                    const SVar *pEntry = _SVar_Index(pMods, i);
+                    const SVarTable *pMod;
+                    const SVar *pSettings, *pActive;
+                    GUIModElement *pDst;
+                    if (pEntry == NULL || pEntry->eType != CTYPE_LUATABLE)
+                    {
+                        continue;
+                    }
+                    pMod               = (SVarTable*)SVAR_GET_LUATABLE(*pEntry);
+                    pDst               = &pApp->pElementSets->pModElementArray[dCount++];
+                    pDst->sID          = _Mod_Text(pMod, "id");
+                    pDst->sName        = _Mod_Text(pMod, "name");
+                    pDst->sAuthor      = _Mod_Text(pMod, "author");
+                    pDst->sDescription = _Mod_Text(pMod, "description");
+                    pDst->sVersion     = _Mod_Text(pMod, "version");
+                    pDst->sWebsite     = _Mod_Text(pMod, "website");
+                    pDst->sScreenshot  = _Mod_Text(pMod, "screenshot");
+                    pSettings          = _SVar_Field(pMod, "settings");
+                    if (pSettings != NULL && pSettings->eType == CTYPE_LUATABLE)
+                    {
+                        pDst->pOptions = _Options_Load(pApp, (SVarTable*)SVAR_GET_LUATABLE(*pSettings));
+                    }
+                    pActive       = _SVar_Field(pMod, "active");
+                    pDst->bActive  = pActive != NULL && SVAR_IS_BOOL(*pActive) && SVAR_GET_BOOL(*pActive);
+                }
+                if (dCount == 0)
+                {
+                    _Mods_Clear(pApp);
+                    break;
+                }
+                dModalRetVal = _Nappgui_ShowModal(pApp, Panel_GetModalModManager(pApp), TXT_TITLE_MODS);
+                if (dModalRetVal == MODAL_ACCEPT)
+                {
+                    SVarTable *pActiveValues  = _SVar_TableNew(dCount);
+                    SVarTable *pOptionValues  = _SVar_TableNew(dCount);
+                    SVAR_BOOL(tRetVal.tKeys[0].tVar, CTRUE);
+                    for (i = 0; i < dCount; ++i)
+                    {
+                        const GUIModElement *pMod = &pApp->pElementSets->pModElementArray[i];
+                        SVar tValue;
+                        SVAR_BOOL(tValue, pMod->bActive);
+                        _SVar_TableAdd(pActiveValues, tc(pMod->sID), &tValue);
+                        if (pMod->pOptions != NULL)
+                        {
+                            SVAR_LUATABLE(tValue, _Options_Values(pMod->pOptions));
+                            _SVar_TableAdd(pOptionValues, tc(pMod->sID), &tValue);
+                        }
+                    }
+                    SVARKEYB_LUATABLE(tRetVal, "active", pActiveValues);
+                    tRetVal.tKeys[tRetVal.dCount - 1].tVar.dFlags |= SVAR_FLAG_OWNED;
+                    SVARKEYB_LUATABLE(tRetVal, "options", pOptionValues);
+                    tRetVal.tKeys[tRetVal.dCount - 1].tVar.dFlags |= SVAR_FLAG_OWNED;
+                }
+                pApp->pWidgets->pListBox = NULL;
+                pApp->pWindows->pLayoutExtra = NULL;
+                _Mods_Clear(pApp);
             }
             break;
 

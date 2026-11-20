@@ -31,22 +31,12 @@ Complete overhaul of foliage sprites: trees, flowers, plant pots, etc.
     },
   },
 
-  onInstall = function(ctx)
-  end,
-
-  onUninstall = function(ctx)
-    --ctx.log("Removing Dummy.lua")
-    --FS.PathDelete(FS.PathJoin(ctx.gameRoot, "Scripts", "General", "Dummy.lua"))
-  end,
-
-  onOption = function(ctx)
+  onApply = function(ctx)
   end,
 
   options = {
-    davidsprites = {
-      type    = "enum",
-      values  = {1},
-      default = 1
-    }
+    { id = "trees",   title = "New trees",    type = UIWIDGET.CHECKBOX, default = true },
+    { id = "foliage", title = "New foliage",  type = UIWIDGET.CHECKBOX, default = true },
+    { id = "water",   title = "New water",    type = UIWIDGET.CHECKBOX, default = true }
   }
 }

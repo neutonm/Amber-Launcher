@@ -250,6 +250,12 @@ _DisposeRecursive(lua_State *L, SVar *pVar)
 
     switch (pVar->eType)
     {
+        case CTYPE_CONST_CHAR:
+            if (pVar->dFlags & SVAR_FLAG_OWNED)
+            {
+                free((void*)SVAR_GET_CONSTCHAR(*pVar));
+            }
+            break;
         case CTYPE_LUAREF:
             luaL_unref(L, LUA_REGISTRYINDEX, SVAR_GET_LUAREF(*pVar));
             break;
@@ -365,6 +371,10 @@ _LUA_UICall(lua_State* L)
     {
         SLuaState_PushVariable(pAppCore->pLuaState, &tRetVal.tKeys[i].tVar);
         lua_setfield(L, -2, tRetVal.tKeys[i].sKey); /* t[key] = value */
+        if (tRetVal.tKeys[i].tVar.dFlags & SVAR_FLAG_OWNED)
+        {
+            _DisposeRecursive(L, &tRetVal.tKeys[i].tVar);
+        }
     }
 
     /* Cleanup */
