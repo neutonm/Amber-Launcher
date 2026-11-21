@@ -48,8 +48,8 @@ local function _SaveTable(path, values)
     return true
 end
 
-local function _SettingsPath(id)
-    return FS.PathJoin(GAME_DESTINATION_PATH, "Scripts", "ModSettings", id.."_settings.lua")
+local function _SettingsPath(id, kind)
+    return FS.PathJoin(GAME_DESTINATION_PATH, "Scripts", "ModSettings", id.."_"..(kind or "settings")..".lua")
 end
 
 local function _GetCompatibleGames(manifest)
@@ -65,10 +65,17 @@ end
 function AL_ScanMods()
     local list = {}
     if GAME_CURRENT == GAME_NULL or not FS.IsFilePresent(modsRoot) then return list end
+    local languages = AL_ContentLanguages()
     for _, dir in ipairs(FS.DirectoryList(modsRoot) or {}) do
         local path = FS.PathJoin(modsRoot, dir, "manifest.lua")
         if FS.IsFilePresent(path) then
-            local ok, manifest = pcall(dofile, path)
+            local directory = FS.PathJoin(modsRoot, dir)
+            local chunk = loadfile(path)
+            local ok, manifest = false, nil
+            if chunk then
+                ok, manifest = pcall(chunk, {languages = languages,
+                    text = function(key, fallback) return AL_Text(directory, key, fallback) end})
+            end
             if ok and type(manifest) == "table" and AL_IsGameCompatible(_GetCompatibleGames(manifest)) then
                 manifest.games = _GetCompatibleGames(manifest)
                 manifest.id    = manifest.id or dir
@@ -184,9 +191,10 @@ local function _Delete(relative)
     return true
 end
 
-local function _MakeCtx(mod, options, previous, force)
+local function _MakeCtx(mod, options, previous, force, languages, previousLanguages)
     local context = {FS = FS, gameRoot = GAME_DESTINATION_PATH, modRoot = mod.root,
-                     options = options, previous = previous or {}, force = force or false}
+                     options = options, previous = previous or {}, force = force or false,
+                     languages = languages, previousLanguages = previousLanguages}
     context.log = function(message) AL_print("[Mod "..mod.id.."] "..tostring(message)) end
     context.copy = function(src, dst)
         local ok, err = _CopyRule(mod, {src = src, dst = dst})
@@ -209,19 +217,18 @@ local function _CallHook(mod, name, context)
     return true
 end
 
-local function _InstallManifest(mod, options)
+local function _InstallManifest(mod, context)
     for _, rule in ipairs(mod.install or {}) do
         local ok, err = _CopyRule(mod, rule)
         if not ok then return nil, err end
     end
-    local context = _MakeCtx(mod, options, {}, true)
     local ok, err = _CallHook(mod, "onInstall", context)
     if not ok then return nil, err end
     return _CallHook(mod, "onApply", context)
 end
 
-local function _UninstallManifest(mod, options)
-    local ok, err = _CallHook(mod, "onUninstall", _MakeCtx(mod, options))
+local function _UninstallManifest(mod, context)
+    local ok, err = _CallHook(mod, "onUninstall", context)
     if not ok then return nil, err end
     for _, rule in ipairs(mod.install or {}) do
         if rule.autoclear then
@@ -237,23 +244,33 @@ function AL_LoadActiveMods()
 end
 
 local function _ChangeMod(mod, enabled, overrides, force, active)
-    local path     = _SettingsPath(mod.id)
-    local saved    = _LoadTable(path)
-    local previous = _Options(mod, nil, saved)
-    local values   = overrides and _Options(mod, overrides, saved) or previous
-    local index    = _ActiveIndex(active, mod.id)
-    local changed  = enabled ~= nil and enabled ~= (index ~= nil)
-    local ok, err  = true
+    local path                = _SettingsPath(mod.id)
+    local saved               = _LoadTable(path)
+    local previous            = _Options(mod, nil, saved)
+    local values              = overrides and _Options(mod, overrides, saved) or previous
+    local index               = _ActiveIndex(active, mod.id)
+    local changed             = enabled ~= nil and enabled ~= (index ~= nil)
+    local languages, revision = AL_ContentLanguages()
+    local content             = {core = languages.core, mod = languages.mod, revision = revision}
+    local localePath          = _SettingsPath(mod.id, "languages")
+    local previousLanguages   = _LoadTable(localePath)
+    local context             = _MakeCtx(mod, values, previous, enabled and (changed or force), languages, previousLanguages)
+    local ok, err             = true
     if enabled and (changed or force) then
-        ok, err = _InstallManifest(mod, values)
+        ok, err = _InstallManifest(mod, context)
     elseif changed then
-        ok, err = _UninstallManifest(mod, previous)
-    elseif index and not _TablesEqual(previous, values) then
-        ok, err = _CallHook(mod, "onApply", _MakeCtx(mod, values, previous))
+        context.options = previous
+        ok, err = _UninstallManifest(mod, context)
+    elseif index and (not _TablesEqual(previous, values) or not _TablesEqual(previousLanguages, content)) then
+        ok, err = _CallHook(mod, "onApply", context)
     end
     if not ok then return nil, err end
     if #(mod.options or {}) > 0 and not _TablesEqual(saved, values) then
         ok, err = _SaveTable(path, values)
+        if not ok then return nil, err end
+    end
+    if enabled ~= false and (index or enabled) and not _TablesEqual(previousLanguages, content) then
+        ok, err = _SaveTable(localePath, content)
         if not ok then return nil, err end
     end
     if changed then
@@ -295,6 +312,18 @@ function AL_ReinstallMod(id, overrides)
     return _UpdateMod(id, true, overrides, true)
 end
 
+function AL_SyncModLanguages()
+    local active = AL_LoadActiveMods()
+    if #active == 0 then return true end
+    for _, mod in ipairs(AL_ScanMods()) do
+        if _ActiveIndex(active, mod.id) then
+            local ok, err = _ChangeMod(mod, nil, nil, false, active)
+            if not ok then AL_print("[Mod "..mod.id.."] "..tostring(err)); return false end
+        end
+    end
+    return true
+end
+
 function ModalShowModManager()
     if GAME_CURRENT == GAME_NULL then return false end
     local game   = GAME_CURRENT
@@ -304,11 +333,11 @@ function ModalShowModManager()
     local ok, err = pcall(function()
         for _, mod in ipairs(mods) do
             local values = _Options(mod, nil, _LoadTable(_SettingsPath(mod.id)))
-            local form, displayed = AL_BuildOptions(mod.options or {}, values, _WidgetValue)
+            local form, displayed = AL_BuildOptions(mod.options or {}, values, _WidgetValue, mod.root)
             prepared[mod.id] = {values = values, displayed = displayed}
             available[#available + 1] = {
-                id = mod.id, name = mod.name or mod.id, version = mod.version or "",
-                author = mod.author or "", description = mod.description or "",
+                id = mod.id, name = AL_Text(mod.root, "name", mod.name or mod.id), version = mod.version or "",
+                author = mod.author or "", description = AL_Text(mod.root, "description", mod.description or ""),
                 website = mod.website or "", screenshot = mod.screenshot, settings = form,
                 active = _ActiveIndex(active, mod.id) ~= nil
             }

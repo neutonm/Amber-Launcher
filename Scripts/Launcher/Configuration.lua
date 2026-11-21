@@ -44,6 +44,7 @@ function AL_InitLauncherConfig()
 
     return _FillConfig(INI_PATH_LAUNCHER, {
         {"Settings", "CloseOnLaunch",   "1"},
+        {"Settings", "UILanguage",      "en_US"},
         {"Settings", "DefaultLanguage", "English"}
     })
 end

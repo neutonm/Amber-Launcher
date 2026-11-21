@@ -23,7 +23,8 @@ UIEVENT = {
     MODAL_MODS          = 14, -- Modal: Mod Manager
     MODAL_TOOLS         = 15, -- Modal: External App/Command launcher
     MODAL_UPDATER       = 16, -- Modal: Auto Update
-    MAX                 = 17
+    LANGUAGE            = 17, -- Launcher language and game UI texts
+    MAX                 = 18
 }
 
 UIWIDGET = {

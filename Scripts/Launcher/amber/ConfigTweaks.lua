@@ -3,34 +3,29 @@
 
 local _TweakerWizardEntries = {
     {
-        info = "Toggle to change how the Left and Right buttons function in-game:\n * Strafe: Buttons move your character sideways (left/right) without changing orientation.\n * Turn: Buttons rotate your character's viewpoint to the left or right.",
         tag = "strafe",
-        { optionName = "Strafe",    imagePath = "Data/Launcher/tweak-strafe-a.gif" },
-        { optionName = "Turn",      imagePath = "Data/Launcher/tweak-strafe-b.gif" },
+        { imagePath = "Data/Launcher/tweak-strafe-a.gif" },
+        { imagePath = "Data/Launcher/tweak-strafe-b.gif" },
     },
     {
-        info = "Choose between the classic UI or a new HD widescreen interface that gives you more view space.",
         tag = "gui",
-        { optionName = "Modern",    imagePath = "Data/Launcher/tweak-gui-a.jpg" },
-        { optionName = "Original",  imagePath = "Data/Launcher/tweak-gui-b.jpg" }
+        { imagePath = "Data/Launcher/tweak-gui-a.jpg" },
+        { imagePath = "Data/Launcher/tweak-gui-b.jpg" }
     },
     {
-        info = "Mod: Uses DaveHer’s HD foliage sprites, replacing the vanilla foliage.",
         tag = "david",
-        { optionName = "New",       imagePath = "Data/Launcher/tweak-daveher-a.jpg" },
-        { optionName = "Original",  imagePath = "Data/Launcher/tweak-daveher-b.jpg" }
+        { imagePath = "Data/Launcher/tweak-daveher-a.jpg" },
+        { imagePath = "Data/Launcher/tweak-daveher-b.jpg" }
     },
     {
-        info = "Mod: Replaces the default map texture with a version that marks shops, teachers, and dungeons for easier navigation.",
         tag = "mapicons",
-        { optionName = "Extra Icons",imagePath = "Data/Launcher/tweak-mapicons-a.jpg" },
-        { optionName = "Original",   imagePath = "Data/Launcher/tweak-mapicons-b.jpg" }
+        { imagePath = "Data/Launcher/tweak-mapicons-a.jpg" },
+        { imagePath = "Data/Launcher/tweak-mapicons-b.jpg" }
     },
     {
-        info = "Would you like to create desktop link to Might and Magic: Amber Island?",
         tag = "desktoplink",
-        { optionName = "Yes"},
-        { optionName = "No"}
+        {},
+        {}
     }
 }
 
@@ -49,7 +44,7 @@ local function _ConfigTweaks()
     AL.INISet(ini, "Settings", "MouseLook", "1")
     AL.INISet(ini, "Settings", "tviewdist", "1600")
 
-    local uiResponse = AL.UICall(UIEVENT.MODAL_TWEAKER, _TweakerWizardEntries)
+    local uiResponse = AL.UICall(UIEVENT.MODAL_TWEAKER, AL_TweakerText(_TweakerWizardEntries))
     if uiResponse and uiResponse.status == true then
 
         if uiResponse.strafe then

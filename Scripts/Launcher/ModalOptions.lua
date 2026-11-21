@@ -92,7 +92,8 @@ function ModalShowOptions()
             local value  = values[option.id]
             if _OptionsByID[option.id] == option and
                 value ~= nil and tostring(value) ~= tostring(widget.default) then
-                widget.value = value
+                widget.value    = value
+                widget.optTitle = shown.choices
                 if option.callback(widget, context) == false then
                     success = false
                 end
@@ -103,7 +104,9 @@ function ModalShowOptions()
     if not applied then
         AL_print("[Error]: failed to apply settings: "..tostring(err))
     end
-    return applied and saved and success
+    if not applied or not saved then return false end
+    AL_InitUILanguage()
+    return AL_RefreshUI() and AL_SyncModLanguages() and success
 end
 
 function events.GameDeactivated()
@@ -113,6 +116,26 @@ end
 
 function events.InitLauncher()
 
+    AL_RegisterOption({
+        id       = "uilanguage",
+        section  = "General",
+        title    = "Launcher language:",
+        type     = UIWIDGET.POPUP,
+        optTitle = function()
+            local names = {}
+            for _, language in ipairs(AL_GetUILanguages()) do names[#names + 1] = language.name end
+            return names
+        end,
+        read     = function()
+            for i, language in ipairs(AL_GetUILanguages()) do
+                if language.code == AL_UILanguage() then return i - 1 end
+            end
+            return 0
+        end,
+        callback = function(option, context)
+            return context:Set("launcher", "Settings", "UILanguage", AL_GetUILanguages()[option.value + 1].code)
+        end
+    })
     AL_RegisterOption({
         id       = "cmdargs",
         section  = "General",

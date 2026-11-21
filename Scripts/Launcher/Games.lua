@@ -334,7 +334,7 @@ function AL_DiscoverGames()
         local fullDir = FS.PathJoin(launcherScriptsRoot, dirName)
 
         local attr = lfs.attributes(fullDir)
-        if attr and attr.mode == "directory" then
+        if attr and attr.mode == "directory" and dirName ~= "Locales" then
             local gameFile = FS.PathJoin(fullDir, "_game.lua")
 
             if FS.IsFilePresent(gameFile) == false then

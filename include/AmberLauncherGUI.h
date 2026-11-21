@@ -88,6 +88,7 @@ typedef enum
     UIEVENT_MODAL_MODS,
     UIEVENT_MODAL_TOOLS,
     UIEVENT_MODAL_UPDATER,
+    UIEVENT_LANGUAGE,
     UIEVENT_MAX
 } EUIEventType;
 
@@ -227,6 +228,15 @@ typedef struct _AppGUILocalization
     unsigned int        dLocaleSelected[LOC_MAX];
 } AppGUILocalization;
 
+typedef enum
+{
+    GAME_TEXT_MAIN,
+    GAME_TEXT_CONFIG_INTRO,
+    GAME_TEXT_CONFIG_SUCCESS,
+    GAME_TEXT_NOT_FOUND,
+    GAME_TEXT_MAX
+} EGameText;
+
 typedef struct _AppGUI
 {
     struct AppCore*     pAppCore;
@@ -241,6 +251,8 @@ typedef struct _AppGUI
     unsigned int        dPage;
     unsigned int        dPageMax;
 
+    String             *sUILanguage;
+    String             *sGameText[GAME_TEXT_MAX];
     EPanelType          eCurrentPanel;
     EUIEventType        eCurrentUIEvent;
     bool_t              bUpdaterModSkipped;

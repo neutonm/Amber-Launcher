@@ -87,6 +87,7 @@ end
 
 function OnAppScriptsLoaded()
     if not AL_InitLauncherConfig() then return false end
+    AL_InitUILanguage()
     AL_DiscoverGames()
     if not AL_SelectCurrentGame() then
         return false
@@ -126,6 +127,7 @@ end
 function OnGameReady()
 
     if GAME_CURRENT == GAME_NULL then return false end
+    if not AL_RefreshUI() then return false end
     local src, how = AL_DetectGame()
     local modFound = AL_DetectMod(GAME_DESTINATION_PATH, true)
     if not AL_SaveCurrentGame() then

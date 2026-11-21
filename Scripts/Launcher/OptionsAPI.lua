@@ -10,7 +10,9 @@ function AL_ValidateOptionValue(option, value, choices)
     return value >= 0 and value <= limit
 end
 
-function AL_BuildOptions(options, context, read)
+function AL_BuildOptions(options, context, read, scope)
+
+    scope = scope or "game"
 
     local sections, byName, displayed, ids = {}, {}, {}, {}
     for _, option in ipairs(options) do
@@ -37,15 +39,21 @@ function AL_BuildOptions(options, context, read)
             if read then value = read(option, context[option.id])
             elseif option.read then value = option.read(context) end
             assert(AL_ValidateOptionValue(option, value, choices), "Invalid default for "..option.id)
-            local widget = {id = option.id, title = option.title, type = option.type,
-                            optTitle = choices, default = value}
-            local name = option.section or "General"
+            local labels = choices and {}
+            for i, title in ipairs(choices or {}) do
+                local key = type(option.optTitle) == "function" and "choice."..title or option.id..".choice."..i
+                labels[i] = AL_Text(scope, key, title)
+            end
+            local widget = {id = option.id, title = AL_Text(scope, option.id..".title", option.title),
+                            type = option.type, optTitle = labels, default = value}
+            local section = option.section or "General"
+            local name = AL_Text(scope, "section."..section, AL_Text("launcher", "section."..section, section))
             if not byName[name] then
                 byName[name] = {sectionName = name}
                 sections[#sections + 1] = byName[name]
             end
             byName[name][#byName[name] + 1] = widget
-            displayed[#displayed + 1] = {definition = option, widget = widget}
+            displayed[#displayed + 1] = {definition = option, widget = widget, choices = choices}
         end
     end
     return sections, displayed

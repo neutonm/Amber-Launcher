@@ -93,8 +93,8 @@ function AL_GetToolsForCurrentGame()
                 id           = tool.id,
                 iconPath     = tool.iconPath,
                 iconDarkPath = tool.iconDarkPath,
-                title        = tool.title,
-                description  = tool.description,
+                title        = AL_Text("launcher", tool.key..".title", tool.title),
+                description  = AL_Text("launcher", tool.key..".description", tool.description),
                 onClick      = function()
                     if _ToolsByKey[tool.key] == tool and AL_IsGameCompatible(tool.games) then
                         return tool.onClick()

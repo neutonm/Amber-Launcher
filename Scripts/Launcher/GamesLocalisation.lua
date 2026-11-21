@@ -96,6 +96,22 @@ local function _FindLocale(locales, which, value)
     end
 end
 
+function AL_ContentLanguages()
+
+    local context   = AL_ConfigContext()
+    local languages = {launcher = AL_UILanguage()}
+    for _, which in ipairs({"core", "mod"}) do
+        local key = which == "core" and "Core" or "Mod"
+        local applied = context:Get("project", "Localisation", "Applied"..key, "")
+        for _, locale in ipairs(context.locales) do
+            if locale.name == applied or locale.code == applied then languages[which] = locale.code; break end
+        end
+    end
+    local revision = tonumber(context:Get("project", "Localisation", "Revision", "0")) or 0
+    context:Close(false)
+    return languages, revision
+end
+
 function AL_SetLocalisation(context, which, value)
 
     assert(which == "core" or which == "mod", "Unknown localisation scope")
@@ -117,8 +133,11 @@ function AL_SetLocalisation(context, which, value)
         AL_print("Failed to apply "..which.." localisation: "..locale.name)
         return false
     end
+    -- Reapplying the same locale can also overwrite optional mod files.
+    local revision = tonumber(context:Get("project", "Localisation", "Revision", "0")) or 0
     return context:Set("project", "Localisation", key, locale.name) and
-        context:Set("project", "Localisation", "Applied"..key, locale.name)
+        context:Set("project", "Localisation", "Applied"..key, locale.name) and
+        context:Set("project", "Localisation", "Revision", revision + 1)
 end
 
 function AL_ConfigureLocalisation()
@@ -146,7 +165,7 @@ function AL_ConfigureLocalisation()
     end)
     local saved = context:Close(true)
     if not ok then AL_print("Failed to configure localisation: "..tostring(success)) end
-    return ok and success and saved
+    return ok and success and saved and AL_SyncModLanguages()
 end
 
 function AL_SyncLocalisation()
@@ -168,5 +187,5 @@ function AL_SyncLocalisation()
     end)
     local saved = context:Close(true)
     if not ok then AL_print("Failed to synchronize localisation: "..tostring(success)) end
-    return ok and success and saved
+    return ok and success and saved and AL_SyncModLanguages()
 end

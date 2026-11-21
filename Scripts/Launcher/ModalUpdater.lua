@@ -76,6 +76,7 @@ end
 
 function events.AfterUpdate()
 
+    AL_RefreshUI(true)
     AL_print("[Updater] Checking mods...")
     _UpdateMods()
     AL_print("[Updater] Done!")

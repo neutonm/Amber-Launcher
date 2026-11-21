@@ -72,6 +72,7 @@ static const char *_sLua_MOD_VERSION =
 
 const char* EUIEventTypeStrings[] = {
     "NULL",
+    "DEBUG",
     "PRINT",
     "MAIN",
     "PLAY",
@@ -87,6 +88,7 @@ const char* EUIEventTypeStrings[] = {
     "MODAL_MODS",
     "MODAL_TOOLS",
     "MODAL_UPDATER",
+    "LANGUAGE",
     NULL
 };
 
@@ -396,6 +398,7 @@ Panel_GetAutoConfigure(AppGUI* pApp, FPanelFlags dFlags)
     Font        *pFontGreet  = font_system(18, ekFNORMAL | ekFPIXELS);
     Font        *pFontCfg    = font_system(24, ekFNORMAL | ekFPIXELS);
     bool_t      bIsStateEnd  = FLAG_HAS(dFlags, FLAG_PANEL_STATE_END);
+    EGameText   eText        = bIsStateEnd ? GAME_TEXT_CONFIG_SUCCESS : GAME_TEXT_CONFIG_INTRO;
 
     if (bIsStateEnd)
     {
@@ -409,7 +412,8 @@ Panel_GetAutoConfigure(AppGUI* pApp, FPanelFlags dFlags)
     pApp->pWidgets->pTextView = pConsole;
 
     /* Label: Greetings Text */
-    label_text(pLabelGreet, bIsStateEnd ? TXT_CONFIGSUCCESS : TXT_CONFIGINTRO);
+    label_text(pLabelGreet, pApp->sGameText[eText] ? tc(pApp->sGameText[eText]) :
+        (bIsStateEnd ? TXT_CONFIGSUCCESS : TXT_CONFIGINTRO));
     label_multiline(pLabelGreet, TRUE);
     label_font(pLabelGreet, pFontGreet);
 
@@ -458,7 +462,7 @@ Panel_GetMain(AppGUI* pApp)
     pApp->pWidgets->pTextView = NULL;
 
     /* Label: Temp */
-    label_text(pLabelTemp, TXT_MAININTRO);
+    label_text(pLabelTemp, pApp->sGameText[GAME_TEXT_MAIN] ? tc(pApp->sGameText[GAME_TEXT_MAIN]) : TXT_MAININTRO);
     label_multiline(pLabelTemp, TRUE);
 
     /* Button: Play */
@@ -721,7 +725,7 @@ Panel_GetModalGameNotFound(AppGUI* pApp)
     Font        *pFontSubmit    = font_system(20, ekFNORMAL | ekFPIXELS);
 
     /* Label: Greetings Text */
-    label_text(pLabelInfo, TXT_GAMENOTFOUND);
+    label_text(pLabelInfo, pApp->sGameText[GAME_TEXT_NOT_FOUND] ? tc(pApp->sGameText[GAME_TEXT_NOT_FOUND]) : TXT_GAMENOTFOUND);
     label_multiline(pLabelInfo, TRUE);
     label_font(pLabelInfo, pFontInfo);
 
@@ -1776,7 +1780,7 @@ _Panel_GetModalModManagerSubpanel(AppGUI *pApp, const unsigned int dModIndex)
     layout_label(pLayoutModPreview, pLabelModWebsite, 0, 4);
     layout_layout(pLayoutModPreview, pLayoutDescription, 0, 5);
 
-    button_text(pSettings, "Settings");
+    button_text(pSettings, TXT_TOOLTIP_SETTINGS);
     button_OnClick(pSettings, listener(pElem, _Callback_ModSettings, GUIModElement));
     layout_button(pLayoutModPreview, pSettings, 0, 6);
     layout_show_row(pLayoutModPreview, 6, pElem->pOptions != NULL && pElem->pOptions->dCount > 0);
@@ -3740,6 +3744,12 @@ _Nappgui_End(AppGUI **pApp)
     heap_delete(&(*pApp)->pDebugData, GUIDebugData);
     (*pApp)->pDebugData = NULL;
 
+    str_destopt(&(*pApp)->sUILanguage);
+    for (i = 0; i < GAME_TEXT_MAX; ++i)
+    {
+        str_destopt(&(*pApp)->sGameText[i]);
+    }
+
     /* Finalize */
     AppCore_free(&(*pApp)->pAppCore);
     heap_delete(pApp, AppGUI);
@@ -4025,6 +4035,50 @@ _ProcessUIEvent(
 
                 _al_printf(pApp,"%s\n", sMessage);
                 SVARKEYB_BOOL(tRetVal, sStatusKey, CTRUE);
+            }
+            break;
+
+        case UIEVENT_LANGUAGE:
+            {
+                static const char *sKeys[] = {"mainIntro", "configIntro", "configSuccess", "gameNotFound"};
+                const SVarTable *pTexts;
+                const char *sLanguage;
+                unsigned int i;
+                SVARKEYB_BOOL(tRetVal, sStatusKey, CFALSE);
+                if (dNumArgs != 2 || !SVAR_IS_CONSTCHAR(pUserData[0]) || pUserData[1].eType != CTYPE_LUATABLE)
+                {
+                    break;
+                }
+                pTexts = (SVarTable*)SVAR_GET_LUATABLE(pUserData[1]);
+                for (i = 0; i < GAME_TEXT_MAX; ++i)
+                {
+                    const SVar *pText = _SVar_Field(pTexts, sKeys[i]);
+                    if (pText == NULL || !SVAR_IS_CONSTCHAR(*pText))
+                    {
+                        break;
+                    }
+                }
+                if (i != GAME_TEXT_MAX)
+                {
+                    break;
+                }
+                for (i = 0; i < GAME_TEXT_MAX; ++i)
+                {
+                    const SVar *pText = _SVar_Field(pTexts, sKeys[i]);
+                    str_upd(&pApp->sGameText[i], SVAR_GET_CONSTCHAR(*pText));
+                }
+                sLanguage = SVAR_GET_CONSTCHAR(pUserData[0]);
+                if (pApp->sUILanguage == NULL || strcmp(tc(pApp->sUILanguage), sLanguage) != 0)
+                {
+                    str_upd(&pApp->sUILanguage, sLanguage);
+                    gui_language(sLanguage);
+                }
+                if (pApp->pWindows->pWindow != NULL && pApp->pWindows->pWindowModal == NULL &&
+                    pApp->eCurrentPanel == CPANEL_MAIN)
+                {
+                    GUIThread_SchedulePanelSet(pApp, CPANEL_MAIN, FLAG_PANEL_NONE);
+                }
+                SVAR_BOOL(tRetVal.tKeys[0].tVar, CTRUE);
             }
             break;
 
